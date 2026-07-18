@@ -5,6 +5,7 @@ import '../widgets/nyaki_bottom_bar.dart';
 import 'add_word_screen.dart';
 import 'home_screen.dart';
 import 'quest_screen.dart';
+import 'settings_screen.dart';
 import 'word_book_list_screen.dart';
 import 'word_test_screen.dart';
 
@@ -24,6 +25,7 @@ class _AppShellState extends State<AppShell> {
     WordBookListScreen(),
     AddWordScreen(),
     WordTestScreen(),
+    SettingsScreen(),
   ];
 
   @override

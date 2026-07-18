@@ -2,6 +2,8 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:nyaki/data/auth/auth_controller.dart';
+import 'package:nyaki/data/auth/auth_repository.dart';
 import 'package:nyaki/data/local/app_database.dart';
 import 'package:nyaki/data/repositories/drift_vocab_repository.dart';
 import 'package:nyaki/data/vocab_controller.dart';
@@ -14,7 +16,13 @@ void main() {
     final controller = VocabController(repository);
     await controller.initialize();
 
-    await tester.pumpWidget(NyakiApp(controller: controller));
+    final authController = AuthController(UnconfiguredAuthRepository());
+    await authController.initialize();
+    authController.skipSignIn();
+
+    await tester.pumpWidget(
+      NyakiApp(controller: controller, authController: authController),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('홈'), findsOneWidget);

@@ -63,3 +63,13 @@ app.*.map.json
 
 # macOS custom folder icon
 Icon?
+
+# Asset images (keep local only)
+assets/**/*.png
+assets/**/*.jpg
+assets/**/*.jpeg
+assets/**/*.gif
+assets/**/*.webp
+assets/**/*.svg
+assets/**/*.ico
+assets/**/*.bmp

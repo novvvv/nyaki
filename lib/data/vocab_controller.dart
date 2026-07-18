@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
 import 'repositories/vocab_repository.dart';
+import 'seed/seed_default_nyaki_words.dart';
 
 /// UI가 구독하는 단어장·단어 상태 레이어.
 class VocabController extends ChangeNotifier {
@@ -17,6 +18,7 @@ class VocabController extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       await _repository.ensureInitialized();
+      await seedDefaultNyakiWords(_repository);
       await reload();
       initError = null;
     } catch (error) {

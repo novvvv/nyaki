@@ -1,24 +1,74 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
+import '../core/nyaki_scope.dart';
 import '../core/theme/nyaki_colors.dart';
+import '../data/repositories/vocab_repository.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
+
+/// 테스트 대상/표시 방식을 정하는 옵션.
+class WordTestOptions {
+  const WordTestOptions({
+    this.filter = WordTestFilter.unmemorizedOnly,
+    this.hideMeaning = true,
+    this.shuffle = false,
+  });
+
+  /// 대상 단어 필터.
+  final WordTestFilter filter;
+
+  /// true면 단어만 먼저 보여주고 탭해야 뜻이 보인다.
+  final bool hideMeaning;
+
+  /// 단어 순서 섞기.
+  final bool shuffle;
+
+  List<Word> selectWords(WordBook wordBook) {
+    final words = wordBook.activeWords.where((word) {
+      switch (filter) {
+        case WordTestFilter.all:
+          return true;
+        case WordTestFilter.unmemorizedOnly:
+          return !word.isMemorized;
+        case WordTestFilter.memorizedOnly:
+          return word.isMemorized;
+      }
+    }).toList();
+    if (shuffle) words.shuffle();
+    return words;
+  }
+}
+
+enum WordTestFilter {
+  all,
+  unmemorizedOnly,
+  memorizedOnly,
+}
 
 /// 세로 스와이프(릴스 스타일) 단어 테스트.
 /// 기본은 단어만 표시, 탭하면 발음·뜻 공개.
 class WordTestSessionScreen extends StatefulWidget {
-  const WordTestSessionScreen({super.key, required this.wordBook});
+  const WordTestSessionScreen({
+    super.key,
+    required this.wordBook,
+    this.options = const WordTestOptions(),
+  });
 
   final WordBook wordBook;
+  final WordTestOptions options;
 
   @override
   State<WordTestSessionScreen> createState() => _WordTestSessionScreenState();
 }
 
 class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
-  late final List<Word> _words = widget.wordBook.activeWords;
+  late final List<Word> _words = widget.options.selectWords(widget.wordBook);
   final _pageController = PageController();
-  final _revealed = <String>{};
+  late final Set<String> _revealed = widget.options.hideMeaning
+      ? <String>{}
+      : _words.map((word) => word.id).toSet();
   int _currentPage = 0;
 
   @override
@@ -33,6 +83,29 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
         _revealed.remove(wordId);
       }
     });
+  }
+
+  Future<void> _setMemorization(
+    int index,
+    WordMemorizationStatus status,
+  ) async {
+    final word = _words[index];
+    if (word.memorizationStatus == status) return;
+
+    try {
+      final updated = await NyakiScope.of(context).updateWord(
+        wordBookId: word.wordBookId,
+        wordId: word.id,
+        input: UpdateWordInput(memorizationStatus: status),
+      );
+      if (!mounted) return;
+      setState(() => _words[index] = updated);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 
   @override
@@ -84,6 +157,14 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
                     revealed: revealed,
                     isLast: isLast,
                     onTap: () => _toggleReveal(word.id),
+                    onMarkUnmemorized: () => _setMemorization(
+                      index,
+                      WordMemorizationStatus.unmemorized,
+                    ),
+                    onMarkMemorized: () => _setMemorization(
+                      index,
+                      WordMemorizationStatus.memorized,
+                    ),
                   );
                 },
               ),
@@ -101,12 +182,16 @@ class _WordTestCard extends StatelessWidget {
     required this.revealed,
     required this.isLast,
     required this.onTap,
+    required this.onMarkUnmemorized,
+    required this.onMarkMemorized,
   });
 
   final Word word;
   final bool revealed;
   final bool isLast;
   final VoidCallback onTap;
+  final VoidCallback onMarkUnmemorized;
+  final VoidCallback onMarkMemorized;
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +204,19 @@ class _WordTestCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (word.imagePath != null) ...[
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: _WordImage(path: word.imagePath!),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+            ],
             Text(
               word.term,
               textAlign: TextAlign.center,
@@ -175,7 +273,24 @@ class _WordTestCard extends StatelessWidget {
                       ),
                     ),
             ),
-            const SizedBox(height: 70),
+            const SizedBox(height: 44),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _MemorizationButton(
+                  label: '모름',
+                  selected: !word.isMemorized,
+                  onTap: onMarkUnmemorized,
+                ),
+                const SizedBox(width: 10),
+                _MemorizationButton(
+                  label: '외움',
+                  selected: word.isMemorized,
+                  onTap: onMarkMemorized,
+                ),
+              ],
+            ),
+            const SizedBox(height: 44),
             Icon(
               isLast
                   ? Icons.check_circle_outline_rounded
@@ -197,6 +312,68 @@ class _WordTestCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MemorizationButton extends StatelessWidget {
+  const _MemorizationButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? NyakiColors.ink : Colors.transparent,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(
+          color: NyakiColors.ink.withValues(alpha: selected ? 1 : 0.2),
+        ),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 10),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+              color: selected
+                  ? NyakiColors.cream
+                  : NyakiColors.ink.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WordImage extends StatelessWidget {
+  const _WordImage({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    final image = path.startsWith('assets/')
+        ? Image.asset(path, fit: BoxFit.cover)
+        : Image.file(File(path), fit: BoxFit.cover);
+
+    return ColoredBox(
+      color: NyakiColors.ink.withValues(alpha: 0.06),
+      child: image,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:nyaki/data/auth/auth_controller.dart';
 import 'package:nyaki/data/auth/auth_repository.dart';
@@ -9,16 +10,41 @@ import 'package:nyaki/data/repositories/drift_vocab_repository.dart';
 import 'package:nyaki/data/vocab_controller.dart';
 import 'package:nyaki/main.dart';
 
+class _FakeAuthRepository implements AuthRepository {
+  @override
+  Future<AuthUser?> restoreSession() async => null;
+
+  @override
+  Future<AuthUser> signInWithApple() async {
+    throw AuthException('테스트에서는 Apple 로그인을 쓰지 않아요.');
+  }
+
+  @override
+  Future<AuthUser> signInWithGoogle() async {
+    throw AuthException('테스트에서는 Google 로그인을 쓰지 않아요.');
+  }
+
+  @override
+  Future<void> signOut() async {}
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   testWidgets('홈 탭에 고양이만 표시한다', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     final repository = DriftVocabRepository.forTesting(db);
     final controller = VocabController(repository);
     await controller.initialize();
 
-    final authController = AuthController(UnconfiguredAuthRepository());
+    final authController = AuthController(
+      _FakeAuthRepository(),
+      preferences: await SharedPreferences.getInstance(),
+    );
     await authController.initialize();
-    authController.skipSignIn();
+    await authController.skipSignIn();
 
     await tester.pumpWidget(
       NyakiApp(controller: controller, authController: authController),

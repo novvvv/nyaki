@@ -1,43 +1,62 @@
 import 'package:flutter/material.dart';
-
-import '../core/nyaki_scope.dart';
-import '../core/theme/nyaki_colors.dart';
-import '../models/word_book.dart';
+import '../../core/nyaki_scope.dart';
+import '../../core/theme/nyaki_colors.dart';
+import '../../models/word_book.dart';
 import 'word_test_session_screen.dart';
+
+// ===============================================  
+// ✨ WordTestScreen ✨ 
+// - 단어장 테스트 시작 전 단어장 설정 및 시작 전 화면 세팅을 담당한다. 
+// ✨ Flow ✨
+// 단어장 선택 -> 테스트 옵션 설정 -> 테스트 화면 이동 
+// ===============================================  
 
 class WordTestScreen extends StatefulWidget {
   const WordTestScreen({super.key});
-
   @override
   State<WordTestScreen> createState() => _WordTestScreenState();
 }
 
 class _WordTestScreenState extends State<WordTestScreen> {
-  String? _selectedWordBookId;
 
-  WordBook? _resolveSelected(List<WordBook> books) {
-    if (books.isEmpty) return null;
-    for (final book in books) {
-      if (book.id == _selectedWordBookId) return book;
-    }
-    return books.first;
+  // _selectedWordBooksIds -> 선택된 단어의 객체 전체가 아닌 ID만 저장 
+  // ex) _selectedWordBookIds = {'book-1', 'book-3', ...}
+  final Set<String> _selectedWordBookIds = <String>{};
+
+  // _reslovedSelected -> ID 목록을 실제 WordBook 객체 목록으로 변환
+  // ex) books = [ WordBook(id: 'book-1', title: '기초 영어')]
+  List<WordBook> _resolveSelected(List<WordBook> books) {
+    return books
+        .where((book) => _selectedWordBookIds.contains(book.id)) 
+        .toList(growable: false);
   }
 
-  Future<void> _startTest(WordBook wordBook) async {
+  // _toggleSelection -> 단어장을 누를 때 선택 상태를 반전한다. 
+  void _toggleSelection(String wordBookId) {
+
+    // 단어장의 상태를 체크하여 selectedWordBooksIds에 단어장 정보를 추가/삭제 
+    setState(() {
+      if (!_selectedWordBookIds.add(wordBookId)) {
+        _selectedWordBookIds.remove(wordBookId);
+      }
+    });
+  }
+
+  Future<void> _startTest(List<WordBook> wordBooks) async {
     final options = await showModalBottomSheet<WordTestOptions>(
       context: context,
       backgroundColor: NyakiColors.cream,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => _TestOptionsSheet(wordBook: wordBook),
+      builder: (_) => _TestOptionsSheet(wordBooks: wordBooks),
     );
     if (options == null || !mounted) return;
 
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => WordTestSessionScreen(
-          wordBook: wordBook,
+          wordBooks: wordBooks,
           options: options,
         ),
       ),
@@ -51,7 +70,9 @@ class _WordTestScreenState extends State<WordTestScreen> {
       builder: (context, _) {
         final books = NyakiScope.of(context).wordBooks;
         final selected = _resolveSelected(books);
-        final canStart = selected != null && selected.activeWords.isNotEmpty;
+        final totalWords =
+            selected.fold<int>(0, (sum, book) => sum + book.activeWords.length);
+        final canStart = totalWords > 0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,7 +92,7 @@ class _WordTestScreenState extends State<WordTestScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
               child: Text(
-                '테스트할 단어장을 선택해 주세요.',
+                '테스트할 단어장을 선택해 주세요. 여러 개를 함께 고를 수 있어요.',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 13,
@@ -98,14 +119,11 @@ class _WordTestScreenState extends State<WordTestScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final book = books[index];
-                        final isSelected = book.id == selected?.id;
                         return _TestBookTile(
                           title: book.title,
                           meta: book.metaLabel,
-                          selected: isSelected,
-                          onTap: () {
-                            setState(() => _selectedWordBookId = book.id);
-                          },
+                          selected: _selectedWordBookIds.contains(book.id),
+                          onTap: () => _toggleSelection(book.id),
                         );
                       },
                     ),
@@ -128,11 +146,13 @@ class _WordTestScreenState extends State<WordTestScreen> {
                     ),
                   ),
                   child: Text(
-                    selected == null
-                        ? '테스트 시작'
-                        : selected.activeWords.isEmpty
+                    selected.isEmpty
+                        ? '단어장을 선택해 주세요'
+                        : totalWords == 0
                             ? '단어가 없어요'
-                            : '테스트 시작 · ${selected.activeWords.length}단어',
+                            : selected.length == 1
+                                ? '테스트 시작 · $totalWords단어'
+                                : '테스트 시작 · ${selected.length}권 $totalWords단어',
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
@@ -151,9 +171,9 @@ class _WordTestScreenState extends State<WordTestScreen> {
 
 /// 테스트 시작 전 옵션을 고르는 바텀 시트.
 class _TestOptionsSheet extends StatefulWidget {
-  const _TestOptionsSheet({required this.wordBook});
+  const _TestOptionsSheet({required this.wordBooks});
 
-  final WordBook wordBook;
+  final List<WordBook> wordBooks;
 
   @override
   State<_TestOptionsSheet> createState() => _TestOptionsSheetState();
@@ -165,7 +185,7 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
   bool _shuffle = false;
 
   int get _targetCount =>
-      WordTestOptions(filter: _filter).selectWords(widget.wordBook).length;
+      WordTestOptions(filter: _filter).selectWords(widget.wordBooks).length;
 
   @override
   Widget build(BuildContext context) {

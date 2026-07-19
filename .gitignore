@@ -66,3 +66,11 @@ Icon?
 
 # Local assets (keep out of git)
 assets/
+
+# Private product notes
+/PRODUCT_DIRECTION.md
+
+# Firebase / Google config (local only)
+**/GoogleService-Info.plist
+**/GoogleService-Info*.plist
+**/google-services.json

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/nyaki_colors.dart';
-import '../widgets/screen_header.dart';
+import '../../core/theme/nyaki_colors.dart';
+import '../../widgets/screen_header.dart';
 
 class QuestScreen extends StatelessWidget {
   const QuestScreen({super.key});

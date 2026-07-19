@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../core/nyaki_scope.dart';
-import '../core/theme/nyaki_colors.dart';
-import '../data/repositories/vocab_repository.dart';
-import '../models/word.dart';
-import '../models/word_book.dart';
+import '../../core/nyaki_scope.dart';
+import '../../core/theme/nyaki_colors.dart';
+import '../../data/repositories/vocab_repository.dart';
+import '../../models/word.dart';
+import '../../models/word_book.dart';
 
 /// 테스트 대상/표시 방식을 정하는 옵션.
 class WordTestOptions {
@@ -25,8 +25,9 @@ class WordTestOptions {
   /// 단어 순서 섞기.
   final bool shuffle;
 
-  List<Word> selectWords(WordBook wordBook) {
-    final words = wordBook.activeWords.where((word) {
+  /// 선택한 단어장들의 단어를 하나의 출제 목록으로 합친다.
+  List<Word> selectWords(List<WordBook> wordBooks) {
+    final words = wordBooks.expand((book) => book.activeWords).where((word) {
       switch (filter) {
         case WordTestFilter.all:
           return true;
@@ -52,11 +53,12 @@ enum WordTestFilter {
 class WordTestSessionScreen extends StatefulWidget {
   const WordTestSessionScreen({
     super.key,
-    required this.wordBook,
+    required this.wordBooks,
     this.options = const WordTestOptions(),
   });
 
-  final WordBook wordBook;
+  /// 테스트 대상 단어장 목록. 여러 개를 합쳐 출제한다.
+  final List<WordBook> wordBooks;
   final WordTestOptions options;
 
   @override
@@ -64,7 +66,7 @@ class WordTestSessionScreen extends StatefulWidget {
 }
 
 class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
-  late final List<Word> _words = widget.options.selectWords(widget.wordBook);
+  late final List<Word> _words = widget.options.selectWords(widget.wordBooks);
   final _pageController = PageController();
   late final Set<String> _revealed = widget.options.hideMeaning
       ? <String>{}

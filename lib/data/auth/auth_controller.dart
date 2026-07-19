@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_repository.dart';
 
@@ -14,9 +15,13 @@ enum AuthStatus {
 }
 
 class AuthController extends ChangeNotifier {
-  AuthController(this._repository);
+  AuthController(this._repository, {SharedPreferences? preferences})
+      : _preferences = preferences;
+
+  static const _skipKey = 'auth_skipped_local_mode';
 
   final AuthRepository _repository;
+  SharedPreferences? _preferences;
 
   AuthStatus _status = AuthStatus.initializing;
   AuthUser? _user;
@@ -32,16 +37,29 @@ class AuthController extends ChangeNotifier {
   /// 로그인 진행 중 여부 (버튼 중복 탭 방지용).
   bool get busy => _busy;
 
+  /// Firebase UID. 후속 동기화 식별자로 사용. 비로그인이면 null.
+  String? get userId => _user?.uid;
+
   Future<void> initialize() async {
+    _preferences ??= await SharedPreferences.getInstance();
     final restored = await _repository.restoreSession();
     _user = restored;
-    _status = restored == null ? AuthStatus.signedOut : AuthStatus.signedIn;
+    if (restored != null) {
+      _status = AuthStatus.signedIn;
+      _skipped = false;
+      await _preferences!.setBool(_skipKey, false);
+    } else {
+      _status = AuthStatus.signedOut;
+      _skipped = _preferences!.getBool(_skipKey) ?? false;
+    }
     notifyListeners();
   }
 
   /// 로그인 없이 로컬 전용 모드로 진입.
-  void skipSignIn() {
+  Future<void> skipSignIn() async {
+    _preferences ??= await SharedPreferences.getInstance();
     _skipped = true;
+    await _preferences!.setBool(_skipKey, true);
     notifyListeners();
   }
 
@@ -59,6 +77,8 @@ class AuthController extends ChangeNotifier {
       _user = await run();
       _status = AuthStatus.signedIn;
       _skipped = false;
+      _preferences ??= await SharedPreferences.getInstance();
+      await _preferences!.setBool(_skipKey, false);
     } finally {
       _busy = false;
       notifyListeners();
@@ -69,7 +89,10 @@ class AuthController extends ChangeNotifier {
     await _repository.signOut();
     _user = null;
     _status = AuthStatus.signedOut;
-    _skipped = false;
+    // 로그아웃 후에도 로컬 단어장은 유지하고 앱 본체를 계속 쓴다.
+    _skipped = true;
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences!.setBool(_skipKey, true);
     notifyListeners();
   }
 }

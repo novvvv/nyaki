@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../core/nyaki_scope.dart';
-import '../core/theme/nyaki_colors.dart';
+import '../../core/nyaki_scope.dart';
+import '../../core/theme/nyaki_colors.dart';
 
 class AddWordBookScreen extends StatefulWidget {
   const AddWordBookScreen({super.key});

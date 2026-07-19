@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../core/auth_scope.dart';
-import '../core/theme/nyaki_colors.dart';
-import '../data/auth/auth_controller.dart';
-import 'app_shell.dart';
+import '../../core/auth_scope.dart';
+import '../../core/theme/nyaki_colors.dart';
+import '../../data/auth/auth_controller.dart';
+import '../app_shell.dart';
 import 'sign_in_screen.dart';
 
 /// 세션 복원 결과에 따라 로그인 화면 또는 앱 본체를 보여준다.

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/nyaki_colors.dart';
 import '../widgets/nyaki_bottom_bar.dart';
-import 'add_word_screen.dart';
-import 'home_screen.dart';
-import 'quest_screen.dart';
-import 'settings_screen.dart';
-import 'word_book_list_screen.dart';
-import 'word_test_screen.dart';
+import 'home/home_screen.dart';
+import 'quest/quest_screen.dart';
+import 'settings/settings_screen.dart';
+import 'test/word_test_screen.dart';
+import 'word_book/add_word_screen.dart';
+import 'word_book/word_book_list_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});

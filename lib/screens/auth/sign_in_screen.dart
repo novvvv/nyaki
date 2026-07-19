@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../core/auth_scope.dart';
-import '../core/theme/nyaki_colors.dart';
-import '../data/auth/auth_repository.dart';
+import '../../core/auth_scope.dart';
+import '../../core/theme/nyaki_colors.dart';
+import '../../data/auth/auth_repository.dart';
 
 /// 선택형 로그인 화면. Apple·Google 로그인 또는 건너뛰기.
 class SignInScreen extends StatelessWidget {
@@ -26,13 +26,13 @@ class SignInScreen extends StatelessWidget {
     }
   }
 
-  void _skip(BuildContext context) {
+  Future<void> _skip(BuildContext context) async {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();
-    } else {
-      AuthScope.of(context).skipSignIn();
+      return;
     }
+    await AuthScope.of(context).skipSignIn();
   }
 
   @override

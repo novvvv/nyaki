@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../core/auth_scope.dart';
-import '../core/theme/nyaki_colors.dart';
-import '../data/auth/auth_controller.dart';
-import '../data/auth/auth_repository.dart';
-import 'sign_in_screen.dart';
+import '../../core/auth_scope.dart';
+import '../../core/theme/nyaki_colors.dart';
+import '../../data/auth/auth_controller.dart';
+import '../../data/auth/auth_repository.dart';
+import '../auth/sign_in_screen.dart';
 
 /// 설정 탭. 계정(로그인) 관리를 담당한다.
 class SettingsScreen extends StatelessWidget {
@@ -36,11 +36,13 @@ class SettingsScreen extends StatelessWidget {
         final signedIn = auth.status == AuthStatus.signedIn;
         final user = auth.user;
 
+        final welcomeName = user?.displayName ?? user?.email;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(28, 18, 28, 24),
+              padding: EdgeInsets.fromLTRB(28, 18, 28, 6),
               child: Text(
                 '설정',
                 style: TextStyle(
@@ -48,6 +50,20 @@ class SettingsScreen extends StatelessWidget {
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: NyakiColors.ink,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
+              child: Text(
+                signedIn
+                    ? (welcomeName == null ? '환영해요!' : '$welcomeName님, 환영해요!')
+                    : '로그인하면 계정을 연결할 수 있어요.',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: NyakiColors.ink.withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -117,7 +133,7 @@ class _AccountRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final providerLabel =
-        user.provider == AuthProvider.apple ? 'Apple 계정' : 'Google 계정';
+        user.provider == SignInProvider.apple ? 'Apple 계정' : 'Google 계정';
 
     return Row(
       children: [

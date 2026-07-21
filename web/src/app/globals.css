@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --nyaki-cream: #fcf9f2;
+  --nyaki-ink: #1d1d1b;
+  --nyaki-muted: #e7e7dd;
+  --nyaki-card: #f5f2eb;
+  --nyaki-stroke: rgba(29, 29, 27, 0.08);
+  --nyaki-subtle: rgba(29, 29, 27, 0.04);
+}
+
+@theme inline {
+  --color-cream: var(--nyaki-cream);
+  --color-ink: var(--nyaki-ink);
+  --color-muted: var(--nyaki-muted);
+  --color-card: var(--nyaki-card);
+  --color-subtle: var(--nyaki-subtle);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--nyaki-cream);
+  color: var(--nyaki-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(29, 29, 27, 0.12);
+}

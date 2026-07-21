@@ -1,0 +1,26 @@
+services:
+  api:
+    ports: []
+    volumes:
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH:?Set FIREBASE_SERVICE_ACCOUNT_PATH}:/run/secrets/firebase-service-account.json:ro
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-service-account.json
+
+  caddy:
+    image: caddy:2.10-alpine
+    depends_on:
+      - api
+    environment:
+      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:?Set CADDY_SITE_ADDRESS}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

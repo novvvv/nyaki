@@ -112,11 +112,66 @@ class _AddWordScreenState extends State<AddWordScreen> {
         final selectedId = _resolveSelectedId(books);
 
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Stack(
-                alignment: Alignment.center,
+              padding: const EdgeInsets.fromLTRB(28, 20, 20, 0),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '단어 추가',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.3,
+                            color: NyakiColors.ink,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '새로운 단어와 의미를 기록합니다.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: Color(0x731D1D1B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _isSubmitting || selectedId == null
+                        ? null
+                        : _submitWord,
+                    style: TextButton.styleFrom(
+                      foregroundColor: NyakiColors.ink,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: Text(
+                      _isSubmitting ? '저장 중…' : '저장',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
                   _WordBookSelector(
                     books: books,
@@ -127,45 +182,21 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       }
                     },
                   ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _isSubmitting || selectedId == null
-                          ? null
-                          : _submitWord,
-                      style: TextButton.styleFrom(
-                        foregroundColor: NyakiColors.ink,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 10,
-                        ),
-                      ),
-                      child: Text(
-                        _isSubmitting ? '추가 중…' : '추가',
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 8),
+                  Divider(
+                    height: 1,
+                    color: NyakiColors.ink.withValues(alpha: 0.06),
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(28, 14, 28, 32),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                children: [
                   const _PhotoPicker(),
-                  const SizedBox(height: 30),
+                  Divider(
+                    height: 1,
+                    color: NyakiColors.ink.withValues(alpha: 0.06),
+                  ),
+                  const SizedBox(height: 24),
                   _BoxTextField(
                     controller: _termController,
                     label: '단어',
                     hint: '단어를 입력해 주세요. (필수)',
-                    suffixIcon: Icons.search_rounded,
                     errorText: _showTermError ? '단어를 입력해 주세요.' : null,
                     onChanged: (_) {
                       if (_showTermError) {
@@ -173,12 +204,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   _BoxTextField(
                     controller: _meaningController,
                     label: '의미',
                     hint: '의미를 입력해 주세요. (필수)',
-                    suffixIcon: Icons.search_rounded,
                     errorText: _showMeaningError ? '의미를 입력해 주세요.' : null,
                     onChanged: (_) {
                       if (_showMeaningError) {
@@ -186,20 +216,20 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   _BoxTextField(
                     controller: _pronunciationController,
                     label: '발음',
                     hint: '발음을 입력해 주세요.',
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   _BoxTextField(
                     controller: _descriptionController,
                     label: '설명',
                     hint: '단어에 대한 설명을 입력해 주세요.',
                     maxLines: 2,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   _BoxTextField(
                     controller: _exampleController,
                     label: '예문',
@@ -222,7 +252,6 @@ class _BoxTextField extends StatelessWidget {
     required this.label,
     required this.hint,
     this.maxLines = 1,
-    this.suffixIcon,
     this.errorText,
     this.onChanged,
   });
@@ -231,71 +260,65 @@ class _BoxTextField extends StatelessWidget {
   final String label;
   final String hint;
   final int maxLines;
-  final IconData? suffixIcon;
   final String? errorText;
   final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(
-        color: NyakiColors.ink.withValues(alpha: 0.18),
-        width: 1.2,
-      ),
-    );
-
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      onChanged: onChanged,
-      style: const TextStyle(
-        fontFamily: 'Inter',
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: NyakiColors.ink,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        errorText: errorText,
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-        labelStyle: const TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: NyakiColors.ink,
-        ),
-        hintStyle: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: NyakiColors.ink.withValues(alpha: 0.4),
-        ),
-        filled: true,
-        fillColor: NyakiColors.cream,
-        suffixIcon: suffixIcon == null
-            ? null
-            : Icon(
-                suffixIcon,
-                size: 24,
-                color: NyakiColors.ink.withValues(alpha: 0.55),
-              ),
-        contentPadding: EdgeInsets.fromLTRB(
-          14,
-          maxLines > 1 ? 18 : 16,
-          14,
-          maxLines > 1 ? 18 : 16,
-        ),
-        border: border,
-        enabledBorder: border,
-        focusedBorder: border.copyWith(
-          borderSide: BorderSide(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
             color: NyakiColors.ink.withValues(alpha: 0.45),
-            width: 1.3,
           ),
         ),
-      ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          onChanged: onChanged,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: NyakiColors.ink,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            errorText: errorText,
+            hintStyle: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              color: NyakiColors.ink.withValues(alpha: 0.28),
+            ),
+            contentPadding: EdgeInsets.only(
+              top: 8,
+              right: 4,
+              bottom: maxLines > 1 ? 12 : 10,
+            ),
+            border: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: NyakiColors.ink.withValues(alpha: 0.08),
+              ),
+            ),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: NyakiColors.ink.withValues(alpha: 0.08),
+              ),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: NyakiColors.ink.withValues(alpha: 0.45),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -305,28 +328,40 @@ class _PhotoPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Material(
-        color: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            color: NyakiColors.ink.withValues(alpha: 0.18),
-            width: 1.2,
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: InkWell(
-          onTap: () {},
-          borderRadius: BorderRadius.circular(10),
-          child: SizedBox(
-            width: 76,
-            height: 76,
-            child: Icon(
-              Icons.add_photo_alternate_outlined,
-              size: 27,
-              color: NyakiColors.ink.withValues(alpha: 0.5),
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            children: [
+              Icon(
+                Icons.add_photo_alternate_outlined,
+                size: 20,
+                color: NyakiColors.ink.withValues(alpha: 0.45),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  '사진 선택',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: NyakiColors.ink,
+                  ),
+                ),
+              ),
+              Text(
+                '선택 사항',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: NyakiColors.ink.withValues(alpha: 0.3),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -347,61 +382,57 @@ class _WordBookSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    return Row(
+      children: [
+        Text(
+          '저장할 단어장',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: NyakiColors.ink.withValues(alpha: 0.5),
+          ),
+        ),
+        const Spacer(),
+        if (books.isEmpty)
           Text(
-            '선택된 단어장',
+            '단어장이 없습니다',
             style: TextStyle(
               fontFamily: 'Inter',
-              fontWeight: FontWeight.w500,
-              color: NyakiColors.ink.withValues(alpha: 0.45),
-              fontSize: 11,
+              fontSize: 13,
+              color: NyakiColors.ink.withValues(alpha: 0.35),
+            ),
+          )
+        else
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedId,
+              isDense: true,
+              alignment: Alignment.centerRight,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18,
+                color: NyakiColors.ink.withValues(alpha: 0.4),
+              ),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: NyakiColors.ink,
+              ),
+              dropdownColor: NyakiColors.cream,
+              borderRadius: BorderRadius.circular(8),
+              items: [
+                for (final book in books)
+                  DropdownMenuItem<String>(
+                    value: book.id,
+                    child: Text(book.title),
+                  ),
+              ],
+              onChanged: onChanged,
             ),
           ),
-          if (books.isEmpty)
-            Text(
-              '단어장을 먼저 만들어 주세요',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: NyakiColors.ink.withValues(alpha: 0.45),
-              ),
-            )
-          else
-            DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: selectedId,
-                isDense: true,
-                alignment: Alignment.center,
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 18,
-                  color: NyakiColors.ink.withValues(alpha: 0.55),
-                ),
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: NyakiColors.ink,
-                ),
-                dropdownColor: NyakiColors.cream,
-                borderRadius: BorderRadius.circular(12),
-                items: [
-                  for (final book in books)
-                    DropdownMenuItem<String>(
-                      value: book.id,
-                      child: Text(book.title),
-                    ),
-                ],
-                onChanged: onChanged,
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }

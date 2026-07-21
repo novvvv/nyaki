@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../models/word.dart';
 import '../../models/word_book.dart';
@@ -11,6 +14,10 @@ class DriftVocabRepository implements VocabRepository {
   DriftVocabRepository(this._db);
 
   final AppDatabase _db;
+  static const _uuid = Uuid();
+
+  /// SyncCoordinator가 outbox/cursor를 관리할 때 사용하는 로컬 DB.
+  AppDatabase get database => _db;
 
   static Future<DriftVocabRepository> create() async {
     final repository = DriftVocabRepository(AppDatabase());
@@ -39,12 +46,53 @@ class DriftVocabRepository implements VocabRepository {
             updatedAt: now,
           ),
         );
+    await _enqueueWordBook(VocabConstants.defaultWordBookId, 'upsert');
+  }
+
+  static const _localBootstrapUserId = '__local_bootstrap__';
+
+  /// 앱 최초 sync 이전에 로컬에만 있던 데이터를 outbox에 한 번 올린다.
+  Future<bool> isLocalBootstrapDone() async {
+    final row = await (_db.select(_db.syncState)
+          ..where((state) => state.userId.equals(_localBootstrapUserId)))
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<void> markLocalBootstrapDone() async {
+    await _db.into(_db.syncState).insertOnConflictUpdate(
+          SyncStateCompanion.insert(
+            userId: _localBootstrapUserId,
+            cursor: const Value(1),
+          ),
+        );
+  }
+
+  Future<void> bootstrapLocalEntitiesForSync() async {
+    await ensureInitialized();
+
+    final books = await (_db.select(_db.wordBooks)
+          ..where((book) => book.isDeleted.equals(false)))
+        .get();
+    for (final book in books) {
+      if (await _hasPendingOutboxEntry('word_book', book.id)) continue;
+      await _enqueueWordBook(book.id, 'upsert');
+    }
+
+    final words = await (_db.select(_db.wordEntries)
+          ..where((word) => word.isDeleted.equals(false)))
+        .get();
+    for (final word in words) {
+      if (await _hasPendingOutboxEntry('word', word.id)) continue;
+      await _enqueueWord(word.id, 'upsert');
+    }
   }
 
   @override
   Future<List<WordBook>> listWordBooks() async {
     await ensureInitialized();
     final rows = await (_db.select(_db.wordBooks)
+          ..where((book) => book.isDeleted.equals(false))
           ..orderBy([(book) => OrderingTerm.asc(book.createdAt)]))
         .get();
     return Future.wait(rows.map(_loadWordBook));
@@ -81,6 +129,7 @@ class DriftVocabRepository implements VocabRepository {
             updatedAt: now,
           ),
         );
+    await _enqueueWordBook(id, 'upsert');
     return getWordBook(id);
   }
 
@@ -103,6 +152,7 @@ class DriftVocabRepository implements VocabRepository {
         updatedAt: Value(now),
       ),
     );
+    await _enqueueWordBook(id, 'upsert');
 
     return getWordBook(id);
   }
@@ -110,12 +160,15 @@ class DriftVocabRepository implements VocabRepository {
   @override
   Future<void> deleteWordBook(String id) async {
     await ensureInitialized();
-    final deleted = await (_db.delete(_db.wordBooks)
-          ..where((book) => book.id.equals(id)))
-        .go();
+    final now = DateTime.now();
+    final deleted = await (_db.update(_db.wordBooks)
+          ..where((book) => book.id.equals(id) & book.isDeleted.equals(false)))
+        .write(WordBooksCompanion(
+            isDeleted: const Value(true), updatedAt: Value(now)));
     if (deleted == 0) {
       throw VocabNotFoundException('단어장을 찾을 수 없습니다: $id');
     }
+    await _enqueueWordBook(id, 'delete');
   }
 
   @override
@@ -180,6 +233,7 @@ class DriftVocabRepository implements VocabRepository {
       await (_db.update(_db.wordBooks)
             ..where((book) => book.id.equals(input.wordBookId)))
           .write(WordBooksCompanion(updatedAt: Value(now)));
+      await _enqueueWord(id, 'upsert');
     });
 
     return getWord(input.wordBookId, id);
@@ -230,6 +284,7 @@ class DriftVocabRepository implements VocabRepository {
       await (_db.update(_db.wordBooks)
             ..where((book) => book.id.equals(wordBookId)))
           .write(WordBooksCompanion(updatedAt: Value(now)));
+      await _enqueueWord(wordId, 'upsert');
     });
 
     return getWord(wordBookId, wordId);
@@ -252,13 +307,14 @@ class DriftVocabRepository implements VocabRepository {
       await (_db.update(_db.wordBooks)
             ..where((book) => book.id.equals(wordBookId)))
           .write(WordBooksCompanion(updatedAt: Value(now)));
+      await _enqueueWord(wordId, 'delete');
     });
   }
 
   Future<void> _requireWordBookExists(String id) async {
     await ensureInitialized();
     final exists = await (_db.select(_db.wordBooks)
-          ..where((book) => book.id.equals(id)))
+          ..where((book) => book.id.equals(id) & book.isDeleted.equals(false)))
         .getSingleOrNull();
     if (exists == null) {
       throw VocabNotFoundException('단어장을 찾을 수 없습니다: $id');
@@ -300,8 +356,68 @@ class DriftVocabRepository implements VocabRepository {
     );
   }
 
-  String _newId(String prefix) =>
-      '$prefix-${DateTime.now().microsecondsSinceEpoch}';
+  Future<bool> _hasPendingOutboxEntry(String entityType, String entityId) async {
+    final row = await (_db.select(_db.syncOutbox)
+          ..where(
+            (outbox) =>
+                outbox.entityType.equals(entityType) &
+                outbox.entityId.equals(entityId),
+          ))
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<void> _enqueueWordBook(String id, String operation) async {
+    final row = await (_db.select(_db.wordBooks)
+          ..where((book) => book.id.equals(id)))
+        .getSingle();
+    await _db.into(_db.syncOutbox).insert(
+          SyncOutboxCompanion.insert(
+            entityType: 'word_book',
+            entityId: id,
+            operation: operation,
+            payloadJson: jsonEncode({
+              'id': row.id,
+              'title': row.title,
+              'description': row.description,
+              'created_at': row.createdAt.toUtc().toIso8601String(),
+              'updated_at': row.updatedAt.toUtc().toIso8601String(),
+              'is_deleted': row.isDeleted,
+            }),
+            createdAt: DateTime.now().toUtc(),
+          ),
+        );
+  }
+
+  Future<void> _enqueueWord(String id, String operation) async {
+    final row = await (_db.select(_db.wordEntries)
+          ..where((word) => word.id.equals(id)))
+        .getSingle();
+    await _db.into(_db.syncOutbox).insert(
+          SyncOutboxCompanion.insert(
+            entityType: 'word',
+            entityId: id,
+            operation: operation,
+            payloadJson: jsonEncode({
+              'id': row.id,
+              'word_book_id': row.wordBookId,
+              'term': row.term,
+              'meaning': row.meaning,
+              'pronunciation': row.pronunciation,
+              'description': row.description,
+              'example': row.example,
+              'image_path': row.imagePath,
+              'memorization_status': row.memorizationStatus,
+              'created_at': row.createdAt.toUtc().toIso8601String(),
+              'updated_at': row.updatedAt.toUtc().toIso8601String(),
+              'is_deleted': row.isDeleted,
+            }),
+            createdAt: DateTime.now().toUtc(),
+          ),
+        );
+  }
+
+  String _newId(String prefix) => '$prefix-${_uuid.v4()}';
 
   String? _trimOrNull(String? value) {
     if (value == null) return null;

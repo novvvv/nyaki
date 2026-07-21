@@ -40,6 +40,8 @@ class AuthController extends ChangeNotifier {
   /// Firebase UID. 후속 동기화 식별자로 사용. 비로그인이면 null.
   String? get userId => _user?.uid;
 
+  Future<String?> getIdToken() => _repository.getIdToken();
+
   Future<void> initialize() async {
     _preferences ??= await SharedPreferences.getInstance();
     final restored = await _repository.restoreSession();

@@ -4,12 +4,12 @@ import '../../core/theme/nyaki_colors.dart';
 import '../../models/word_book.dart';
 import 'word_test_session_screen.dart';
 
-// ===============================================  
-// ✨ WordTestScreen ✨ 
-// - 단어장 테스트 시작 전 단어장 설정 및 시작 전 화면 세팅을 담당한다. 
+// ===============================================
+// ✨ WordTestScreen ✨
+// - 단어장 테스트 시작 전 단어장 설정 및 시작 전 화면 세팅을 담당한다.
 // ✨ Flow ✨
-// 단어장 선택 -> 테스트 옵션 설정 -> 테스트 화면 이동 
-// ===============================================  
+// 단어장 선택 -> 테스트 옵션 설정 -> 테스트 화면 이동
+// ===============================================
 
 class WordTestScreen extends StatefulWidget {
   const WordTestScreen({super.key});
@@ -18,8 +18,7 @@ class WordTestScreen extends StatefulWidget {
 }
 
 class _WordTestScreenState extends State<WordTestScreen> {
-
-  // _selectedWordBooksIds -> 선택된 단어의 객체 전체가 아닌 ID만 저장 
+  // _selectedWordBooksIds -> 선택된 단어의 객체 전체가 아닌 ID만 저장
   // ex) _selectedWordBookIds = {'book-1', 'book-3', ...}
   final Set<String> _selectedWordBookIds = <String>{};
 
@@ -27,14 +26,13 @@ class _WordTestScreenState extends State<WordTestScreen> {
   // ex) books = [ WordBook(id: 'book-1', title: '기초 영어')]
   List<WordBook> _resolveSelected(List<WordBook> books) {
     return books
-        .where((book) => _selectedWordBookIds.contains(book.id)) 
+        .where((book) => _selectedWordBookIds.contains(book.id))
         .toList(growable: false);
   }
 
-  // _toggleSelection -> 단어장을 누를 때 선택 상태를 반전한다. 
+  // _toggleSelection -> 단어장을 누를 때 선택 상태를 반전한다.
   void _toggleSelection(String wordBookId) {
-
-    // 단어장의 상태를 체크하여 selectedWordBooksIds에 단어장 정보를 추가/삭제 
+    // 단어장의 상태를 체크하여 selectedWordBooksIds에 단어장 정보를 추가/삭제
     setState(() {
       if (!_selectedWordBookIds.add(wordBookId)) {
         _selectedWordBookIds.remove(wordBookId);
@@ -78,25 +76,25 @@ class _WordTestScreenState extends State<WordTestScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(28, 18, 28, 6),
+              padding: EdgeInsets.fromLTRB(28, 20, 28, 4),
               child: Text(
-                '단어 테스트',
+                '테스트',
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
                   color: NyakiColors.ink,
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
+              padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
               child: Text(
-                '테스트할 단어장을 선택해 주세요. 여러 개를 함께 고를 수 있어요.',
+                '테스트할 단어장을 선택합니다.',
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
+                  fontSize: 14,
                   color: NyakiColors.ink.withValues(alpha: 0.45),
                 ),
               ),
@@ -116,7 +114,11 @@ class _WordTestScreenState extends State<WordTestScreen> {
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
                       itemCount: books.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: NyakiColors.ink.withValues(alpha: 0.06),
+                      ),
                       itemBuilder: (context, index) {
                         final book = books[index];
                         return _TestBookTile(
@@ -142,7 +144,7 @@ class _WordTestScreenState extends State<WordTestScreen> {
                     disabledForegroundColor:
                         NyakiColors.cream.withValues(alpha: 0.8),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   child: Text(
@@ -412,56 +414,59 @@ class _TestBookTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: NyakiColors.cream,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: NyakiColors.ink.withValues(alpha: selected ? 0.75 : 0.14),
-          width: selected ? 1.4 : 1.1,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: NyakiColors.ink,
-                      ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: NyakiColors.ink,
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      meta,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: NyakiColors.ink.withValues(alpha: 0.45),
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    meta,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      color: NyakiColors.ink.withValues(alpha: 0.4),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? NyakiColors.ink : Colors.transparent,
+                border: Border.all(
+                  color: NyakiColors.ink.withValues(
+                    alpha: selected ? 1 : 0.18,
+                  ),
                 ),
               ),
-              if (selected)
-                const Icon(
-                  Icons.check_rounded,
-                  size: 20,
-                  color: NyakiColors.ink,
-                ),
-            ],
-          ),
+              child: selected
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 14,
+                      color: NyakiColors.cream,
+                    )
+                  : null,
+            ),
+          ],
         ),
       ),
     );

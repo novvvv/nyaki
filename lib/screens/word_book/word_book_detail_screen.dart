@@ -4,23 +4,23 @@ import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../models/word.dart';
 import '../../widgets/word_tile.dart';
+import 'add_word_screen.dart';
 import 'edit_word_screen.dart';
 
-
-// ===============================================  
-// ✨ word_book_detail_screen.dart ✨ 
+// ===============================================
+// ✨ word_book_detail_screen.dart ✨
 // - 선택한 단어장 안의 단어 목록 출력 및 필터링 (세부 페이지)
 
 // 🔗 Chain 🔗
-// _openEditWord(Word word) -> edit_word_screen.dart 
-// ===============================================  
+// _openEditWord(Word word) -> edit_word_screen.dart
+// ===============================================
 
-// WordListFilter : 화면에 출력할 단어를 필터링하는 enum 
+// WordListFilter : 화면에 출력할 단어를 필터링하는 enum
 enum WordListFilter { all, unmemorized, memorized }
 
 // ✨ WordBookDetailScreen ✨
-// - 단어장 목록에서 선택한 단어장의 ID를 받는다. 
-// - 해당 아이디를 사용해 현재 화면에 표시할 WordBook Data를 탐색한다. 
+// - 단어장 목록에서 선택한 단어장의 ID를 받는다.
+// - 해당 아이디를 사용해 현재 화면에 표시할 WordBook Data를 탐색한다.
 
 class WordBookDetailScreen extends StatefulWidget {
   const WordBookDetailScreen({super.key, required this.wordBookId});
@@ -32,10 +32,9 @@ class WordBookDetailScreen extends StatefulWidget {
 // ✨ WordBookDetailScreenState ✨
 // - 현재 선택된 필터를 저장한다. (default : all)
 class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
+  WordListFilter _filter = WordListFilter.all;
 
-  WordListFilter _filter = WordListFilter.all; 
-
-  // [method] _applyFilter 
+  // [method] _applyFilter
   // - _filter 종류에 따라 단어를 필터링한다.
   List<Word> _applyFilter(List<Word> words) {
     switch (_filter) {
@@ -48,8 +47,8 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
     }
   }
 
-  // [method] _openEditWord 
-  // - 사용자가 특정한 단어 컴포넌트를 누르면 해당 word 객체를 EditWordScreen으로 전달한다. 
+  // [method] _openEditWord
+  // - 사용자가 특정한 단어 컴포넌트를 누르면 해당 word 객체를 EditWordScreen으로 전달한다.
   void _openEditWord(Word word) {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -83,48 +82,82 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
             }
 
             final words = _applyFilter(wordBook.activeWords);
+            final dividerColor = NyakiColors.ink.withValues(alpha: 0.06);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
-                  child: Stack(
-                    alignment: Alignment.center,
+                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                          iconSize: 18,
-                          color: NyakiColors.ink,
-                          tooltip: '뒤로',
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
+                      Row(
                         children: [
-                          Text(
-                            wordBook.title,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: NyakiColors.ink,
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                            iconSize: 18,
+                            color: NyakiColors.ink.withValues(alpha: 0.5),
+                            tooltip: '뒤로',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            wordBook.metaLabel,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: NyakiColors.ink.withValues(alpha: 0.42),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).push<void>(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const AddWordScreen(),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: NyakiColors.cream,
+                              backgroundColor: NyakiColors.ink,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              '단어 추가',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        wordBook.title,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                          color: NyakiColors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        wordBook.description ?? wordBook.metaLabel,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: NyakiColors.ink.withValues(alpha: 0.45),
+                        ),
                       ),
                     ],
                   ),
@@ -134,21 +167,23 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
                       ? Center(
                           child: Text(
                             _filter == WordListFilter.all
-                                ? '아직 저장된 단어가 없어요.'
+                                ? '단어가 없습니다.'
                                 : '해당하는 단어가 없어요.',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              color: NyakiColors.ink.withValues(alpha: 0.42),
+                              color: NyakiColors.ink.withValues(alpha: 0.4),
                             ),
                           ),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(28, 8, 28, 20),
+                          padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
                           itemCount: words.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
+                          separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: dividerColor,
+                          ),
                           itemBuilder: (context, index) {
                             final entry = words[index];
                             return WordTile(
@@ -201,10 +236,10 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
 }
 
 // ✨ FilterTab ✨
-// Parameter 
+// Parameter
 // - label : 전체, 미암기, 암기 (단어 상태)
-// - selected : 현재 데이터 선택 여부 
-// - onTap : 단어 컴포넌트 클릭 시 실행 함수 리스너 
+// - selected : 현재 데이터 선택 여부
+// - onTap : 단어 컴포넌트 클릭 시 실행 함수 리스너
 
 class _FilterTab extends StatelessWidget {
   const _FilterTab({

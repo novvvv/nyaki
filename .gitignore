@@ -64,9 +64,6 @@ app.*.map.json
 # macOS custom folder icon
 Icon?
 
-# Local assets (keep out of git)
-assets/
-
 # Private product notes
 /PRODUCT_DIRECTION.md
 
@@ -77,3 +74,24 @@ assets/
 **/GoogleService-Info.plist
 **/GoogleService-Info*.plist
 **/google-services.json
+**/*firebase-admin*.json
+**/*firebase-adminsdk*.json
+**/*service-account*.json
+**/*credentials*.json
+
+# Local environment (keep *.example templates in git)
+**/.env*
+!**/.env.example
+!**/.env*.example
+
+# API secrets
+**/secrets/
+
+# Private keys, certificates, and provisioning files
+**/*.pem
+**/*.key
+**/*.p8
+**/*.p12
+**/*.jks
+**/*.keystore
+**/*.mobileprovision

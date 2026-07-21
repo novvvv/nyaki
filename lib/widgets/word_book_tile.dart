@@ -7,64 +7,64 @@ class WordBookTile extends StatelessWidget {
     super.key,
     required this.title,
     required this.meta,
+    this.description,
     required this.onTap,
   });
 
   final String title;
   final String meta;
+  final String? description;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: NyakiColors.cream,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: NyakiColors.ink.withValues(alpha: 0.14),
-          width: 1.1,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: NyakiColors.ink,
-                      ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: NyakiColors.ink,
                     ),
-                    const SizedBox(height: 5),
+                  ),
+                  if (description != null && description!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      meta,
+                      description!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: NyakiColors.ink.withValues(alpha: 0.45),
+                        color: NyakiColors.ink.withValues(alpha: 0.4),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 21,
-                color: NyakiColors.ink.withValues(alpha: 0.32),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              meta,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: NyakiColors.ink.withValues(alpha: 0.35),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

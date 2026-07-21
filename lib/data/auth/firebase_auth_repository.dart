@@ -64,6 +64,9 @@ class FirebaseAuthRepository implements AuthRepository {
     ]);
   }
 
+  @override
+  Future<String?> getIdToken() async => _auth.currentUser?.getIdToken();
+
   AuthUser _mapUser(
     firebase.User user, {
     SignInProvider? preferredProvider,

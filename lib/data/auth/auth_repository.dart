@@ -37,4 +37,7 @@ abstract class AuthRepository {
   Future<AuthUser> signInWithGoogle();
 
   Future<void> signOut();
+
+  /// Hub API 요청에 쓸 Firebase ID token. 비로그인 상태면 null.
+  Future<String?> getIdToken();
 }

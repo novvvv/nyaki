@@ -5,15 +5,15 @@ import '../../core/theme/nyaki_colors.dart';
 import '../../data/repositories/vocab_repository.dart';
 import '../../models/word.dart';
 
-// ===============================================  
-// ✨ edit_word_screen.dart ✨ 
-// - 기존 단어 정보를 입력찬에 채워 보여주고, 유저가 해당 단어를 수정/저장/삭제할 수 있게 하는 화면입니다. 
+// ===============================================
+// ✨ edit_word_screen.dart ✨
+// - 기존 단어 정보를 입력찬에 채워 보여주고, 유저가 해당 단어를 수정/저장/삭제할 수 있게 하는 화면입니다.
 // 🔗 Chain 🔗
-// word_book_detail_screen.dart (Word word) -> edit_word_screen.dart 
-// ===============================================  
+// word_book_detail_screen.dart (Word word) -> edit_word_screen.dart
+// ===============================================
 
-// ✨ EditWordScreen ✨ 
-// word_book_detail_screen.dart 에서 word 객체를 받아온다. 
+// ✨ EditWordScreen ✨
+// word_book_detail_screen.dart 에서 word 객체를 받아온다.
 class EditWordScreen extends StatefulWidget {
   const EditWordScreen({super.key, required this.word});
   final Word word;
@@ -21,16 +21,14 @@ class EditWordScreen extends StatefulWidget {
   State<EditWordScreen> createState() => _EditWordScreenState();
 }
 
-// ✨ EditWordScreenState ✨ 
+// ✨ EditWordScreenState ✨
 class _EditWordScreenState extends State<EditWordScreen> {
-
-  // _termController : 단어  
+  // _termController : 단어
   // _meaningController : 단어 뜻
   // _pronunciationController : 발음 컨트롤러
-  // _descriptionController : 주석 컨트롤러 
-  // _exampleController : 예시 컨트롤러 
-  late final _termController =
-      TextEditingController(text: widget.word.term);
+  // _descriptionController : 주석 컨트롤러
+  // _exampleController : 예시 컨트롤러
+  late final _termController = TextEditingController(text: widget.word.term);
   late final _meaningController =
       TextEditingController(text: widget.word.meaning);
   late final _pronunciationController =
@@ -40,12 +38,12 @@ class _EditWordScreenState extends State<EditWordScreen> {
   late final _exampleController =
       TextEditingController(text: widget.word.example ?? '');
 
-  // 화면 상태 
+  // 화면 상태
   bool _showTermError = false; // 단어 미입력 오류 표시 여부
   bool _showMeaningError = false; // 의미 미입력 오류 표시 여부
   bool _isSubmitting = false; // 현재 저장중 여부 (저장 중에는 버튼을 다시 누르지 못하게 막음)
 
-  // Controller Destroy 
+  // Controller Destroy
   @override
   void dispose() {
     _termController.dispose();
@@ -56,14 +54,13 @@ class _EditWordScreenState extends State<EditWordScreen> {
     super.dispose();
   }
 
-  // _save 
+  // _save
   Future<void> _save() async {
-
-    // [exception] 입력값, 의미 앞뒤 공백 제거 
+    // [exception] 입력값, 의미 앞뒤 공백 제거
     final term = _termController.text.trim();
     final meaning = _meaningController.text.trim();
 
-    // [exception] (required) 단어, 의미에 입력값이 비어있는지 체크 
+    // [exception] (required) 단어, 의미에 입력값이 비어있는지 체크
     final hasTermError = term.isEmpty;
     final hasMeaningError = meaning.isEmpty;
     if (hasTermError || hasMeaningError) {
@@ -74,13 +71,13 @@ class _EditWordScreenState extends State<EditWordScreen> {
       return;
     }
 
-    // [DB] 단어 저장 로직 
-    // 단어 편집중 (isSubmitting = True) 상태로 바꿔 저장 버튼을 비활성화 
+    // [DB] 단어 저장 로직
+    // 단어 편집중 (isSubmitting = True) 상태로 바꿔 저장 버튼을 비활성화
     setState(() => _isSubmitting = true);
     try {
-      // VocabController? 이게 뭐지 << 내가 지정한건가. 
-      // Word Model에서 사용되는,, 머 그런 메서드? 비슷한건가. 
-      // NyakiScope.of(context).updateWord << 이게 먼데 
+      // VocabController? 이게 뭐지 << 내가 지정한건가.
+      // Word Model에서 사용되는,, 머 그런 메서드? 비슷한건가.
+      // NyakiScope.of(context).updateWord << 이게 먼데
       await NyakiScope.of(context).updateWord(
         wordBookId: widget.word.wordBookId,
         wordId: widget.word.id,

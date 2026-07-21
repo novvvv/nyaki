@@ -6,7 +6,6 @@ import '../../data/auth/auth_controller.dart';
 import '../../data/auth/auth_repository.dart';
 import '../auth/sign_in_screen.dart';
 import 'google_drive_backup_screen.dart';
-import 'widgets/drive_backup_banner.dart';
 import 'widgets/settings_link_row.dart';
 
 /// 설정 탭. 계정(로그인) 및 드라이브 백업 UI를 담당한다.
@@ -78,13 +77,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Padding(
-                padding: EdgeInsets.fromLTRB(28, 18, 28, 6),
+                padding: EdgeInsets.fromLTRB(28, 20, 28, 4),
                 child: Text(
                   '설정',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
                     color: NyakiColors.ink,
                   ),
                 ),
@@ -93,23 +93,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
                 child: Text(
                   signedIn
-                      ? (welcomeName == null
-                          ? '환영해요!'
-                          : '$welcomeName님, 환영해요!')
+                      ? (welcomeName == null ? '환영해요!' : '$welcomeName님, 환영해요!')
                       : '로그인하면 계정을 연결할 수 있어요.',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: NyakiColors.ink.withValues(alpha: 0.5),
+                    fontSize: 14,
+                    color: NyakiColors.ink.withValues(alpha: 0.45),
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
-                child: DriveBackupBanner(
-                  connected: _driveConnected,
-                  onPrimaryTap: () => _openDriveBackup(),
                 ),
               ),
               Padding(
@@ -118,8 +108,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _SectionLabel('계정'),
-                    const SizedBox(height: 10),
-                    _SettingsCard(
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       child: signedIn
                           ? _AccountRow(
                               user: user!,
@@ -128,6 +119,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           : _SignedOutRow(
                               onSignIn: () => _openSignIn(context),
                             ),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: NyakiColors.ink.withValues(alpha: 0.06),
                     ),
                     const SizedBox(height: 24),
                     _SectionLabel('데이터'),
@@ -174,27 +169,6 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 12,
         fontWeight: FontWeight.w600,
         color: NyakiColors.ink.withValues(alpha: 0.45),
-      ),
-    );
-  }
-}
-
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: NyakiColors.cream,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: NyakiColors.ink.withValues(alpha: 0.14)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: child,
       ),
     );
   }

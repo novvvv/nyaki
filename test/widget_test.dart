@@ -7,6 +7,7 @@ import 'package:nyaki/data/auth/auth_controller.dart';
 import 'package:nyaki/data/auth/auth_repository.dart';
 import 'package:nyaki/data/local/app_database.dart';
 import 'package:nyaki/data/repositories/drift_vocab_repository.dart';
+import 'package:nyaki/data/sync/sync_coordinator.dart';
 import 'package:nyaki/data/vocab_controller.dart';
 import 'package:nyaki/main.dart';
 
@@ -26,6 +27,9 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {}
+
+  @override
+  Future<String?> getIdToken() async => null;
 }
 
 void main() {
@@ -47,7 +51,15 @@ void main() {
     await authController.skipSignIn();
 
     await tester.pumpWidget(
-      NyakiApp(controller: controller, authController: authController),
+      NyakiApp(
+        controller: controller,
+        authController: authController,
+        syncCoordinator: SyncCoordinator(
+          repository: repository,
+          auth: authController,
+          vocab: controller,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 

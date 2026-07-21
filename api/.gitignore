@@ -1,0 +1,19 @@
+.env*
+!.env.example
+!.env*.example
+secrets/
+
+# Firebase Admin SDK keys (if downloaded outside secrets/)
+*firebase-admin*.json
+*firebase-adminsdk*.json
+*service-account*.json
+*credentials*.json
+
+# Private keys and certificates
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.keystore
+*.mobileprovision

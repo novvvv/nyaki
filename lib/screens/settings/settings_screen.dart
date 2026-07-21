@@ -5,10 +5,21 @@ import '../../core/theme/nyaki_colors.dart';
 import '../../data/auth/auth_controller.dart';
 import '../../data/auth/auth_repository.dart';
 import '../auth/sign_in_screen.dart';
+import 'google_drive_backup_screen.dart';
+import 'widgets/drive_backup_banner.dart';
+import 'widgets/settings_link_row.dart';
 
-/// 설정 탭. 계정(로그인) 관리를 담당한다.
-class SettingsScreen extends StatelessWidget {
+/// 설정 탭. 계정(로그인) 및 드라이브 백업 UI를 담당한다.
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _driveConnected = false;
+  DateTime? _lastBackupAt;
 
   Future<void> _signOut(BuildContext context, AuthController auth) async {
     try {
@@ -27,6 +38,30 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  String _driveStatusLabel() {
+    if (!_driveConnected) return '연결 안 됨';
+    if (_lastBackupAt == null) return '연결됨';
+    return '연결됨 · ${_lastBackupAt!.month}월 ${_lastBackupAt!.day}일';
+  }
+
+  Future<void> _openDriveBackup() async {
+    final result = await Navigator.of(context).push<GoogleDriveBackupResult>(
+      MaterialPageRoute<GoogleDriveBackupResult>(
+        builder: (_) => GoogleDriveBackupScreen(
+          initialConnected: _driveConnected,
+          initialLastBackupAt: _lastBackupAt,
+        ),
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _driveConnected = result.connected;
+      _lastBackupAt = result.lastBackupAt;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -38,66 +73,108 @@ class SettingsScreen extends StatelessWidget {
 
         final welcomeName = user?.displayName ?? user?.email;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(28, 18, 28, 6),
-              child: Text(
-                '설정',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: NyakiColors.ink,
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(28, 18, 28, 6),
+                child: Text(
+                  '설정',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: NyakiColors.ink,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
-              child: Text(
-                signedIn
-                    ? (welcomeName == null ? '환영해요!' : '$welcomeName님, 환영해요!')
-                    : '로그인하면 계정을 연결할 수 있어요.',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: NyakiColors.ink.withValues(alpha: 0.5),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
+                child: Text(
+                  signedIn
+                      ? (welcomeName == null
+                          ? '환영해요!'
+                          : '$welcomeName님, 환영해요!')
+                      : '로그인하면 계정을 연결할 수 있어요.',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: NyakiColors.ink.withValues(alpha: 0.5),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '계정',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: NyakiColors.ink.withValues(alpha: 0.45),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
+                child: DriveBackupBanner(
+                  connected: _driveConnected,
+                  onPrimaryTap: () => _openDriveBackup(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionLabel('계정'),
+                    const SizedBox(height: 10),
+                    _SettingsCard(
+                      child: signedIn
+                          ? _AccountRow(
+                              user: user!,
+                              onSignOut: () => _signOut(context, auth),
+                            )
+                          : _SignedOutRow(
+                              onSignIn: () => _openSignIn(context),
+                            ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  _SettingsCard(
-                    child: signedIn
-                        ? _AccountRow(
-                            user: user!,
-                            onSignOut: () => _signOut(context, auth),
-                          )
-                        : _SignedOutRow(
-                            onSignIn: () => _openSignIn(context),
-                          ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    _SectionLabel('데이터'),
+                    const SizedBox(height: 4),
+                    SettingsLinkRow(
+                      label: '구글 드라이브',
+                      value: _driveStatusLabel(),
+                      onTap: () => _openDriveBackup(),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: NyakiColors.ink.withValues(alpha: 0.08),
+                    ),
+                    SettingsLinkRow(
+                      label: '자동 백업',
+                      value: '끔',
+                      muted: true,
+                      enabled: false,
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: NyakiColors.ink.withValues(alpha: 0.45),
+      ),
     );
   }
 }

@@ -29,7 +29,8 @@ class _EditWordScreenState extends State<EditWordScreen> {
   // _pronunciationController : 발음 컨트롤러
   // _descriptionController : 주석 컨트롤러 
   // _exampleController : 예시 컨트롤러 
-  late final _termController = TextEditingController(text: widget.word.term);
+  late final _termController =
+      TextEditingController(text: widget.word.term);
   late final _meaningController =
       TextEditingController(text: widget.word.meaning);
   late final _pronunciationController =

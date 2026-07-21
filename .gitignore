@@ -70,6 +70,9 @@ assets/
 # Private product notes
 /PRODUCT_DIRECTION.md
 
+# Private docs (local notes, not for repo)
+/docs/
+
 # Firebase / Google config (local only)
 **/GoogleService-Info.plist
 **/GoogleService-Info*.plist

@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
-import { PrimaryButton } from "@/components/ui";
+import { HomeNav } from "@/components/home-nav";
+import { PricingSection } from "@/components/pricing-section";
 
 function LandingScreen({
   message,
@@ -13,43 +14,43 @@ function LandingScreen({
   children?: React.ReactNode;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center px-6 py-8">
-      <div className="flex w-full max-w-[340px] flex-col items-center text-center">
-        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink/35">
-          Vocabulary, calmly
-        </p>
-        <h1 className="mt-2.5 text-[2.5rem] font-semibold tracking-[-0.02em] text-ink sm:text-5xl">
-          Nyaki
-        </h1>
-        <p className="mt-3 text-[15px] leading-[1.65] text-ink/45">
-          폰과 웹에서 같은 단어장을
-          <br />
-          외우고, 기록하고, 어디서든 이어서.
-        </p>
+    <div className="min-h-screen">
+      <HomeNav />
 
-        <p className="mt-7 text-[15px] font-medium leading-relaxed text-ink/60">
-          궁금한 거 있으면 언제든지 물어보라냥
-        </p>
+      <main>
+        <section className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-6 py-12">
+          <div className="flex w-full max-w-[340px] flex-col items-center text-center">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink/35">
+              Vocabulary, calmly
+            </p>
+            <h1 className="mt-2.5 text-[2.5rem] font-semibold tracking-[-0.02em] text-ink sm:text-5xl">
+              Nyaki
+            </h1>
+            <p className="mt-3 text-[15px] leading-[1.65] text-ink/45">
+              폰과 웹에서 같은 단어장을
+              <br />
+              외우고, 기록하고, 어디서든 이어서.
+            </p>
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/cat.png"
-          alt="Nyaki 고양이"
-          width={500}
-          height={500}
-          className="mt-4 block h-auto w-[min(260px,68vw)]"
-        />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/cat.png"
+              alt="Nyaki 고양이"
+              width={500}
+              height={500}
+              className="mt-8 block h-auto w-[min(260px,68vw)]"
+            />
 
-        {message ? (
-          <p className="mt-5 text-sm text-ink/40">{message}</p>
-        ) : null}
-        {children ? <div className="mt-7 w-full">{children}</div> : null}
+            {message ? (
+              <p className="mt-5 text-sm text-ink/40">{message}</p>
+            ) : null}
+            {children ? <div className="mt-8 w-full">{children}</div> : null}
+          </div>
+        </section>
 
-        <p className="mt-6 text-[11px] text-ink/30">
-          모바일 앱과 실시간 동기화
-        </p>
-      </div>
-    </main>
+        <PricingSection />
+      </main>
+    </div>
   );
 }
 
@@ -84,13 +85,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!user) {
     return (
       <LandingScreen>
-        <PrimaryButton
-          className="h-11 w-full text-[15px]"
+        <button
+          type="button"
           disabled={signingIn}
           onClick={() => void handleSignIn()}
+          className="w-full text-sm text-ink/40 transition hover:text-ink/70 disabled:opacity-45"
         >
           {signingIn ? "로그인 중…" : "Google로 계속하기"}
-        </PrimaryButton>
+        </button>
       </LandingScreen>
     );
   }

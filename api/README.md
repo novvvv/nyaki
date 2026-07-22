@@ -2,6 +2,8 @@
 
 FastAPI + Postgres 기반의 단어장 Sync Hub입니다.
 
+API 계약(포트폴리오용): [docs/API.md](../docs/API.md)
+
 ## 로컬 실행
 
 ```bash

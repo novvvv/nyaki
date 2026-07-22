@@ -67,8 +67,9 @@ Icon?
 # Private product notes
 /PRODUCT_DIRECTION.md
 
-# Private docs (local notes, not for repo)
-/docs/
+# Private working notes (versioned locally; only README is tracked)
+/notes/*
+!/notes/README.md
 
 # Firebase / Google config (local only)
 **/GoogleService-Info.plist

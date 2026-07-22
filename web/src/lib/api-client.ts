@@ -21,6 +21,8 @@ type ApiWord = {
   example: string | null;
   image_path: string | null;
   memorization_status: "unmemorized" | "memorized";
+  is_bookmarked: boolean;
+  tags: string[];
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
@@ -47,6 +49,8 @@ function toWord(value: ApiWord): Word {
     description: value.description ?? undefined,
     example: value.example ?? undefined,
     memorizationStatus: value.memorization_status,
+    isBookmarked: value.is_bookmarked ?? false,
+    tags: value.tags ?? [],
     createdAt: value.created_at,
     updatedAt: value.updated_at,
     isDeleted: value.is_deleted,
@@ -118,6 +122,9 @@ export async function putWord(
   input: WordInput,
   createdAt = now(),
 ): Promise<Word> {
+  const tags = (input.tags ?? [])
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
   const word = await request<ApiWord>(
     `/v1/word-books/${wordBookId}/words/${id}`,
     token,
@@ -132,7 +139,9 @@ export async function putWord(
         description: input.description?.trim() || null,
         example: input.example?.trim() || null,
         image_path: null,
-        memorization_status: "unmemorized",
+        memorization_status: input.memorizationStatus ?? "unmemorized",
+        is_bookmarked: input.isBookmarked ?? false,
+        tags,
         created_at: createdAt,
         updated_at: now(),
         is_deleted: false,

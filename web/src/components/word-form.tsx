@@ -36,7 +36,12 @@ export function WordForm({ mode }: WordFormProps) {
     pronunciation: existing?.pronunciation ?? "",
     description: existing?.description ?? "",
     example: existing?.example ?? "",
+    isBookmarked: existing?.isBookmarked ?? false,
+    tags: existing?.tags ?? [],
   }));
+  const [tagsText, setTagsText] = useState(
+    () => (existing?.tags ?? []).join(", "),
+  );
   const [errors, setErrors] = useState<{ term?: string; meaning?: string }>({});
 
   if (!book) {
@@ -67,11 +72,17 @@ export function WordForm({ mode }: WordFormProps) {
   async function handleSubmit() {
     if (!book || !validate()) return;
 
+    const tags = tagsText
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+    const payload: WordInput = { ...form, tags };
+
     try {
       if (mode === "create") {
-        await createWord(book.id, form);
+        await createWord(book.id, payload);
       } else if (existing) {
-        await updateWord(book.id, existing.id, form);
+        await updateWord(book.id, existing.id, payload);
       }
       router.push(`/word-books/${book.id}`);
     } catch (reason) {
@@ -173,6 +184,25 @@ export function WordForm({ mode }: WordFormProps) {
             placeholder="I have a cat."
           />
         </div>
+
+        <div>
+          <FieldLabel>태그</FieldLabel>
+          <TextInput
+            value={tagsText}
+            onChange={(e) => setTagsText(e.target.value)}
+            placeholder="N3, 조사 (쉼표로 구분)"
+          />
+        </div>
+
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-ink/65">
+          <input
+            type="checkbox"
+            className="size-4 rounded border-ink/20"
+            checked={form.isBookmarked ?? false}
+            onChange={(e) => setField("isBookmarked", e.target.checked)}
+          />
+          북마크
+        </label>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-ink/[0.06] pt-5">
           <PrimaryButton type="submit">

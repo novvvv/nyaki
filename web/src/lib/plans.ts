@@ -17,6 +17,7 @@ export type Plan = {
   badge?: string;
   features: PlanFeature[];
   highlight?: boolean;
+  comingSoon?: boolean;
 };
 
 export const PLANS: Plan[] = [
@@ -25,14 +26,30 @@ export const PLANS: Plan[] = [
     tier: "free",
     name: "Free",
     price: "₩0",
-    priceNote: "영구 무료 · 카드 등록 없음",
-    tagline: "앱에서 본격 학습, 웹은 가볍게",
+    priceNote: "카드 없이 바로 시작",
+    tagline: "앱은 마음껏, 클라우드는 가볍게",
     badge: "기본",
     features: [
-      { label: "앱 로컬 단어장·테스트·퀘스트", hint: "오프라인·무제한" },
-      { label: "웹 Hub 단어 100개", hint: "앱과 sync" },
-      { label: "공유 단어장 담기", hint: "쿼터 포함" },
-      { label: "Drive 수동 백업", hint: "Hub와 별도" },
+      {
+        label: "클라우드 단어장 세 권까지",
+        hint: "단어 100개 · 웹과 앱 sync",
+      },
+      {
+        label: "앱에서는 제한 없이 학습",
+        hint: "테스트·퀘스트 포함",
+      },
+      {
+        label: "Drive에 백업해 두기",
+        hint: "기기 바꿔도 복원",
+      },
+      {
+        label: "냥키에게 세 번 물어보기",
+        hint: "뜻·예문 맛보기",
+      },
+      {
+        label: "오늘 배울 단어 열 개",
+        hint: "하루 한 번 추천",
+      },
     ],
   },
   {
@@ -40,29 +57,58 @@ export const PLANS: Plan[] = [
     tier: "pro",
     name: "Pro",
     price: "₩4,900",
-    priceNote: "월 구독",
-    tagline: "폰·웹·태블릿, 같은 단어장",
+    priceNote: "매월",
+    tagline: "여러 기기에서 이어서, 더 넉넉하게",
     badge: "추천",
     highlight: true,
     features: [
-      { label: "Free 기능 전부 포함", hint: "기존 데이터 유지" },
-      { label: "기기 간 Hub sync", hint: "외운 표시도 sync" },
-      { label: "웹 단어 한도 확대", hint: "100개 이상" },
-      { label: "Drive 자동 백업", hint: "주기 저장" },
+      {
+        label: "Free의 모든 것 포함",
+        hint: "로컬·Drive 그대로",
+      },
+      {
+        label: "클라우드 단어장 백 권",
+        hint: "테마별로 나눠 관리",
+      },
+      {
+        label: "단어 만 개까지 동기화",
+        hint: "웹에서 모으고 앱에서 복습",
+      },
+      {
+        label: "냥키 질의 쿠폰 스무 장",
+        hint: "궁금할 때 바로",
+      },
+      {
+        label: "하루 추천 백 개",
+        hint: "루틴을 키우고 싶을 때",
+      },
     ],
   },
   {
     id: "premium",
     tier: "premium",
     name: "Premium",
-    price: "₩29,000",
-    priceNote: "월 구독",
-    tagline: "캡처·패키지·냥키까지",
+    price: "준비 중",
+    priceNote: "조금만 기다려 주세요",
+    tagline: "캡처부터 패키지까지, 한 단계 위",
+    comingSoon: true,
     features: [
-      { label: "Pro 기능 전부 포함", hint: "Pro + α" },
-      { label: "웹 단어 거의 무제한", hint: "대량 저장" },
-      { label: "OCR · 캡처 저장", hint: "화면에서 추출" },
-      { label: "패키지 · 냥키 LLM", hint: "고급 복습" },
+      {
+        label: "Pro를 넘는 한도와 편의",
+        hint: "상세는 곧",
+      },
+      {
+        label: "화면에서 바로 단어 저장",
+        hint: "OCR · 캡처",
+      },
+      {
+        label: "곡·콘텐츠 패키지와 깊은 복습",
+        hint: "냥키와 함께",
+      },
+      {
+        label: "혜택과 가격은 곧 공개",
+        hint: "알림으로 안내 예정",
+      },
     ],
   },
 ];

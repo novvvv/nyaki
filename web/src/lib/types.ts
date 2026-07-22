@@ -9,6 +9,8 @@ export interface Word {
   description?: string;
   example?: string;
   memorizationStatus: MemorizationStatus;
+  isBookmarked: boolean;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   isDeleted: boolean;
@@ -29,6 +31,9 @@ export interface WordInput {
   pronunciation?: string;
   description?: string;
   example?: string;
+  isBookmarked?: boolean;
+  tags?: string[];
+  memorizationStatus?: MemorizationStatus;
 }
 
 export interface WordBookInput {

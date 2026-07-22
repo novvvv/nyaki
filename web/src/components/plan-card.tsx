@@ -49,7 +49,7 @@ function tierStyles(tier: Plan["tier"]) {
       accent: "text-ink/40 group-hover:text-ink/55",
       badge: "bg-subtle text-ink/45",
       glow: "from-ink/[0.025] to-transparent",
-      bullet: "text-ink/25",
+      dot: "bg-ink/20",
     };
   }
   if (tier === "pro") {
@@ -58,7 +58,7 @@ function tierStyles(tier: Plan["tier"]) {
       accent: "text-ink/70",
       badge: "bg-ink text-cream",
       glow: "from-ink/[0.03] to-transparent",
-      bullet: "text-ink/25",
+      dot: "bg-ink/25",
     };
   }
   return {
@@ -66,7 +66,7 @@ function tierStyles(tier: Plan["tier"]) {
     accent: "text-amber-900/75 plan-shimmer",
     badge: "bg-amber-900/90 text-[#faf6ec]",
     glow: "from-amber-900/[0.06] to-transparent",
-    bullet: "text-amber-900/35",
+    dot: "bg-amber-900/30",
   };
 }
 
@@ -76,7 +76,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
 
   return (
     <Card
-      className={`group relative flex h-full min-h-[420px] flex-col px-5 py-5 transition duration-300 ${styles.card} ${
+      className={`group relative flex h-full min-h-[400px] flex-col px-5 py-6 transition duration-300 ${styles.card} ${
         plan.highlight ? "border-ink/15 shadow-[0_1px_0_rgba(29,29,27,0.04)]" : ""
       }`}
     >
@@ -85,16 +85,16 @@ export function PlanCard({ plan }: { plan: Plan }) {
       />
 
       <div className="relative flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             {plan.tier === "free" ? (
-              <CatIcon className={`h-4 w-4 transition duration-300 ${styles.accent}`} />
+              <CatIcon className={`h-4 w-4 shrink-0 transition duration-300 ${styles.accent}`} />
             ) : null}
             {plan.tier === "pro" ? (
-              <CrownIcon className={`h-4 w-4 transition duration-300 ${styles.accent}`} />
+              <CrownIcon className={`h-4 w-4 shrink-0 transition duration-300 ${styles.accent}`} />
             ) : null}
             {plan.tier === "premium" ? (
-              <span className="relative flex items-center">
+              <span className="relative flex shrink-0 items-center">
                 <CrownIcon className={`h-4 w-4 transition duration-300 ${styles.accent}`} />
                 <SparkleIcon className="absolute -right-2 -top-1 h-2.5 w-2.5 text-amber-800/50 opacity-0 transition group-hover:opacity-100" />
               </span>
@@ -103,7 +103,9 @@ export function PlanCard({ plan }: { plan: Plan }) {
               {plan.name}
             </h3>
           </div>
-          <p className="mt-1 text-sm text-ink/45">{plan.tagline}</p>
+          <p className="mt-1.5 text-[13px] leading-snug text-ink/45">
+            {plan.tagline}
+          </p>
         </div>
         {plan.badge ? (
           <span
@@ -114,32 +116,31 @@ export function PlanCard({ plan }: { plan: Plan }) {
         ) : null}
       </div>
 
-      <div className="relative mt-5 min-h-[3.75rem]">
-        <p className="text-2xl font-semibold tracking-tight text-ink">
+      <div className="relative mt-6">
+        <p className="text-[1.75rem] font-semibold leading-none tracking-tight text-ink">
           {plan.price}
         </p>
-        <p className="mt-1 text-xs text-ink/35">{plan.priceNote}</p>
+        <p className="mt-1.5 text-xs text-ink/35">{plan.priceNote}</p>
       </div>
 
-      <ul className="mt-6 flex-1 space-y-2.5">
+      <ul className="mt-7 flex-1 space-y-3">
         {plan.features.map((feature) => (
-          <li
-            key={feature.label}
-            className="flex gap-2 text-sm leading-relaxed text-ink/60"
-          >
-            <span className={`mt-0.5 shrink-0 ${styles.bullet}`}>·</span>
-            <span className="min-w-0 truncate">
+          <li key={feature.label} className="flex gap-2.5">
+            <span className={`mt-[7px] h-1 w-1 shrink-0 rounded-full ${styles.dot}`} />
+            <p className="text-[13px] leading-[1.45] text-ink/70">
               {feature.label}
-              <span className="plan-card-hint text-ink/35 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                {" · "}
-                {feature.hint}
-              </span>
-            </span>
+              {feature.hint ? (
+                <span className="plan-card-hint text-ink/35 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  {" — "}
+                  {feature.hint}
+                </span>
+              ) : null}
+            </p>
           </li>
         ))}
       </ul>
 
-      <div className="mt-auto pt-6">
+      <div className="mt-8">
         {isFree ? (
           <PrimaryButton className="h-10 w-full" disabled>
             현재 플랜
@@ -149,7 +150,9 @@ export function PlanCard({ plan }: { plan: Plan }) {
             className="h-10 w-full text-ink/40 transition group-hover:border-ink/10 group-hover:bg-subtle group-hover:text-ink/55"
             disabled
           >
-            준비 중
+            {plan.comingSoon || plan.tier === "premium"
+              ? "준비 중"
+              : "결제 준비 중"}
           </GhostButton>
         )}
       </div>

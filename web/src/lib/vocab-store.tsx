@@ -106,7 +106,13 @@ export function VocabProvider({ children }: { children: ReactNode }) {
         token,
         wordBookId,
         wordId,
-        input,
+        {
+          ...input,
+          memorizationStatus:
+            input.memorizationStatus ?? current.memorizationStatus,
+          isBookmarked: input.isBookmarked ?? current.isBookmarked,
+          tags: input.tags ?? current.tags,
+        },
         current.createdAt,
       );
 

@@ -26,10 +26,8 @@ function LandingScreen({
             <h1 className="mt-2.5 text-[2.5rem] font-semibold tracking-[-0.02em] text-ink sm:text-5xl">
               Nyaki
             </h1>
-            <p className="mt-3 text-[15px] leading-[1.65] text-ink/45">
-              폰과 웹에서 같은 단어장을
-              <br />
-              외우고, 기록하고, 어디서든 이어서.
+            <p className="mt-3 text-[15px] font-medium leading-relaxed text-ink/60">
+              궁금한 거 있으면 언제든지 물어보라냥
             </p>
 
             {/* eslint-disable-next-line @next/next/no-img-element */}

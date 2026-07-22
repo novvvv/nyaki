@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/nyaki_colors.dart';
 
+/// 일일 퀘스트 정적 화면. (진행 로직은 이후)
 class QuestScreen extends StatelessWidget {
   const QuestScreen({super.key});
 
@@ -15,22 +16,29 @@ class QuestScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final dividerColor = NyakiColors.ink.withValues(alpha: 0.06);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(28, 20, 28, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return Scaffold(
+      backgroundColor: NyakiColors.cream,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 28, 0),
+              child: Row(
                 children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    iconSize: 18,
+                    color: NyakiColors.ink.withValues(alpha: 0.5),
+                    tooltip: '뒤로',
+                  ),
                   const Expanded(
                     child: Text(
-                      '퀘스트',
+                      'Daily Quest',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.3,
                         color: NyakiColors.ink,
@@ -47,33 +55,24 @@ class QuestScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                '오늘의 작은 학습 목표입니다.',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: NyakiColors.ink.withValues(alpha: 0.45),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
-            itemCount: _quests.length,
-            separatorBuilder: (_, __) => Divider(
-              height: 1,
-              thickness: 1,
-              color: dividerColor,
             ),
-            itemBuilder: (context, index) {
-              return _QuestRow(title: _quests[index]);
-            },
-          ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
+                itemCount: _quests.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: dividerColor,
+                ),
+                itemBuilder: (context, index) {
+                  return _QuestRow(title: _quests[index]);
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -92,7 +91,7 @@ class _QuestRow extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

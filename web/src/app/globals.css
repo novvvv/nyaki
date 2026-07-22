@@ -18,6 +18,10 @@
   --font-sans: var(--font-inter);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--nyaki-cream);
   color: var(--nyaki-ink);
@@ -27,4 +31,26 @@ body {
 
 ::selection {
   background: rgba(29, 29, 27, 0.12);
+}
+
+@keyframes plan-shimmer {
+  0%,
+  100% {
+    opacity: 0.72;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.08);
+  }
+}
+
+.plan-shimmer {
+  animation: plan-shimmer 2.8s ease-in-out infinite;
+}
+
+@media (hover: none) {
+  .plan-card-hint {
+    opacity: 0.45;
+  }
 }

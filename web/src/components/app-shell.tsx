@@ -65,6 +65,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           Nyaki
         </Link>
 
+        <nav className="mb-3">
+          <SidebarItem
+            href="/word-books"
+            label="전체 단어장"
+            active={pathname === "/word-books"}
+          />
+        </nav>
+
         <p className="mb-2 px-2.5 text-[11px] font-medium uppercase tracking-wider text-ink/35">
           단어장
         </p>

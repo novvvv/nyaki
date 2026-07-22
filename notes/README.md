@@ -6,7 +6,7 @@
 
 | 경로 | 내용 |
 |------|------|
-| `product/` | 제품 방향·비전 (구 PRODUCT_DIRECTION) |
+| `product/` | 비전·task·마케팅·사이드앱 → [product/README.md](product/README.md) |
 | `requirements/` | 기능 요구사항·체크리스트 |
 | `architecture/` | 전체 구조·데이터 흐름 |
 | `backend/` | Hub API · DB · 배포 메모 |

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { PrimaryButton } from "@/components/ui";
 
@@ -73,9 +72,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (!ready) {
-    return (
-      <LandingScreen message="로그인 상태를 확인하고 있습니다." />
-    );
+    return <LandingScreen message="로그인 상태를 확인하고 있습니다." />;
   }
 
   if (!configured) {
@@ -98,5 +95,5 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <AppShell>{children}</AppShell>;
+  return <>{children}</>;
 }

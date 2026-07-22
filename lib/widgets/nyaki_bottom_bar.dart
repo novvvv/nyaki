@@ -12,7 +12,7 @@ class NyakiBottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  static const _labels = ['홈', '퀘스트', '단어장', '추가', '테스트', '설정'];
+  static const _labels = ['홈', '단어장', '추가', '테스트', '설정'];
 
   @override
   Widget build(BuildContext context) {

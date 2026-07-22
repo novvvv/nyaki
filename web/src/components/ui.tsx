@@ -4,13 +4,15 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes } from "react";
 export function Card({
   children,
   className = "",
+  ...props
 }: {
   children: React.ReactNode;
   className?: string;
-}) {
+} & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={`rounded-lg border border-ink/[0.08] bg-card/50 px-4 py-3.5 ${className}`}
+      {...props}
     >
       {children}
     </div>

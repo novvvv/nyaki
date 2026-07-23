@@ -123,6 +123,56 @@ curl http://localhost:8000/health
 
 ---
 
+## 9. GitHub Actions CD (자동 배포)
+
+`main`에 `api/**`가 push되면 Actions가 Lightsail의 **api 컨테이너만** 다시 빌드·기동합니다.  
+(db·caddy는 그대로. `.env`·`secrets/`는 서버 값을 유지합니다.)
+
+### 9-1. 배포 전용 SSH 키
+
+로컬에서:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/nyaki_deploy -N "" -C "nyaki-github-actions"
+```
+
+Lightsail에 공개키 등록:
+
+```bash
+# 서버에서 (ubuntu 유저)
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo '여기에 nyaki_deploy.pub 한 줄' >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+로컬에서 접속 테스트:
+
+```bash
+ssh -i ~/.ssh/nyaki_deploy ubuntu@<STATIC-IP>
+```
+
+### 9-2. GitHub Secrets
+
+저장소 → **Settings** → **Secrets and variables** → **Actions** → New secret:
+
+| Name | Value |
+|------|--------|
+| `AWS_HOST` | Static IP 또는 도메인 |
+| `AWS_USER` | `ubuntu` |
+| `AWS_SSH_KEY` | Lightsail `.pem` **private** 키 전체 |
+| `API_HEALTH_URL` | (선택) `https://api.<도메인>/health` |
+
+### 9-3. 동작 확인
+
+1. 워크플로 파일 commit & push (또는 Actions → **Deploy API** → Run workflow)
+2. Actions 탭에서 초록불 확인
+3. `curl https://api.<도메인>/health`
+
+관련 파일: `.github/workflows/deploy-api.yml`  
+연습용(서버 미연결): `.github/workflows/hello.yml`
+
+---
+
 ## 트러블슈팅
 
 | 증상 | 확인 |
@@ -131,3 +181,5 @@ curl http://localhost:8000/health
 | 401 | Firebase Admin JSON 경로, `FIREBASE_PROJECT_ID` |
 | CORS | `CORS_ORIGINS`에 웹 origin 정확히 |
 | DB 연결 실패 | `POSTGRES_PASSWORD` ↔ `DATABASE_URL` 일치 |
+| Actions SSH 실패 | Secrets 키 전체 붙여넣기, 서버 `authorized_keys`, 방화벽 22 |
+| 배포 후 .env 없음 | rsync가 `.env`는 제외함 — 서버에 최초 1회 수동 작성 |

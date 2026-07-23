@@ -30,6 +30,8 @@ class CreateWordInput {
     this.description,
     this.example,
     this.imagePath,
+    this.isBookmarked = false,
+    this.tags = const [],
   });
 
   final String wordBookId;
@@ -39,6 +41,8 @@ class CreateWordInput {
   final String? description;
   final String? example;
   final String? imagePath;
+  final bool isBookmarked;
+  final List<String> tags;
 }
 
 class UpdateWordInput {
@@ -50,6 +54,8 @@ class UpdateWordInput {
     this.example,
     this.imagePath,
     this.memorizationStatus,
+    this.isBookmarked,
+    this.tags,
   });
 
   final String? term;
@@ -59,6 +65,8 @@ class UpdateWordInput {
   final String? example;
   final String? imagePath;
   final WordMemorizationStatus? memorizationStatus;
+  final bool? isBookmarked;
+  final List<String>? tags;
 }
 
 class VocabNotFoundException implements Exception {

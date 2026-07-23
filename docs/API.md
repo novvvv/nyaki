@@ -67,13 +67,16 @@ Authorization: Bearer <Firebase ID token>
   "example": null,
   "image_path": null,
   "memorization_status": "unmemorized",
+  "is_bookmarked": false,
+  "tags": ["N3"],
   "created_at": "2026-07-22T01:00:00Z",
   "updated_at": "2026-07-22T01:00:00Z",
   "is_deleted": false
 }
 ```
 
-`memorization_status`: `unmemorized` | `memorized`
+`memorization_status`: `unmemorized` | `memorized`  
+`tags`: 문자열 배열 (기본 `[]`) · `is_bookmarked`: 북마크 여부 (기본 `false`)
 
 ---
 

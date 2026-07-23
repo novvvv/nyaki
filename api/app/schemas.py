@@ -23,6 +23,8 @@ class WordPayload(BaseModel):
     example: str | None = None
     image_path: str | None = None
     memorization_status: Literal["unmemorized", "memorized"] = "unmemorized"
+    is_bookmarked: bool = False
+    tags: list[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
     is_deleted: bool = False

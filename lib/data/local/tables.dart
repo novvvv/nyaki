@@ -44,6 +44,9 @@ class WordEntries extends Table {
   TextColumn get example => text().nullable()();
   TextColumn get imagePath => text().nullable()();
   TextColumn get memorizationStatus => text()();
+  BoolColumn get isBookmarked =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get tagsJson => text().withDefault(const Constant('[]'))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();

@@ -415,6 +415,24 @@ class $WordEntriesTable extends WordEntries
   late final GeneratedColumn<String> memorizationStatus =
       GeneratedColumn<String>('memorization_status', aliasedName, false,
           type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isBookmarkedMeta =
+      const VerificationMeta('isBookmarked');
+  @override
+  late final GeneratedColumn<bool> isBookmarked = GeneratedColumn<bool>(
+      'is_bookmarked', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_bookmarked" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _tagsJsonMeta =
+      const VerificationMeta('tagsJson');
+  @override
+  late final GeneratedColumn<String> tagsJson = GeneratedColumn<String>(
+      'tags_json', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('[]'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -448,6 +466,8 @@ class $WordEntriesTable extends WordEntries
         example,
         imagePath,
         memorizationStatus,
+        isBookmarked,
+        tagsJson,
         createdAt,
         updatedAt,
         isDeleted
@@ -515,6 +535,16 @@ class $WordEntriesTable extends WordEntries
     } else if (isInserting) {
       context.missing(_memorizationStatusMeta);
     }
+    if (data.containsKey('is_bookmarked')) {
+      context.handle(
+          _isBookmarkedMeta,
+          isBookmarked.isAcceptableOrUnknown(
+              data['is_bookmarked']!, _isBookmarkedMeta));
+    }
+    if (data.containsKey('tags_json')) {
+      context.handle(_tagsJsonMeta,
+          tagsJson.isAcceptableOrUnknown(data['tags_json']!, _tagsJsonMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -558,6 +588,10 @@ class $WordEntriesTable extends WordEntries
           .read(DriftSqlType.string, data['${effectivePrefix}image_path']),
       memorizationStatus: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}memorization_status'])!,
+      isBookmarked: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_bookmarked'])!,
+      tagsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tags_json'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -583,6 +617,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
   final String? example;
   final String? imagePath;
   final String memorizationStatus;
+  final bool isBookmarked;
+  final String tagsJson;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -596,6 +632,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       this.example,
       this.imagePath,
       required this.memorizationStatus,
+      required this.isBookmarked,
+      required this.tagsJson,
       required this.createdAt,
       required this.updatedAt,
       required this.isDeleted});
@@ -619,6 +657,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       map['image_path'] = Variable<String>(imagePath);
     }
     map['memorization_status'] = Variable<String>(memorizationStatus);
+    map['is_bookmarked'] = Variable<bool>(isBookmarked);
+    map['tags_json'] = Variable<String>(tagsJson);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['is_deleted'] = Variable<bool>(isDeleted);
@@ -644,6 +684,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           ? const Value.absent()
           : Value(imagePath),
       memorizationStatus: Value(memorizationStatus),
+      isBookmarked: Value(isBookmarked),
+      tagsJson: Value(tagsJson),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isDeleted: Value(isDeleted),
@@ -664,6 +706,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       imagePath: serializer.fromJson<String?>(json['imagePath']),
       memorizationStatus:
           serializer.fromJson<String>(json['memorizationStatus']),
+      isBookmarked: serializer.fromJson<bool>(json['isBookmarked']),
+      tagsJson: serializer.fromJson<String>(json['tagsJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
@@ -682,6 +726,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       'example': serializer.toJson<String?>(example),
       'imagePath': serializer.toJson<String?>(imagePath),
       'memorizationStatus': serializer.toJson<String>(memorizationStatus),
+      'isBookmarked': serializer.toJson<bool>(isBookmarked),
+      'tagsJson': serializer.toJson<String>(tagsJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
@@ -698,6 +744,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           Value<String?> example = const Value.absent(),
           Value<String?> imagePath = const Value.absent(),
           String? memorizationStatus,
+          bool? isBookmarked,
+          String? tagsJson,
           DateTime? createdAt,
           DateTime? updatedAt,
           bool? isDeleted}) =>
@@ -712,6 +760,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
         example: example.present ? example.value : this.example,
         imagePath: imagePath.present ? imagePath.value : this.imagePath,
         memorizationStatus: memorizationStatus ?? this.memorizationStatus,
+        isBookmarked: isBookmarked ?? this.isBookmarked,
+        tagsJson: tagsJson ?? this.tagsJson,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted ?? this.isDeleted,
@@ -733,6 +783,10 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       memorizationStatus: data.memorizationStatus.present
           ? data.memorizationStatus.value
           : this.memorizationStatus,
+      isBookmarked: data.isBookmarked.present
+          ? data.isBookmarked.value
+          : this.isBookmarked,
+      tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
@@ -751,6 +805,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           ..write('example: $example, ')
           ..write('imagePath: $imagePath, ')
           ..write('memorizationStatus: $memorizationStatus, ')
+          ..write('isBookmarked: $isBookmarked, ')
+          ..write('tagsJson: $tagsJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted')
@@ -769,6 +825,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       example,
       imagePath,
       memorizationStatus,
+      isBookmarked,
+      tagsJson,
       createdAt,
       updatedAt,
       isDeleted);
@@ -785,6 +843,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           other.example == this.example &&
           other.imagePath == this.imagePath &&
           other.memorizationStatus == this.memorizationStatus &&
+          other.isBookmarked == this.isBookmarked &&
+          other.tagsJson == this.tagsJson &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isDeleted == this.isDeleted);
@@ -800,6 +860,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
   final Value<String?> example;
   final Value<String?> imagePath;
   final Value<String> memorizationStatus;
+  final Value<bool> isBookmarked;
+  final Value<String> tagsJson;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isDeleted;
@@ -814,6 +876,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     this.example = const Value.absent(),
     this.imagePath = const Value.absent(),
     this.memorizationStatus = const Value.absent(),
+    this.isBookmarked = const Value.absent(),
+    this.tagsJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -829,6 +893,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     this.example = const Value.absent(),
     this.imagePath = const Value.absent(),
     required String memorizationStatus,
+    this.isBookmarked = const Value.absent(),
+    this.tagsJson = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.isDeleted = const Value.absent(),
@@ -850,6 +916,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     Expression<String>? example,
     Expression<String>? imagePath,
     Expression<String>? memorizationStatus,
+    Expression<bool>? isBookmarked,
+    Expression<String>? tagsJson,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isDeleted,
@@ -865,6 +933,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       if (example != null) 'example': example,
       if (imagePath != null) 'image_path': imagePath,
       if (memorizationStatus != null) 'memorization_status': memorizationStatus,
+      if (isBookmarked != null) 'is_bookmarked': isBookmarked,
+      if (tagsJson != null) 'tags_json': tagsJson,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isDeleted != null) 'is_deleted': isDeleted,
@@ -882,6 +952,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       Value<String?>? example,
       Value<String?>? imagePath,
       Value<String>? memorizationStatus,
+      Value<bool>? isBookmarked,
+      Value<String>? tagsJson,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<bool>? isDeleted,
@@ -896,6 +968,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       example: example ?? this.example,
       imagePath: imagePath ?? this.imagePath,
       memorizationStatus: memorizationStatus ?? this.memorizationStatus,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      tagsJson: tagsJson ?? this.tagsJson,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -933,6 +1007,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     if (memorizationStatus.present) {
       map['memorization_status'] = Variable<String>(memorizationStatus.value);
     }
+    if (isBookmarked.present) {
+      map['is_bookmarked'] = Variable<bool>(isBookmarked.value);
+    }
+    if (tagsJson.present) {
+      map['tags_json'] = Variable<String>(tagsJson.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -960,6 +1040,8 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
           ..write('example: $example, ')
           ..write('imagePath: $imagePath, ')
           ..write('memorizationStatus: $memorizationStatus, ')
+          ..write('isBookmarked: $isBookmarked, ')
+          ..write('tagsJson: $tagsJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -1807,6 +1889,8 @@ typedef $$WordEntriesTableCreateCompanionBuilder = WordEntriesCompanion
   Value<String?> example,
   Value<String?> imagePath,
   required String memorizationStatus,
+  Value<bool> isBookmarked,
+  Value<String> tagsJson,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<bool> isDeleted,
@@ -1823,6 +1907,8 @@ typedef $$WordEntriesTableUpdateCompanionBuilder = WordEntriesCompanion
   Value<String?> example,
   Value<String?> imagePath,
   Value<String> memorizationStatus,
+  Value<bool> isBookmarked,
+  Value<String> tagsJson,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
@@ -1882,6 +1968,12 @@ class $$WordEntriesTableFilterComposer
   ColumnFilters<String> get memorizationStatus => $composableBuilder(
       column: $table.memorizationStatus,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isBookmarked => $composableBuilder(
+      column: $table.isBookmarked, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tagsJson => $composableBuilder(
+      column: $table.tagsJson, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -1948,6 +2040,13 @@ class $$WordEntriesTableOrderingComposer
       column: $table.memorizationStatus,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isBookmarked => $composableBuilder(
+      column: $table.isBookmarked,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tagsJson => $composableBuilder(
+      column: $table.tagsJson, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -2011,6 +2110,12 @@ class $$WordEntriesTableAnnotationComposer
   GeneratedColumn<String> get memorizationStatus => $composableBuilder(
       column: $table.memorizationStatus, builder: (column) => column);
 
+  GeneratedColumn<bool> get isBookmarked => $composableBuilder(
+      column: $table.isBookmarked, builder: (column) => column);
+
+  GeneratedColumn<String> get tagsJson =>
+      $composableBuilder(column: $table.tagsJson, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -2073,6 +2178,8 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             Value<String?> example = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
             Value<String> memorizationStatus = const Value.absent(),
+            Value<bool> isBookmarked = const Value.absent(),
+            Value<String> tagsJson = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -2088,6 +2195,8 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             example: example,
             imagePath: imagePath,
             memorizationStatus: memorizationStatus,
+            isBookmarked: isBookmarked,
+            tagsJson: tagsJson,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -2103,6 +2212,8 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             Value<String?> example = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
             required String memorizationStatus,
+            Value<bool> isBookmarked = const Value.absent(),
+            Value<String> tagsJson = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<bool> isDeleted = const Value.absent(),
@@ -2118,6 +2229,8 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             example: example,
             imagePath: imagePath,
             memorizationStatus: memorizationStatus,
+            isBookmarked: isBookmarked,
+            tagsJson: tagsJson,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,

@@ -1,7 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Index, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import JSON
 
 from .database import Base
 
@@ -26,6 +28,7 @@ class WordModel(Base):
     __table_args__ = (
         Index("ix_words_user_updated", "user_id", "updated_at"),
         Index("ix_words_book", "user_id", "word_book_id"),
+        Index("ix_words_user_bookmarked", "user_id", "is_bookmarked"),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
@@ -38,6 +41,14 @@ class WordModel(Base):
     example: Mapped[str | None] = mapped_column(Text, nullable=True)
     image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     memorization_status: Mapped[str] = mapped_column(String(20), default="unmemorized")
+    is_bookmarked: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    tags: Mapped[list] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"),
+        default=list,
+        server_default="[]",
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

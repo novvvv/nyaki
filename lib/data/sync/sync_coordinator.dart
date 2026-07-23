@@ -182,11 +182,23 @@ class SyncCoordinator {
             example: Value(json['example'] as String?),
             imagePath: Value(json['image_path'] as String?),
             memorizationStatus: json['memorization_status'] as String,
+            isBookmarked: Value(json['is_bookmarked'] as bool? ?? false),
+            tagsJson: Value(_encodeTagsJson(json['tags'])),
             createdAt: DateTime.parse(json['created_at'] as String),
             updatedAt: remoteUpdatedAt,
             isDeleted: Value(json['is_deleted'] as bool),
           ),
         );
+  }
+
+  String _encodeTagsJson(Object? raw) {
+    if (raw is! List) return '[]';
+    final tags = raw
+        .whereType<String>()
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList(growable: false);
+    return jsonEncode(tags);
   }
 
   Map<String, String> _headers(String token) => {

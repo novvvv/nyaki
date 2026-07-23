@@ -66,13 +66,23 @@ def put_word_book(
     return entity
 
 
+# ====================================== #
+# [web] ✨ word-book delete routing✨ #
+# param 
+#   - user_id : Firebase Login Token 
+#   - Depends가 뜻하는게 뭐지. Depends(get_current_user_id?)
+# Success -> Return HTTP_204_NO_CONTENT # 
+# ====================================== #
+
 @router.delete("/word-books/{word_book_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_word_book(
     word_book_id: str,
     session: Session = Depends(get_session),
     user_id: str = Depends(get_current_user_id),
 ) -> Response:
+    # entity : 단어장 DB Raw 
     entity, _ = delete_word_book(session, user_id, word_book_id)
+    # [Exception] 
     if entity is None:
         raise HTTPException(status_code=404, detail="단어장을 찾을 수 없습니다.")
     session.commit()

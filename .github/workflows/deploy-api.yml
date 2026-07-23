@@ -1,0 +1,80 @@
+# API CD: api 코드 → Lightsail 동기화 → api 컨테이너만 재빌드
+# 필요 Secrets: AWS_HOST, AWS_USER, AWS_SSH_KEY
+# 선택 Secrets: API_HEALTH_URL (예: https://api.example.com/health)
+name: Deploy API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/lightsail_deploy
+          chmod 600 ~/.ssh/lightsail_deploy
+          ssh-keyscan -H "${{ secrets.AWS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Sync api to Lightsail
+        env:
+          HOST: ${{ secrets.AWS_HOST }}
+          USER: ${{ secrets.AWS_USER }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude 'secrets/' \
+            --exclude '__pycache__/' \
+            --exclude '*.pyc' \
+            --exclude '.pytest_cache/' \
+            -e "ssh -i ~/.ssh/lightsail_deploy -o IdentitiesOnly=yes" \
+            api/ "${USER}@${HOST}:/opt/nyaki/api/"
+
+      - name: Rebuild and restart api container
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /opt/nyaki/api
+            docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --build api
+            docker compose -f docker-compose.yml -f docker-compose.production.yml ps
+
+      - name: Health check
+        env:
+          API_HEALTH_URL: ${{ secrets.API_HEALTH_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${API_HEALTH_URL}" ]; then
+            echo "API_HEALTH_URL secret not set — skip health check"
+            exit 0
+          fi
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$API_HEALTH_URL"; then
+              echo
+              echo "health ok"
+              exit 0
+            fi
+            echo "waiting for health... ($i)"
+            sleep 5
+          done
+          echo "health check failed: $API_HEALTH_URL"
+          exit 1

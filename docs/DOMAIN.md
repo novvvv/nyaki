@@ -43,6 +43,8 @@ WordBook (1) ──────< (N) Word
 | `example` | string? | | |
 | `image_path` | string? | | 로컬 경로 또는 URL |
 | `memorization_status` | enum | ✅ | `unmemorized` \| `memorized` |
+| `is_bookmarked` | bool | ✅ | 기본 `false` |
+| `tags` | string[] | ✅ | 기본 `[]`. 태그로 필터·검색용 |
 | `created_at` | datetime | ✅ | |
 | `updated_at` | datetime | ✅ | |
 | `is_deleted` | bool | ✅ | soft delete |

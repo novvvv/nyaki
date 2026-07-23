@@ -116,6 +116,8 @@ class InMemoryVocabRepository implements VocabRepository {
       description: _trimOrNull(input.description),
       example: _trimOrNull(input.example),
       imagePath: _trimOrNull(input.imagePath),
+      isBookmarked: input.isBookmarked,
+      tags: _normalizeTags(input.tags),
       createdAt: now,
       updatedAt: now,
     );
@@ -165,6 +167,8 @@ class InMemoryVocabRepository implements VocabRepository {
           : _trimOrNull(input.imagePath),
       memorizationStatus:
           input.memorizationStatus ?? current.memorizationStatus,
+      isBookmarked: input.isBookmarked ?? current.isBookmarked,
+      tags: input.tags == null ? current.tags : _normalizeTags(input.tags!),
       updatedAt: now,
     );
 
@@ -227,6 +231,13 @@ class InMemoryVocabRepository implements VocabRepository {
     if (value == null) return null;
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  List<String> _normalizeTags(List<String> tags) {
+    return tags
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList(growable: false);
   }
 
   WordBook _cloneWordBook(WordBook wordBook) {

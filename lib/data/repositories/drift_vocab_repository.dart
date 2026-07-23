@@ -226,6 +226,8 @@ class DriftVocabRepository implements VocabRepository {
               example: Value(_trimOrNull(input.example)),
               imagePath: Value(_trimOrNull(input.imagePath)),
               memorizationStatus: WordMemorizationStatus.unmemorized.name,
+              isBookmarked: Value(input.isBookmarked),
+              tagsJson: Value(_encodeTags(input.tags)),
               createdAt: now,
               updatedAt: now,
             ),
@@ -278,6 +280,12 @@ class DriftVocabRepository implements VocabRepository {
           memorizationStatus: input.memorizationStatus == null
               ? const Value.absent()
               : Value(input.memorizationStatus!.name),
+          isBookmarked: input.isBookmarked == null
+              ? const Value.absent()
+              : Value(input.isBookmarked!),
+          tagsJson: input.tags == null
+              ? const Value.absent()
+              : Value(_encodeTags(input.tags!)),
           updatedAt: Value(now),
         ),
       );
@@ -350,6 +358,8 @@ class DriftVocabRepository implements VocabRepository {
       memorizationStatus: WordMemorizationStatus.values.byName(
         row.memorizationStatus,
       ),
+      isBookmarked: row.isBookmarked,
+      tags: _decodeTags(row.tagsJson),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       isDeleted: row.isDeleted,
@@ -408,6 +418,8 @@ class DriftVocabRepository implements VocabRepository {
               'example': row.example,
               'image_path': row.imagePath,
               'memorization_status': row.memorizationStatus,
+              'is_bookmarked': row.isBookmarked,
+              'tags': _decodeTags(row.tagsJson),
               'created_at': row.createdAt.toUtc().toIso8601String(),
               'updated_at': row.updatedAt.toUtc().toIso8601String(),
               'is_deleted': row.isDeleted,
@@ -423,5 +435,27 @@ class DriftVocabRepository implements VocabRepository {
     if (value == null) return null;
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String _encodeTags(List<String> tags) {
+    final cleaned = tags
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList(growable: false);
+    return jsonEncode(cleaned);
+  }
+
+  List<String> _decodeTags(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      return decoded
+          .whereType<String>()
+          .map((tag) => tag.trim())
+          .where((tag) => tag.isNotEmpty)
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
   }
 }

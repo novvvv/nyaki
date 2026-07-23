@@ -1,0 +1,16 @@
+# 학습용: push 시 Actions가 도는지 확인 (서버 배포 없음)
+name: Hello
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hello.yml"
+  workflow_dispatch:
+
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say hello
+        run: echo "hello from GitHub Actions"

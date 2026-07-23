@@ -15,6 +15,8 @@ class Word {
     this.example,
     this.imagePath,
     this.memorizationStatus = WordMemorizationStatus.unmemorized,
+    this.isBookmarked = false,
+    this.tags = const [],
     required this.createdAt,
     required this.updatedAt,
     this.isDeleted = false,
@@ -34,6 +36,8 @@ class Word {
   final String? imagePath;
 
   final WordMemorizationStatus memorizationStatus;
+  final bool isBookmarked;
+  final List<String> tags;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -51,6 +55,8 @@ class Word {
     String? example,
     String? imagePath,
     WordMemorizationStatus? memorizationStatus,
+    bool? isBookmarked,
+    List<String>? tags,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -65,6 +71,8 @@ class Word {
       example: example ?? this.example,
       imagePath: imagePath ?? this.imagePath,
       memorizationStatus: memorizationStatus ?? this.memorizationStatus,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      tags: tags ?? this.tags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,

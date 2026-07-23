@@ -160,3 +160,23 @@ export async function removeWord(
     method: "DELETE",
   });
 }
+
+// =============== ✨ removeWordBook API ✨ =============== //
+// feat
+//     - 단어장 제거 API 
+// parameter 
+//     - token: string -> Firebase login JWT 
+//     - wordBookId: string -> 단어장 ID 
+// url 
+//     - /v1/word-books/${workBookId}
+//     - method : DELETE 
+// ========================================================= //
+
+export async function removeWordBook(
+  token: string,
+  wordBookId: string,
+): Promise<void> {
+  await request<void>(`/v1/word-books/${wordBookId}`, token, {
+    method: "DELETE",
+  });
+}

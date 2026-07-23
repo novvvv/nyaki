@@ -1,14 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 
-import { Badge, EmptyState, GhostButton, PageHeader, PrimaryLink } from "@/components/ui";
+import {
+  Badge,
+  EmptyState,
+  GhostButton,
+  PageHeader,
+  PrimaryLink,
+} from "@/components/ui";
 import { activeWords, bookMeta, useVocab } from "@/lib/vocab-store";
 
 export default function WordBookDetailPage() {
   const params = useParams<{ id: string }>();
-  const { getWordBook } = useVocab();
+  const router = useRouter();
+  const { getWordBook, deleteWordBook } = useVocab();
+  const [deleting, setDeleting] = useState(false);
   const book = getWordBook(params.id);
 
   if (!book) {
@@ -28,6 +37,22 @@ export default function WordBookDetailPage() {
   const meta = bookMeta(book);
   const words = activeWords(book);
 
+  async function handleDeleteBook() {
+    if (!window.confirm(`"${book.title}" 단어장을 삭제할까요?\n안의 단어도 함께 삭제됩니다.`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteWordBook(book.id);
+      router.push("/word-books");
+    } catch (reason) {
+      window.alert(
+        reason instanceof Error ? reason.message : "단어장을 삭제하지 못했어요.",
+      );
+      setDeleting(false);
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-6xl px-8 py-10 lg:px-12">
       <PageHeader
@@ -36,9 +61,18 @@ export default function WordBookDetailPage() {
           book.description ?? `${meta.count}개 · 암기 ${meta.rate}%`
         }
         actions={
-          <PrimaryLink href={`/word-books/${book.id}/words/new`}>
-            단어 추가
-          </PrimaryLink>
+          <div className="flex flex-wrap items-center gap-2">
+            <PrimaryLink href={`/word-books/${book.id}/words/new`}>
+              단어 추가
+            </PrimaryLink>
+            <GhostButton
+              className="text-red-600 hover:bg-red-50"
+              disabled={deleting}
+              onClick={() => void handleDeleteBook()}
+            >
+              {deleting ? "삭제 중…" : "단어장 삭제"}
+            </GhostButton>
+          </div>
         }
       />
 

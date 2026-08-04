@@ -11,7 +11,7 @@ export function Card({
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`rounded-lg border border-ink/[0.08] bg-card/50 px-4 py-3.5 ${className}`}
+      className={`rounded-lg border border-taupe/50 bg-card/60 px-4 py-3.5 ${className}`}
       {...props}
     >
       {children}
@@ -27,7 +27,7 @@ export function PrimaryButton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-ink/88 disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-umber disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
       {...props}
     >
       {children}
@@ -47,7 +47,7 @@ export function PrimaryLink({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-ink/88 ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-umber ${className}`}
     >
       {children}
     </Link>
@@ -62,7 +62,7 @@ export function GhostButton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-ink/65 transition hover:bg-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-umber/70 transition hover:bg-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
       {...props}
     >
       {children}
@@ -72,7 +72,7 @@ export function GhostButton({
 
 export function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="mb-1.5 block text-xs font-medium text-ink/50">
+    <label className="mb-1.5 block text-xs font-medium text-umber/55">
       {children}
     </label>
   );
@@ -84,7 +84,7 @@ export function TextInput({
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full rounded-lg border border-ink/[0.08] bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/20 focus:ring-2 focus:ring-ink/[0.06] ${className}`}
+      className={`w-full rounded-lg border border-taupe/45 bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/25 focus:ring-2 focus:ring-taupe/35 ${className}`}
       {...props}
     />
   );
@@ -98,7 +98,7 @@ export function TextArea({
   return (
     <textarea
       rows={rows}
-      className={`w-full resize-y rounded-lg border border-ink/[0.08] bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/20 focus:ring-2 focus:ring-ink/[0.06] ${className}`}
+      className={`w-full resize-y rounded-lg border border-taupe/45 bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/25 focus:ring-2 focus:ring-taupe/35 ${className}`}
       {...props}
     />
   );
@@ -106,7 +106,7 @@ export function TextArea({
 
 export function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex rounded-md bg-subtle px-2 py-0.5 text-xs font-medium text-ink/50">
+    <span className="inline-flex rounded-md border border-taupe/40 bg-subtle/70 px-2 py-0.5 text-xs font-medium text-umber/70">
       {children}
     </span>
   );
@@ -128,7 +128,7 @@ export function PageHeader({
           {title}
         </h1>
         {description ? (
-          <p className="mt-1 text-sm text-ink/45">{description}</p>
+          <p className="mt-1 text-sm text-umber/65">{description}</p>
         ) : null}
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
@@ -146,10 +146,10 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-ink/10 px-6 py-12 text-center">
+    <div className="rounded-lg border border-dashed border-taupe/60 px-6 py-12 text-center">
       <p className="text-sm font-medium text-ink/70">{title}</p>
       {description ? (
-        <p className="mt-1 text-sm text-ink/40">{description}</p>
+        <p className="mt-1 text-sm text-umber/55">{description}</p>
       ) : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>

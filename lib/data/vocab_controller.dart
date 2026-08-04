@@ -97,4 +97,15 @@ class VocabController extends ChangeNotifier {
     await _repository.deleteWord(wordBookId, wordId);
     await reload();
   }
+
+  /// 복습 화면에서 모름/외움을 눌렀을 때 호출. SM-2로 채점하고 상태를 갱신한다.
+  Future<Word> gradeWord({
+    required String wordBookId,
+    required String wordId,
+    required ReviewGrade grade,
+  }) async {
+    final updated = await _repository.gradeWord(wordBookId, wordId, grade);
+    await reload();
+    return updated;
+  }
 }

@@ -69,6 +69,11 @@ class UpdateWordInput {
   final List<String>? tags;
 }
 
+enum ReviewGrade {
+  again, // 모름
+  good, // 외움
+}
+
 class VocabNotFoundException implements Exception {
   VocabNotFoundException(this.message);
 
@@ -102,4 +107,7 @@ abstract class VocabRepository {
       String wordBookId, String wordId, UpdateWordInput input);
 
   Future<void> deleteWord(String wordBookId, String wordId);
+
+  // gradeWord - 복습에서 "모름/외움"을 눌렀을 때 실행되는 함수.
+  Future<Word> gradeWord(String wordBookId, String wordId, ReviewGrade grade);
 }

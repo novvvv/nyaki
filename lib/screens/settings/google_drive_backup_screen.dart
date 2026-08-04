@@ -290,7 +290,7 @@ class _StatusCard extends StatelessWidget {
     return Material(
       color: NyakiColors.cream,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: NyakiColors.ink.withValues(alpha: 0.14)),
+        side: BorderSide(color: NyakiColors.taupe),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
@@ -368,7 +368,7 @@ class _ActionCard extends StatelessWidget {
         side: BorderSide(
           color: primary
               ? NyakiColors.ink.withValues(alpha: 0.22)
-              : NyakiColors.ink.withValues(alpha: 0.12),
+              : NyakiColors.taupe,
         ),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -604,7 +604,7 @@ class _DriveImportConfirmSheet extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: NyakiColors.ink,
                     side: BorderSide(
-                      color: NyakiColors.ink.withValues(alpha: 0.18),
+                      color: NyakiColors.taupe,
                     ),
                     minimumSize: const Size(0, 46),
                   ),

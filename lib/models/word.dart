@@ -17,6 +17,12 @@ class Word {
     this.memorizationStatus = WordMemorizationStatus.unmemorized,
     this.isBookmarked = false,
     this.tags = const [],
+    this.srsEaseFactor = 2.5,
+    this.srsIntervalDays = 0,
+    this.srsRepetitions = 0,
+    this.srsLapses = 0,
+    required this.srsDueAt,
+    this.srsLastReviewedAt,
     required this.createdAt,
     required this.updatedAt,
     this.isDeleted = false,
@@ -38,12 +44,26 @@ class Word {
   final WordMemorizationStatus memorizationStatus;
   final bool isBookmarked;
   final List<String> tags;
+
+  // ==================== SM-2 SRS 필드 ==================== //
+  // 계산 규칙: docs/SRS.md
+  final double srsEaseFactor;
+  final int srsIntervalDays;
+  final int srsRepetitions;
+  final int srsLapses;
+  final DateTime srsDueAt;
+  final DateTime? srsLastReviewedAt;
+  // ========================================================= //
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
 
   bool get isMemorized =>
       memorizationStatus == WordMemorizationStatus.memorized;
+
+  /// 지금 시각 기준으로 복습 대상인지 (srsDueAt이 지났는지).
+  bool get isDue => !srsDueAt.isAfter(DateTime.now());
 
   Word copyWith({
     String? id,
@@ -57,6 +77,12 @@ class Word {
     WordMemorizationStatus? memorizationStatus,
     bool? isBookmarked,
     List<String>? tags,
+    double? srsEaseFactor,
+    int? srsIntervalDays,
+    int? srsRepetitions,
+    int? srsLapses,
+    DateTime? srsDueAt,
+    DateTime? srsLastReviewedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -73,6 +99,12 @@ class Word {
       memorizationStatus: memorizationStatus ?? this.memorizationStatus,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       tags: tags ?? this.tags,
+      srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
+      srsIntervalDays: srsIntervalDays ?? this.srsIntervalDays,
+      srsRepetitions: srsRepetitions ?? this.srsRepetitions,
+      srsLapses: srsLapses ?? this.srsLapses,
+      srsDueAt: srsDueAt ?? this.srsDueAt,
+      srsLastReviewedAt: srsLastReviewedAt ?? this.srsLastReviewedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,

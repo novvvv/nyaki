@@ -1,5 +1,6 @@
 import '../../models/word.dart';
 import '../../models/word_book.dart';
+import '../srs/sm2.dart';
 import '../vocab_constants.dart';
 import 'vocab_repository.dart';
 
@@ -118,6 +119,7 @@ class InMemoryVocabRepository implements VocabRepository {
       imagePath: _trimOrNull(input.imagePath),
       isBookmarked: input.isBookmarked,
       tags: _normalizeTags(input.tags),
+      srsDueAt: now,
       createdAt: now,
       updatedAt: now,
     );
@@ -191,6 +193,47 @@ class InMemoryVocabRepository implements VocabRepository {
       updatedAt: now,
     );
     _wordBooks[bookIndex] = wordBook.copyWith(words: words, updatedAt: now);
+  }
+
+  @override
+  Future<Word> gradeWord(
+    String wordBookId,
+    String wordId,
+    ReviewGrade grade,
+  ) async {
+    final bookIndex = _wordBookIndex(wordBookId);
+    final wordBook = _wordBooks[bookIndex];
+    final wordIndex = _wordIndex(wordBook, wordId);
+    final current = wordBook.words[wordIndex];
+
+    final state = Sm2State(
+      easeFactor: current.srsEaseFactor,
+      intervalDays: current.srsIntervalDays,
+      repetitions: current.srsRepetitions,
+      lapses: current.srsLapses,
+      dueAt: current.srsDueAt,
+      lastReviewedAt: current.srsLastReviewedAt,
+    );
+
+    final now = DateTime.now();
+    final result =
+        grade == ReviewGrade.again ? gradeAgain(state, now) : gradeGood(state, now);
+
+    final updated = current.copyWith(
+      memorizationStatus: result.memorizationStatus,
+      srsEaseFactor: result.state.easeFactor,
+      srsIntervalDays: result.state.intervalDays,
+      srsRepetitions: result.state.repetitions,
+      srsLapses: result.state.lapses,
+      srsDueAt: result.state.dueAt,
+      srsLastReviewedAt: result.state.lastReviewedAt,
+      updatedAt: now,
+    );
+
+    final words = [...wordBook.words];
+    words[wordIndex] = updated;
+    _wordBooks[bookIndex] = wordBook.copyWith(words: words, updatedAt: now);
+    return _cloneWord(updated);
   }
 
   WordBook _requireWordBook(String id) {

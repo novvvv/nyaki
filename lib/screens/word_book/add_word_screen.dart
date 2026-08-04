@@ -185,12 +185,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   const SizedBox(height: 8),
                   Divider(
                     height: 1,
-                    color: NyakiColors.ink.withValues(alpha: 0.06),
+                    color: NyakiColors.softDune,
                   ),
                   const _PhotoPicker(),
                   Divider(
                     height: 1,
-                    color: NyakiColors.ink.withValues(alpha: 0.06),
+                    color: NyakiColors.softDune,
                   ),
                   const SizedBox(height: 24),
                   _BoxTextField(
@@ -303,12 +303,12 @@ class _BoxTextField extends StatelessWidget {
             ),
             border: UnderlineInputBorder(
               borderSide: BorderSide(
-                color: NyakiColors.ink.withValues(alpha: 0.08),
+                color: NyakiColors.softDune,
               ),
             ),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(
-                color: NyakiColors.ink.withValues(alpha: 0.08),
+                color: NyakiColors.softDune,
               ),
             ),
             focusedBorder: UnderlineInputBorder(

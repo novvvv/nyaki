@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from .auth import get_current_user_id
 from .database import get_session
 from .models import SyncChangeModel, WordBookModel, WordModel
 from .schemas import (
+    ReviewDueResponse,
     SyncChange,
     SyncMutation,
     SyncPullResponse,
@@ -21,6 +22,7 @@ from .schemas import (
 from .services import (
     delete_word,
     delete_word_book,
+    list_due_words,
     list_word_books,
     list_words,
     upsert_word,
@@ -131,6 +133,16 @@ def remove_word(
     delete_word(session, user_id, word_id)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/review/due", response_model=ReviewDueResponse)
+def get_review_due(
+    limit: int = Query(default=50, ge=1, le=200),
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> ReviewDueResponse:
+    words = list_due_words(session, user_id, limit)
+    return ReviewDueResponse(words=[WordResponse.model_validate(w) for w in words])
 
 
 def _apply_mutation(session: Session, user_id: str, mutation: SyncMutation) -> int | None:

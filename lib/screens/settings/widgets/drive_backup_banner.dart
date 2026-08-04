@@ -18,7 +18,7 @@ class DriveBackupBanner extends StatelessWidget {
     return Material(
       color: NyakiColors.cardBg,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: NyakiColors.ink.withValues(alpha: 0.12)),
+        side: const BorderSide(color: NyakiColors.taupe),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Padding(
@@ -79,7 +79,7 @@ class DriveBackupBanner extends StatelessWidget {
             Icon(
               Icons.pets_rounded,
               size: 22,
-              color: NyakiColors.ink.withValues(alpha: 0.18),
+              color: NyakiColors.taupe,
             ),
           ],
         ),

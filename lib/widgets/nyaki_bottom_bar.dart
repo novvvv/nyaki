@@ -61,7 +61,9 @@ class _TabItem extends StatelessWidget {
     final style = TextStyle(
       fontSize: 11,
       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-      color: NyakiColors.ink.withValues(alpha: selected ? 1 : 0.3),
+      color: selected
+          ? NyakiColors.ink
+          : NyakiColors.umber.withValues(alpha: 0.4),
     );
 
     return InkWell(

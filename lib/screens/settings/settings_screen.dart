@@ -122,7 +122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     Divider(
                       height: 1,
-                      color: NyakiColors.ink.withValues(alpha: 0.06),
+                      color: NyakiColors.softDune,
                     ),
                     const SizedBox(height: 24),
                     _SectionLabel('데이터'),
@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     Divider(
                       height: 1,
-                      color: NyakiColors.ink.withValues(alpha: 0.08),
+                      color: NyakiColors.softDune,
                     ),
                     SettingsLinkRow(
                       label: '자동 백업',

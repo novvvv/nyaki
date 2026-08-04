@@ -194,17 +194,17 @@ export function WordForm({ mode }: WordFormProps) {
           />
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-ink/65">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-umber/70">
           <input
             type="checkbox"
-            className="size-4 rounded border-ink/20"
+            className="size-4 rounded border-taupe/60 accent-ink"
             checked={form.isBookmarked ?? false}
             onChange={(e) => setField("isBookmarked", e.target.checked)}
           />
           북마크
         </label>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-ink/[0.06] pt-5">
+        <div className="flex flex-wrap items-center gap-2 border-t border-taupe/40 pt-5">
           <PrimaryButton type="submit">
             {mode === "create" ? "추가" : "저장"}
           </PrimaryButton>

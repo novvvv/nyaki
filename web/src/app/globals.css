@@ -1,18 +1,23 @@
 @import "tailwindcss";
 
+/* Design.md — Vanilla / Black / Soft Dune / Classic Taupe / Umber */
 :root {
-  --nyaki-cream: #fcf9f2;
-  --nyaki-ink: #1d1d1b;
-  --nyaki-muted: #e7e7dd;
-  --nyaki-card: #f5f2eb;
-  --nyaki-stroke: rgba(29, 29, 27, 0.08);
-  --nyaki-subtle: rgba(29, 29, 27, 0.04);
+  --nyaki-cream: #f8f4ee;
+  --nyaki-ink: #252525;
+  --nyaki-umber: #443a35;
+  --nyaki-muted: #e4ddcc;
+  --nyaki-taupe: #c5b49d;
+  --nyaki-card: #f3eee6;
+  --nyaki-stroke: rgba(197, 180, 157, 0.55);
+  --nyaki-subtle: #e4ddcc;
 }
 
 @theme inline {
   --color-cream: var(--nyaki-cream);
   --color-ink: var(--nyaki-ink);
+  --color-umber: var(--nyaki-umber);
   --color-muted: var(--nyaki-muted);
+  --color-taupe: var(--nyaki-taupe);
   --color-card: var(--nyaki-card);
   --color-subtle: var(--nyaki-subtle);
   --font-sans: var(--font-inter);
@@ -30,7 +35,7 @@ body {
 }
 
 ::selection {
-  background: rgba(29, 29, 27, 0.12);
+  background: rgba(197, 180, 157, 0.45);
 }
 
 @keyframes plan-shimmer {

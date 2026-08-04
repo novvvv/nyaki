@@ -20,13 +20,13 @@ function LandingScreen({
       <main>
         <section className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-6 py-12">
           <div className="flex w-full max-w-[340px] flex-col items-center text-center">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink/35">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-umber/45">
               Vocabulary, calmly
             </p>
             <h1 className="mt-2.5 text-[2.5rem] font-semibold tracking-[-0.02em] text-ink sm:text-5xl">
               Nyaki
             </h1>
-            <p className="mt-3 text-[15px] font-medium leading-relaxed text-ink/60">
+            <p className="mt-3 text-[15px] font-medium leading-relaxed text-umber/70">
               궁금한 거 있으면 언제든지 물어보라냥
             </p>
 

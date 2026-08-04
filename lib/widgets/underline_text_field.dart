@@ -15,7 +15,11 @@ class UnderlineTextField extends StatelessWidget {
   final int maxLines;
 
   static const _underline = UnderlineInputBorder(
-    borderSide: BorderSide(color: NyakiColors.muted),
+    borderSide: BorderSide(color: NyakiColors.taupe),
+  );
+
+  static const _focusedUnderline = UnderlineInputBorder(
+    borderSide: BorderSide(color: NyakiColors.ink, width: 1.2),
   );
 
   @override
@@ -52,7 +56,7 @@ class UnderlineTextField extends StatelessWidget {
             hintStyle: hintStyle,
             border: _underline,
             enabledBorder: _underline,
-            focusedBorder: _underline,
+            focusedBorder: _focusedUnderline,
             contentPadding: const EdgeInsets.only(bottom: 12),
             isDense: true,
           ),

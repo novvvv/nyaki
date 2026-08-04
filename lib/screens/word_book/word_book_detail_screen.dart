@@ -82,7 +82,7 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
             }
 
             final words = _applyFilter(wordBook.activeWords);
-            final dividerColor = NyakiColors.ink.withValues(alpha: 0.06);
+            final dividerColor = NyakiColors.softDune;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

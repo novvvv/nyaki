@@ -54,8 +54,13 @@ class WordTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: NyakiColors.ink.withValues(alpha: 0.04),
+                color: isMemorized
+                    ? NyakiColors.softDune
+                    : NyakiColors.cream,
                 borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: NyakiColors.taupe.withValues(alpha: 0.7),
+                ),
               ),
               child: Text(
                 isMemorized ? '암기' : '미암기',
@@ -63,7 +68,9 @@ class WordTile extends StatelessWidget {
                   fontFamily: 'Inter',
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: NyakiColors.ink.withValues(alpha: 0.5),
+                  color: isMemorized
+                      ? NyakiColors.umber
+                      : NyakiColors.ink.withValues(alpha: 0.45),
                 ),
               ),
             ),

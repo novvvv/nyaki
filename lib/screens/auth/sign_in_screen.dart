@@ -178,7 +178,7 @@ class _SignInButton extends StatelessWidget {
         color: filled ? NyakiColors.ink : Colors.transparent,
         shape: RoundedRectangleBorder(
           side: BorderSide(
-            color: NyakiColors.ink.withValues(alpha: filled ? 1 : 0.08),
+            color: filled ? NyakiColors.ink : NyakiColors.taupe,
           ),
           borderRadius: BorderRadius.circular(8),
         ),

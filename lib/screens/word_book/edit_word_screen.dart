@@ -305,7 +305,7 @@ class _BoxTextField extends StatelessWidget {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
       borderSide: BorderSide(
-        color: NyakiColors.ink.withValues(alpha: 0.18),
+        color: NyakiColors.taupe,
         width: 1.2,
       ),
     );

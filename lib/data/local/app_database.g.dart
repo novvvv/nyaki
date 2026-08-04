@@ -433,6 +433,52 @@ class $WordEntriesTable extends WordEntries
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('[]'));
+  static const VerificationMeta _srsEaseFactorMeta =
+      const VerificationMeta('srsEaseFactor');
+  @override
+  late final GeneratedColumn<double> srsEaseFactor = GeneratedColumn<double>(
+      'srs_ease_factor', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(2.5));
+  static const VerificationMeta _srsIntervalDaysMeta =
+      const VerificationMeta('srsIntervalDays');
+  @override
+  late final GeneratedColumn<int> srsIntervalDays = GeneratedColumn<int>(
+      'srs_interval_days', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _srsRepetitionsMeta =
+      const VerificationMeta('srsRepetitions');
+  @override
+  late final GeneratedColumn<int> srsRepetitions = GeneratedColumn<int>(
+      'srs_repetitions', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _srsLapsesMeta =
+      const VerificationMeta('srsLapses');
+  @override
+  late final GeneratedColumn<int> srsLapses = GeneratedColumn<int>(
+      'srs_lapses', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _srsDueAtMeta =
+      const VerificationMeta('srsDueAt');
+  @override
+  late final GeneratedColumn<DateTime> srsDueAt = GeneratedColumn<DateTime>(
+      'srs_due_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _srsLastReviewedAtMeta =
+      const VerificationMeta('srsLastReviewedAt');
+  @override
+  late final GeneratedColumn<DateTime> srsLastReviewedAt =
+      GeneratedColumn<DateTime>('srs_last_reviewed_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -468,6 +514,12 @@ class $WordEntriesTable extends WordEntries
         memorizationStatus,
         isBookmarked,
         tagsJson,
+        srsEaseFactor,
+        srsIntervalDays,
+        srsRepetitions,
+        srsLapses,
+        srsDueAt,
+        srsLastReviewedAt,
         createdAt,
         updatedAt,
         isDeleted
@@ -545,6 +597,38 @@ class $WordEntriesTable extends WordEntries
       context.handle(_tagsJsonMeta,
           tagsJson.isAcceptableOrUnknown(data['tags_json']!, _tagsJsonMeta));
     }
+    if (data.containsKey('srs_ease_factor')) {
+      context.handle(
+          _srsEaseFactorMeta,
+          srsEaseFactor.isAcceptableOrUnknown(
+              data['srs_ease_factor']!, _srsEaseFactorMeta));
+    }
+    if (data.containsKey('srs_interval_days')) {
+      context.handle(
+          _srsIntervalDaysMeta,
+          srsIntervalDays.isAcceptableOrUnknown(
+              data['srs_interval_days']!, _srsIntervalDaysMeta));
+    }
+    if (data.containsKey('srs_repetitions')) {
+      context.handle(
+          _srsRepetitionsMeta,
+          srsRepetitions.isAcceptableOrUnknown(
+              data['srs_repetitions']!, _srsRepetitionsMeta));
+    }
+    if (data.containsKey('srs_lapses')) {
+      context.handle(_srsLapsesMeta,
+          srsLapses.isAcceptableOrUnknown(data['srs_lapses']!, _srsLapsesMeta));
+    }
+    if (data.containsKey('srs_due_at')) {
+      context.handle(_srsDueAtMeta,
+          srsDueAt.isAcceptableOrUnknown(data['srs_due_at']!, _srsDueAtMeta));
+    }
+    if (data.containsKey('srs_last_reviewed_at')) {
+      context.handle(
+          _srsLastReviewedAtMeta,
+          srsLastReviewedAt.isAcceptableOrUnknown(
+              data['srs_last_reviewed_at']!, _srsLastReviewedAtMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -592,6 +676,19 @@ class $WordEntriesTable extends WordEntries
           .read(DriftSqlType.bool, data['${effectivePrefix}is_bookmarked'])!,
       tagsJson: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}tags_json'])!,
+      srsEaseFactor: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}srs_ease_factor'])!,
+      srsIntervalDays: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_interval_days'])!,
+      srsRepetitions: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_repetitions'])!,
+      srsLapses: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_lapses'])!,
+      srsDueAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}srs_due_at'])!,
+      srsLastReviewedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}srs_last_reviewed_at']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -619,6 +716,12 @@ class WordRow extends DataClass implements Insertable<WordRow> {
   final String memorizationStatus;
   final bool isBookmarked;
   final String tagsJson;
+  final double srsEaseFactor;
+  final int srsIntervalDays;
+  final int srsRepetitions;
+  final int srsLapses;
+  final DateTime srsDueAt;
+  final DateTime? srsLastReviewedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -634,6 +737,12 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       required this.memorizationStatus,
       required this.isBookmarked,
       required this.tagsJson,
+      required this.srsEaseFactor,
+      required this.srsIntervalDays,
+      required this.srsRepetitions,
+      required this.srsLapses,
+      required this.srsDueAt,
+      this.srsLastReviewedAt,
       required this.createdAt,
       required this.updatedAt,
       required this.isDeleted});
@@ -659,6 +768,14 @@ class WordRow extends DataClass implements Insertable<WordRow> {
     map['memorization_status'] = Variable<String>(memorizationStatus);
     map['is_bookmarked'] = Variable<bool>(isBookmarked);
     map['tags_json'] = Variable<String>(tagsJson);
+    map['srs_ease_factor'] = Variable<double>(srsEaseFactor);
+    map['srs_interval_days'] = Variable<int>(srsIntervalDays);
+    map['srs_repetitions'] = Variable<int>(srsRepetitions);
+    map['srs_lapses'] = Variable<int>(srsLapses);
+    map['srs_due_at'] = Variable<DateTime>(srsDueAt);
+    if (!nullToAbsent || srsLastReviewedAt != null) {
+      map['srs_last_reviewed_at'] = Variable<DateTime>(srsLastReviewedAt);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['is_deleted'] = Variable<bool>(isDeleted);
@@ -686,6 +803,14 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       memorizationStatus: Value(memorizationStatus),
       isBookmarked: Value(isBookmarked),
       tagsJson: Value(tagsJson),
+      srsEaseFactor: Value(srsEaseFactor),
+      srsIntervalDays: Value(srsIntervalDays),
+      srsRepetitions: Value(srsRepetitions),
+      srsLapses: Value(srsLapses),
+      srsDueAt: Value(srsDueAt),
+      srsLastReviewedAt: srsLastReviewedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(srsLastReviewedAt),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isDeleted: Value(isDeleted),
@@ -708,6 +833,13 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           serializer.fromJson<String>(json['memorizationStatus']),
       isBookmarked: serializer.fromJson<bool>(json['isBookmarked']),
       tagsJson: serializer.fromJson<String>(json['tagsJson']),
+      srsEaseFactor: serializer.fromJson<double>(json['srsEaseFactor']),
+      srsIntervalDays: serializer.fromJson<int>(json['srsIntervalDays']),
+      srsRepetitions: serializer.fromJson<int>(json['srsRepetitions']),
+      srsLapses: serializer.fromJson<int>(json['srsLapses']),
+      srsDueAt: serializer.fromJson<DateTime>(json['srsDueAt']),
+      srsLastReviewedAt:
+          serializer.fromJson<DateTime?>(json['srsLastReviewedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
@@ -728,6 +860,12 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       'memorizationStatus': serializer.toJson<String>(memorizationStatus),
       'isBookmarked': serializer.toJson<bool>(isBookmarked),
       'tagsJson': serializer.toJson<String>(tagsJson),
+      'srsEaseFactor': serializer.toJson<double>(srsEaseFactor),
+      'srsIntervalDays': serializer.toJson<int>(srsIntervalDays),
+      'srsRepetitions': serializer.toJson<int>(srsRepetitions),
+      'srsLapses': serializer.toJson<int>(srsLapses),
+      'srsDueAt': serializer.toJson<DateTime>(srsDueAt),
+      'srsLastReviewedAt': serializer.toJson<DateTime?>(srsLastReviewedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
@@ -746,6 +884,12 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           String? memorizationStatus,
           bool? isBookmarked,
           String? tagsJson,
+          double? srsEaseFactor,
+          int? srsIntervalDays,
+          int? srsRepetitions,
+          int? srsLapses,
+          DateTime? srsDueAt,
+          Value<DateTime?> srsLastReviewedAt = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
           bool? isDeleted}) =>
@@ -762,6 +906,14 @@ class WordRow extends DataClass implements Insertable<WordRow> {
         memorizationStatus: memorizationStatus ?? this.memorizationStatus,
         isBookmarked: isBookmarked ?? this.isBookmarked,
         tagsJson: tagsJson ?? this.tagsJson,
+        srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
+        srsIntervalDays: srsIntervalDays ?? this.srsIntervalDays,
+        srsRepetitions: srsRepetitions ?? this.srsRepetitions,
+        srsLapses: srsLapses ?? this.srsLapses,
+        srsDueAt: srsDueAt ?? this.srsDueAt,
+        srsLastReviewedAt: srsLastReviewedAt.present
+            ? srsLastReviewedAt.value
+            : this.srsLastReviewedAt,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted ?? this.isDeleted,
@@ -787,6 +939,20 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           ? data.isBookmarked.value
           : this.isBookmarked,
       tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
+      srsEaseFactor: data.srsEaseFactor.present
+          ? data.srsEaseFactor.value
+          : this.srsEaseFactor,
+      srsIntervalDays: data.srsIntervalDays.present
+          ? data.srsIntervalDays.value
+          : this.srsIntervalDays,
+      srsRepetitions: data.srsRepetitions.present
+          ? data.srsRepetitions.value
+          : this.srsRepetitions,
+      srsLapses: data.srsLapses.present ? data.srsLapses.value : this.srsLapses,
+      srsDueAt: data.srsDueAt.present ? data.srsDueAt.value : this.srsDueAt,
+      srsLastReviewedAt: data.srsLastReviewedAt.present
+          ? data.srsLastReviewedAt.value
+          : this.srsLastReviewedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
@@ -807,6 +973,12 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           ..write('memorizationStatus: $memorizationStatus, ')
           ..write('isBookmarked: $isBookmarked, ')
           ..write('tagsJson: $tagsJson, ')
+          ..write('srsEaseFactor: $srsEaseFactor, ')
+          ..write('srsIntervalDays: $srsIntervalDays, ')
+          ..write('srsRepetitions: $srsRepetitions, ')
+          ..write('srsLapses: $srsLapses, ')
+          ..write('srsDueAt: $srsDueAt, ')
+          ..write('srsLastReviewedAt: $srsLastReviewedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted')
@@ -827,6 +999,12 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       memorizationStatus,
       isBookmarked,
       tagsJson,
+      srsEaseFactor,
+      srsIntervalDays,
+      srsRepetitions,
+      srsLapses,
+      srsDueAt,
+      srsLastReviewedAt,
       createdAt,
       updatedAt,
       isDeleted);
@@ -845,6 +1023,12 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           other.memorizationStatus == this.memorizationStatus &&
           other.isBookmarked == this.isBookmarked &&
           other.tagsJson == this.tagsJson &&
+          other.srsEaseFactor == this.srsEaseFactor &&
+          other.srsIntervalDays == this.srsIntervalDays &&
+          other.srsRepetitions == this.srsRepetitions &&
+          other.srsLapses == this.srsLapses &&
+          other.srsDueAt == this.srsDueAt &&
+          other.srsLastReviewedAt == this.srsLastReviewedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isDeleted == this.isDeleted);
@@ -862,6 +1046,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
   final Value<String> memorizationStatus;
   final Value<bool> isBookmarked;
   final Value<String> tagsJson;
+  final Value<double> srsEaseFactor;
+  final Value<int> srsIntervalDays;
+  final Value<int> srsRepetitions;
+  final Value<int> srsLapses;
+  final Value<DateTime> srsDueAt;
+  final Value<DateTime?> srsLastReviewedAt;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isDeleted;
@@ -878,6 +1068,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     this.memorizationStatus = const Value.absent(),
     this.isBookmarked = const Value.absent(),
     this.tagsJson = const Value.absent(),
+    this.srsEaseFactor = const Value.absent(),
+    this.srsIntervalDays = const Value.absent(),
+    this.srsRepetitions = const Value.absent(),
+    this.srsLapses = const Value.absent(),
+    this.srsDueAt = const Value.absent(),
+    this.srsLastReviewedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -895,6 +1091,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     required String memorizationStatus,
     this.isBookmarked = const Value.absent(),
     this.tagsJson = const Value.absent(),
+    this.srsEaseFactor = const Value.absent(),
+    this.srsIntervalDays = const Value.absent(),
+    this.srsRepetitions = const Value.absent(),
+    this.srsLapses = const Value.absent(),
+    this.srsDueAt = const Value.absent(),
+    this.srsLastReviewedAt = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.isDeleted = const Value.absent(),
@@ -918,6 +1120,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     Expression<String>? memorizationStatus,
     Expression<bool>? isBookmarked,
     Expression<String>? tagsJson,
+    Expression<double>? srsEaseFactor,
+    Expression<int>? srsIntervalDays,
+    Expression<int>? srsRepetitions,
+    Expression<int>? srsLapses,
+    Expression<DateTime>? srsDueAt,
+    Expression<DateTime>? srsLastReviewedAt,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isDeleted,
@@ -935,6 +1143,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       if (memorizationStatus != null) 'memorization_status': memorizationStatus,
       if (isBookmarked != null) 'is_bookmarked': isBookmarked,
       if (tagsJson != null) 'tags_json': tagsJson,
+      if (srsEaseFactor != null) 'srs_ease_factor': srsEaseFactor,
+      if (srsIntervalDays != null) 'srs_interval_days': srsIntervalDays,
+      if (srsRepetitions != null) 'srs_repetitions': srsRepetitions,
+      if (srsLapses != null) 'srs_lapses': srsLapses,
+      if (srsDueAt != null) 'srs_due_at': srsDueAt,
+      if (srsLastReviewedAt != null) 'srs_last_reviewed_at': srsLastReviewedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isDeleted != null) 'is_deleted': isDeleted,
@@ -954,6 +1168,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       Value<String>? memorizationStatus,
       Value<bool>? isBookmarked,
       Value<String>? tagsJson,
+      Value<double>? srsEaseFactor,
+      Value<int>? srsIntervalDays,
+      Value<int>? srsRepetitions,
+      Value<int>? srsLapses,
+      Value<DateTime>? srsDueAt,
+      Value<DateTime?>? srsLastReviewedAt,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<bool>? isDeleted,
@@ -970,6 +1190,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       memorizationStatus: memorizationStatus ?? this.memorizationStatus,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       tagsJson: tagsJson ?? this.tagsJson,
+      srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
+      srsIntervalDays: srsIntervalDays ?? this.srsIntervalDays,
+      srsRepetitions: srsRepetitions ?? this.srsRepetitions,
+      srsLapses: srsLapses ?? this.srsLapses,
+      srsDueAt: srsDueAt ?? this.srsDueAt,
+      srsLastReviewedAt: srsLastReviewedAt ?? this.srsLastReviewedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -1013,6 +1239,24 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     if (tagsJson.present) {
       map['tags_json'] = Variable<String>(tagsJson.value);
     }
+    if (srsEaseFactor.present) {
+      map['srs_ease_factor'] = Variable<double>(srsEaseFactor.value);
+    }
+    if (srsIntervalDays.present) {
+      map['srs_interval_days'] = Variable<int>(srsIntervalDays.value);
+    }
+    if (srsRepetitions.present) {
+      map['srs_repetitions'] = Variable<int>(srsRepetitions.value);
+    }
+    if (srsLapses.present) {
+      map['srs_lapses'] = Variable<int>(srsLapses.value);
+    }
+    if (srsDueAt.present) {
+      map['srs_due_at'] = Variable<DateTime>(srsDueAt.value);
+    }
+    if (srsLastReviewedAt.present) {
+      map['srs_last_reviewed_at'] = Variable<DateTime>(srsLastReviewedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1042,6 +1286,12 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
           ..write('memorizationStatus: $memorizationStatus, ')
           ..write('isBookmarked: $isBookmarked, ')
           ..write('tagsJson: $tagsJson, ')
+          ..write('srsEaseFactor: $srsEaseFactor, ')
+          ..write('srsIntervalDays: $srsIntervalDays, ')
+          ..write('srsRepetitions: $srsRepetitions, ')
+          ..write('srsLapses: $srsLapses, ')
+          ..write('srsDueAt: $srsDueAt, ')
+          ..write('srsLastReviewedAt: $srsLastReviewedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -1891,6 +2141,12 @@ typedef $$WordEntriesTableCreateCompanionBuilder = WordEntriesCompanion
   required String memorizationStatus,
   Value<bool> isBookmarked,
   Value<String> tagsJson,
+  Value<double> srsEaseFactor,
+  Value<int> srsIntervalDays,
+  Value<int> srsRepetitions,
+  Value<int> srsLapses,
+  Value<DateTime> srsDueAt,
+  Value<DateTime?> srsLastReviewedAt,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<bool> isDeleted,
@@ -1909,6 +2165,12 @@ typedef $$WordEntriesTableUpdateCompanionBuilder = WordEntriesCompanion
   Value<String> memorizationStatus,
   Value<bool> isBookmarked,
   Value<String> tagsJson,
+  Value<double> srsEaseFactor,
+  Value<int> srsIntervalDays,
+  Value<int> srsRepetitions,
+  Value<int> srsLapses,
+  Value<DateTime> srsDueAt,
+  Value<DateTime?> srsLastReviewedAt,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
@@ -1974,6 +2236,27 @@ class $$WordEntriesTableFilterComposer
 
   ColumnFilters<String> get tagsJson => $composableBuilder(
       column: $table.tagsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get srsEaseFactor => $composableBuilder(
+      column: $table.srsEaseFactor, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsIntervalDays => $composableBuilder(
+      column: $table.srsIntervalDays,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsRepetitions => $composableBuilder(
+      column: $table.srsRepetitions,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsLapses => $composableBuilder(
+      column: $table.srsLapses, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get srsDueAt => $composableBuilder(
+      column: $table.srsDueAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get srsLastReviewedAt => $composableBuilder(
+      column: $table.srsLastReviewedAt,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -2047,6 +2330,28 @@ class $$WordEntriesTableOrderingComposer
   ColumnOrderings<String> get tagsJson => $composableBuilder(
       column: $table.tagsJson, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get srsEaseFactor => $composableBuilder(
+      column: $table.srsEaseFactor,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get srsIntervalDays => $composableBuilder(
+      column: $table.srsIntervalDays,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get srsRepetitions => $composableBuilder(
+      column: $table.srsRepetitions,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get srsLapses => $composableBuilder(
+      column: $table.srsLapses, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get srsDueAt => $composableBuilder(
+      column: $table.srsDueAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get srsLastReviewedAt => $composableBuilder(
+      column: $table.srsLastReviewedAt,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -2116,6 +2421,24 @@ class $$WordEntriesTableAnnotationComposer
   GeneratedColumn<String> get tagsJson =>
       $composableBuilder(column: $table.tagsJson, builder: (column) => column);
 
+  GeneratedColumn<double> get srsEaseFactor => $composableBuilder(
+      column: $table.srsEaseFactor, builder: (column) => column);
+
+  GeneratedColumn<int> get srsIntervalDays => $composableBuilder(
+      column: $table.srsIntervalDays, builder: (column) => column);
+
+  GeneratedColumn<int> get srsRepetitions => $composableBuilder(
+      column: $table.srsRepetitions, builder: (column) => column);
+
+  GeneratedColumn<int> get srsLapses =>
+      $composableBuilder(column: $table.srsLapses, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get srsDueAt =>
+      $composableBuilder(column: $table.srsDueAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get srsLastReviewedAt => $composableBuilder(
+      column: $table.srsLastReviewedAt, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -2180,6 +2503,12 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             Value<String> memorizationStatus = const Value.absent(),
             Value<bool> isBookmarked = const Value.absent(),
             Value<String> tagsJson = const Value.absent(),
+            Value<double> srsEaseFactor = const Value.absent(),
+            Value<int> srsIntervalDays = const Value.absent(),
+            Value<int> srsRepetitions = const Value.absent(),
+            Value<int> srsLapses = const Value.absent(),
+            Value<DateTime> srsDueAt = const Value.absent(),
+            Value<DateTime?> srsLastReviewedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -2197,6 +2526,12 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             memorizationStatus: memorizationStatus,
             isBookmarked: isBookmarked,
             tagsJson: tagsJson,
+            srsEaseFactor: srsEaseFactor,
+            srsIntervalDays: srsIntervalDays,
+            srsRepetitions: srsRepetitions,
+            srsLapses: srsLapses,
+            srsDueAt: srsDueAt,
+            srsLastReviewedAt: srsLastReviewedAt,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -2214,6 +2549,12 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             required String memorizationStatus,
             Value<bool> isBookmarked = const Value.absent(),
             Value<String> tagsJson = const Value.absent(),
+            Value<double> srsEaseFactor = const Value.absent(),
+            Value<int> srsIntervalDays = const Value.absent(),
+            Value<int> srsRepetitions = const Value.absent(),
+            Value<int> srsLapses = const Value.absent(),
+            Value<DateTime> srsDueAt = const Value.absent(),
+            Value<DateTime?> srsLastReviewedAt = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<bool> isDeleted = const Value.absent(),
@@ -2231,6 +2572,12 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             memorizationStatus: memorizationStatus,
             isBookmarked: isBookmarked,
             tagsJson: tagsJson,
+            srsEaseFactor: srsEaseFactor,
+            srsIntervalDays: srsIntervalDays,
+            srsRepetitions: srsRepetitions,
+            srsLapses: srsLapses,
+            srsDueAt: srsDueAt,
+            srsLastReviewedAt: srsLastReviewedAt,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,

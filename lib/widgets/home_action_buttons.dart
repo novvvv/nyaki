@@ -14,8 +14,8 @@ class HomeActionButtons extends StatelessWidget {
           Expanded(
             child: _ActionCard(
               label: '단어 복습',
-              background: NyakiColors.muted,
-              foreground: NyakiColors.ink,
+              background: NyakiColors.softDune,
+              foreground: NyakiColors.umber,
               onTap: () {},
             ),
           ),

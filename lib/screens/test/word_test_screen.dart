@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../models/word_book.dart';
@@ -18,9 +20,38 @@ class WordTestScreen extends StatefulWidget {
 }
 
 class _WordTestScreenState extends State<WordTestScreen> {
+  static const _selectedIdsKey = 'test_selected_word_book_ids';
+
   // _selectedWordBooksIds -> 선택된 단어의 객체 전체가 아닌 ID만 저장
   // ex) _selectedWordBookIds = {'book-1', 'book-3', ...}
   final Set<String> _selectedWordBookIds = <String>{};
+  bool _selectionLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSelection();
+  }
+
+  Future<void> _restoreSelection() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_selectedIdsKey) ?? const <String>[];
+    if (!mounted) return;
+    setState(() {
+      _selectedWordBookIds
+        ..clear()
+        ..addAll(saved);
+      _selectionLoaded = true;
+    });
+  }
+
+  Future<void> _persistSelection() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _selectedIdsKey,
+      _selectedWordBookIds.toList(growable: false),
+    );
+  }
 
   // _reslovedSelected -> ID 목록을 실제 WordBook 객체 목록으로 변환
   // ex) books = [ WordBook(id: 'book-1', title: '기초 영어')]
@@ -30,14 +61,27 @@ class _WordTestScreenState extends State<WordTestScreen> {
         .toList(growable: false);
   }
 
+  void _pruneMissingBooks(List<WordBook> books) {
+    if (!_selectionLoaded || _selectedWordBookIds.isEmpty) return;
+    final existing = books.map((book) => book.id).toSet();
+    final removed = _selectedWordBookIds.difference(existing);
+    if (removed.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _selectedWordBookIds.removeAll(removed));
+      _persistSelection();
+    });
+  }
+
   // _toggleSelection -> 단어장을 누를 때 선택 상태를 반전한다.
   void _toggleSelection(String wordBookId) {
-    // 단어장의 상태를 체크하여 selectedWordBooksIds에 단어장 정보를 추가/삭제
     setState(() {
       if (!_selectedWordBookIds.add(wordBookId)) {
         _selectedWordBookIds.remove(wordBookId);
       }
     });
+    _persistSelection();
   }
 
   Future<void> _startTest(List<WordBook> wordBooks) async {
@@ -67,104 +111,84 @@ class _WordTestScreenState extends State<WordTestScreen> {
       listenable: NyakiScope.of(context),
       builder: (context, _) {
         final books = NyakiScope.of(context).wordBooks;
+        _pruneMissingBooks(books);
         final selected = _resolveSelected(books);
-        final totalWords =
-            selected.fold<int>(0, (sum, book) => sum + book.activeWords.length);
-        final canStart = totalWords > 0;
+        // 시작 버튼의 숫자는 "가진 단어 수"가 아니라 "오늘 복습할 단어 수"다.
+        final dueWords = selected.fold<int>(0, (sum, book) => sum + book.dueCount);
+        final canStart = dueWords > 0;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(28, 20, 28, 4),
-              child: Text(
-                '테스트',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.3,
-                  color: NyakiColors.ink,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
-              child: Text(
-                '테스트할 단어장을 선택합니다.',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: NyakiColors.ink.withValues(alpha: 0.45),
-                ),
-              ),
-            ),
-            Expanded(
-              child: books.isEmpty
-                  ? Center(
-                      child: Text(
-                        '테스트할 단어장이 없어요.',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: NyakiColors.ink.withValues(alpha: 0.42),
+        return ColoredBox(
+          color: NyakiColors.cream,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: books.isEmpty
+                    ? Center(
+                        child: Text(
+                          '단어장이 없습니다.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: NyakiColors.ink.withValues(alpha: 0.4),
+                          ),
                         ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(28, 20, 28, 16),
+                        itemCount: books.length,
+                        separatorBuilder: (_, __) => const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: NyakiColors.softDune,
+                        ),
+                        itemBuilder: (context, index) {
+                          final book = books[index];
+                          return _TestBookTile(
+                            title: book.title,
+                            meta: '${book.metaLabel} · 오늘 ${book.dueCount}개',
+                            selected: _selectedWordBookIds.contains(book.id),
+                            onTap: () => _toggleSelection(book.id),
+                          );
+                        },
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
-                      itemCount: books.length,
-                      separatorBuilder: (_, __) => Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: NyakiColors.ink.withValues(alpha: 0.06),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 8, 28, 20),
+                child: SizedBox(
+                  height: 44,
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: canStart ? () => _startTest(selected) : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: NyakiColors.ink,
+                      foregroundColor: NyakiColors.cream,
+                      disabledBackgroundColor:
+                          NyakiColors.ink.withValues(alpha: 0.12),
+                      disabledForegroundColor:
+                          NyakiColors.ink.withValues(alpha: 0.35),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      itemBuilder: (context, index) {
-                        final book = books[index];
-                        return _TestBookTile(
-                          title: book.title,
-                          meta: book.metaLabel,
-                          selected: _selectedWordBookIds.contains(book.id),
-                          onTap: () => _toggleSelection(book.id),
-                        );
-                      },
                     ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
-              child: SizedBox(
-                height: 52,
-                child: FilledButton(
-                  onPressed: canStart ? () => _startTest(selected) : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: NyakiColors.ink,
-                    foregroundColor: NyakiColors.cream,
-                    disabledBackgroundColor:
-                        NyakiColors.ink.withValues(alpha: 0.15),
-                    disabledForegroundColor:
-                        NyakiColors.cream.withValues(alpha: 0.8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    selected.isEmpty
-                        ? '단어장을 선택해 주세요'
-                        : totalWords == 0
-                            ? '단어가 없어요'
-                            : selected.length == 1
-                                ? '테스트 시작 · $totalWords단어'
-                                : '테스트 시작 · ${selected.length}권 $totalWords단어',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                    child: Text(
+                      selected.isEmpty
+                          ? '단어장을 선택하세요'
+                          : canStart
+                              ? '시작 · $dueWords'
+                              : '오늘 복습할 단어가 없어요',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -182,12 +206,12 @@ class _TestOptionsSheet extends StatefulWidget {
 }
 
 class _TestOptionsSheetState extends State<_TestOptionsSheet> {
-  WordTestFilter _filter = WordTestFilter.unmemorizedOnly;
   bool _hideMeaning = true;
   bool _shuffle = false;
 
+  // 대상 단어는 SM-2가 정한다 (srs_due_at이 지난 단어). 사용자가 고르는 게 아니다.
   int get _targetCount =>
-      WordTestOptions(filter: _filter).selectWords(widget.wordBooks).length;
+      const WordTestOptions().selectWords(widget.wordBooks).length;
 
   @override
   Widget build(BuildContext context) {
@@ -216,34 +240,20 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
                 fontFamily: 'Inter',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: NyakiColors.ink.withValues(alpha: 0.45),
+                color: NyakiColors.umber.withValues(alpha: 0.65),
               ),
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                _FilterChip(
-                  label: '전체',
-                  selected: _filter == WordTestFilter.all,
-                  onTap: () => setState(() => _filter = WordTestFilter.all),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: '모름만',
-                  selected: _filter == WordTestFilter.unmemorizedOnly,
-                  onTap: () => setState(
-                    () => _filter = WordTestFilter.unmemorizedOnly,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: '외움만',
-                  selected: _filter == WordTestFilter.memorizedOnly,
-                  onTap: () => setState(
-                    () => _filter = WordTestFilter.memorizedOnly,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 6),
+            Text(
+              count == 0
+                  ? '오늘 복습할 단어가 없어요'
+                  : '복습 주기가 돌아온 $count단어',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: NyakiColors.ink.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 22),
             _OptionToggleRow(
@@ -267,7 +277,6 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
                     ? null
                     : () => Navigator.of(context).pop(
                           WordTestOptions(
-                            filter: _filter,
                             hideMeaning: _hideMeaning,
                             shuffle: _shuffle,
                           ),
@@ -275,10 +284,9 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
                 style: FilledButton.styleFrom(
                   backgroundColor: NyakiColors.ink,
                   foregroundColor: NyakiColors.cream,
-                  disabledBackgroundColor:
-                      NyakiColors.ink.withValues(alpha: 0.15),
+                  disabledBackgroundColor: NyakiColors.softDune,
                   disabledForegroundColor:
-                      NyakiColors.cream.withValues(alpha: 0.8),
+                      NyakiColors.umber.withValues(alpha: 0.45),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -294,49 +302,6 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? NyakiColors.ink : Colors.transparent,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: NyakiColors.ink.withValues(alpha: selected ? 1 : 0.2),
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: selected
-                  ? NyakiColors.cream
-                  : NyakiColors.ink.withValues(alpha: 0.5),
-            ),
-          ),
         ),
       ),
     );
@@ -380,7 +345,7 @@ class _OptionToggleRow extends StatelessWidget {
                   fontFamily: 'Inter',
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
-                  color: NyakiColors.ink.withValues(alpha: 0.42),
+                  color: NyakiColors.umber.withValues(alpha: 0.55),
                 ),
               ),
             ],
@@ -390,9 +355,9 @@ class _OptionToggleRow extends StatelessWidget {
           value: value,
           onChanged: onChanged,
           activeColor: NyakiColors.cream,
-          activeTrackColor: NyakiColors.ink,
-          inactiveThumbColor: NyakiColors.ink.withValues(alpha: 0.4),
-          inactiveTrackColor: NyakiColors.ink.withValues(alpha: 0.08),
+          activeTrackColor: NyakiColors.umber,
+          inactiveThumbColor: NyakiColors.taupe,
+          inactiveTrackColor: NyakiColors.softDune,
         ),
       ],
     );
@@ -426,10 +391,12 @@ class _TestBookTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                       color: NyakiColors.ink,
                     ),
                   ),
@@ -439,32 +406,21 @@ class _TestBookTile extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
-                      color: NyakiColors.ink.withValues(alpha: 0.4),
+                      color: NyakiColors.ink.withValues(alpha: 0.35),
                     ),
                   ),
                 ],
               ),
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 140),
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected ? NyakiColors.ink : Colors.transparent,
-                border: Border.all(
-                  color: NyakiColors.ink.withValues(
-                    alpha: selected ? 1 : 0.18,
-                  ),
-                ),
-              ),
-              child: selected
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 14,
-                      color: NyakiColors.cream,
-                    )
-                  : null,
+            const SizedBox(width: 12),
+            Icon(
+              selected
+                  ? Icons.check_circle_rounded
+                  : Icons.circle_outlined,
+              size: 20,
+              color: selected
+                  ? NyakiColors.ink
+                  : NyakiColors.taupe,
             ),
           ],
         ),

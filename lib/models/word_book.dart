@@ -26,6 +26,12 @@ class WordBook {
   int get memorizedCount =>
       activeWords.where((word) => word.isMemorized).length;
 
+  /// 오늘 복습해야 하는 단어들 (srsDueAt이 지난 단어).
+  List<Word> get dueWords =>
+      activeWords.where((word) => word.isDue).toList(growable: false);
+
+  int get dueCount => dueWords.length;
+
   int get learningRate =>
       wordCount == 0 ? 0 : (memorizedCount / wordCount * 100).round();
 

@@ -1,14 +1,11 @@
 "use client";
 
-import Link from "next/link";
-
 import { useAuth } from "@/components/auth-provider";
 import { HomeNav } from "@/components/home-nav";
 import { PricingSection } from "@/components/pricing-section";
 
 export default function HomePage() {
-  const { user, signOutUser } = useAuth();
-  const name = user?.displayName?.split(" ")[0] ?? user?.email ?? null;
+  const { signOutUser } = useAuth();
 
   return (
     <div className="min-h-screen">
@@ -23,9 +20,6 @@ export default function HomePage() {
             <h1 className="mt-2.5 text-[2.5rem] font-semibold tracking-[-0.02em] text-ink sm:text-5xl">
               Nyaki
             </h1>
-            {name ? (
-              <p className="mt-3 text-[15px] text-ink/45">{name}</p>
-            ) : null}
 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -35,13 +29,6 @@ export default function HomePage() {
               height={500}
               className="mt-8 block h-auto w-[min(260px,68vw)]"
             />
-
-            <Link
-              href="/word-books"
-              className="mt-8 text-sm text-ink/40 transition hover:text-ink/70"
-            >
-              내 단어장
-            </Link>
           </div>
         </section>
 

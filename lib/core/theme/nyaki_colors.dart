@@ -1,27 +1,39 @@
 import 'package:flutter/material.dart';
 
-/// Pencil `nyangki_vocab.pen` design tokens.
+/// Nyaki design tokens — see [Design.md](../../../Design.md).
 abstract final class NyakiColors {
-  /// #FCF9F2 — warm ivory cream background
-  static const Color cream = Color(0xFFFCF9F2);
+  /// Vanilla #F8F4EE — page / scaffold background
+  static const Color cream = Color(0xFFF8F4EE);
 
-  /// #1D1D1B — primary text / dark surfaces
-  static const Color ink = Color(0xFF1D1D1B);
+  /// Black #252525 — primary text / filled controls
+  static const Color ink = Color(0xFF252525);
 
-  /// #E7E7DD — dividers, muted buttons
-  static const Color muted = Color(0xFFE7E7DD);
+  /// Umber #443A35 — warm dark accent / secondary emphasis
+  static const Color umber = Color(0xFF443A35);
 
-  /// #F5F2EB — cards, quest pills
-  static const Color cardBg = Color(0xFFF5F2EB);
+  /// Soft Dune #E4DDCC — subtle surfaces, soft dividers
+  static const Color softDune = Color(0xFFE4DDCC);
 
-  /// #CBC5BA — check circles, subtle strokes
-  static const Color checkBorder = Color(0xFFCBC5BA);
+  /// Classic Taupe #C5B49D — borders, chips, unselected strokes
+  static const Color taupe = Color(0xFFC5B49D);
 
-  /// #D8D3C8 — progress dots (unselected)
-  static const Color dotBorder = Color(0xFFD8D3C8);
+  /// Alias: muted surfaces (Soft Dune)
+  static const Color muted = softDune;
+
+  /// Alias: card / elevated cream-tint on Soft Dune blend
+  static const Color cardBg = Color(0xFFF3EEE6);
+
+  /// Alias: check / stroke (Classic Taupe)
+  static const Color checkBorder = taupe;
+
+  /// Alias: progress dots
+  static const Color dotBorder = taupe;
 
   static Color inkMuted([double opacity = 0.35]) =>
       ink.withValues(alpha: opacity);
+
+  static Color umberMuted([double opacity = 0.55]) =>
+      umber.withValues(alpha: opacity);
 }
 
 abstract final class NyakiSpacing {

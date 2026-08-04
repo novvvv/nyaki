@@ -23,7 +23,7 @@ class WordBookListScreen extends StatelessWidget {
       listenable: NyakiScope.of(context),
       builder: (context, _) {
         final books = NyakiScope.of(context).wordBooks;
-        final dividerColor = NyakiColors.ink.withValues(alpha: 0.06);
+        const dividerColor = NyakiColors.softDune;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,8 +50,7 @@ class WordBookListScreen extends StatelessWidget {
                       TextButton(
                         onPressed: () => _openAddWordBook(context),
                         style: TextButton.styleFrom(
-                          foregroundColor:
-                              NyakiColors.ink.withValues(alpha: 0.55),
+                          foregroundColor: NyakiColors.umber,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 4,
@@ -76,7 +75,7 @@ class WordBookListScreen extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14,
-                      color: NyakiColors.ink.withValues(alpha: 0.45),
+                      color: NyakiColors.umber.withValues(alpha: 0.7),
                     ),
                   ),
                 ],

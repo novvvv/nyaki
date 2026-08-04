@@ -14,7 +14,7 @@ class QuestScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dividerColor = NyakiColors.ink.withValues(alpha: 0.06);
+    const dividerColor = NyakiColors.softDune;
 
     return Scaffold(
       backgroundColor: NyakiColors.cream,
@@ -105,7 +105,7 @@ class _QuestRow extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: NyakiColors.ink.withValues(alpha: 0.18),
+                color: NyakiColors.taupe,
                 width: 1.2,
               ),
             ),

@@ -184,6 +184,22 @@ class SyncCoordinator {
             memorizationStatus: json['memorization_status'] as String,
             isBookmarked: Value(json['is_bookmarked'] as bool? ?? false),
             tagsJson: Value(_encodeTagsJson(json['tags'])),
+            srsEaseFactor: Value(
+              (json['srs_ease_factor'] as num?)?.toDouble() ?? 2.5,
+            ),
+            srsIntervalDays: Value(json['srs_interval_days'] as int? ?? 0),
+            srsRepetitions: Value(json['srs_repetitions'] as int? ?? 0),
+            srsLapses: Value(json['srs_lapses'] as int? ?? 0),
+            srsDueAt: Value(
+              json['srs_due_at'] != null
+                  ? DateTime.parse(json['srs_due_at'] as String)
+                  : DateTime.parse(json['created_at'] as String),
+            ),
+            srsLastReviewedAt: Value(
+              json['srs_last_reviewed_at'] != null
+                  ? DateTime.parse(json['srs_last_reviewed_at'] as String)
+                  : null,
+            ),
             createdAt: DateTime.parse(json['created_at'] as String),
             updatedAt: remoteUpdatedAt,
             isDeleted: Value(json['is_deleted'] as bool),

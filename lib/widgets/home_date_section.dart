@@ -18,7 +18,7 @@ class HomeDateSection extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: NyakiColors.ink,
             height: 1.2,
-          ).copyWith(color: NyakiColors.ink.withValues(alpha: 0.75)),
+          ).copyWith(color: NyakiColors.umber.withValues(alpha: 0.75)),
         ),
         const SizedBox(height: 10),
         Row(
@@ -75,7 +75,7 @@ class _DateChip extends StatelessWidget {
             fontFamily: 'Inter',
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: NyakiColors.ink.withValues(alpha: 0.35),
+            color: NyakiColors.umber.withValues(alpha: 0.45),
           ),
         ),
       ),

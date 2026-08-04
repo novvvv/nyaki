@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/word.dart';
 import '../../models/word_book.dart';
 import '../local/app_database.dart';
+import '../srs/sm2.dart';
 import '../vocab_constants.dart';
 import 'vocab_repository.dart';
 
@@ -319,6 +320,61 @@ class DriftVocabRepository implements VocabRepository {
     });
   }
 
+
+  // ==================== ✨ gradeWord ✨ ==================== //
+  // Feature.
+  //   - 지금 보고 있는 단어 1개를 SM-2 로직을 통해 채점하여, 저장하는 함수이다.
+  //   - 스와이프/버튼을 누를 때마다 호출된다.
+  //
+  // Parameter
+  //   wordBookId - 단어장 id
+  //   wordId - 단어 id
+  //   grade - 등급 (모름/외움)
+  // =========================================================== //
+  @override
+  Future<Word> gradeWord(
+    String wordBookId,
+    String wordId,
+    ReviewGrade grade,
+  ) async {
+    // DB에서 id + wordBookId가 일치하고 삭제되지 않은 단어를 찾아 Word로 반환한다.
+    // "채점 전" 현재 상태 전체가 필요하다 — SM-2 계산이 이전 ease/interval에 의존한다.
+    final row = await getWord(wordBookId, wordId);
+
+    final state = Sm2State(
+      easeFactor: row.srsEaseFactor,
+      intervalDays: row.srsIntervalDays,
+      repetitions: row.srsRepetitions,
+      lapses: row.srsLapses,
+      dueAt: row.srsDueAt,
+      lastReviewedAt: row.srsLastReviewedAt,
+    );
+
+    final now = DateTime.now();
+    final result = grade == ReviewGrade.again
+        ? gradeAgain(state, now)
+        : gradeGood(state, now);
+
+    await _db.transaction(() async {
+      await (_db.update(_db.wordEntries)..where((w) => w.id.equals(wordId)))
+          .write(
+        WordEntriesCompanion(
+          srsEaseFactor: Value(result.state.easeFactor),
+          srsIntervalDays: Value(result.state.intervalDays),
+          srsRepetitions: Value(result.state.repetitions),
+          srsLapses: Value(result.state.lapses),
+          srsDueAt: Value(result.state.dueAt),
+          srsLastReviewedAt: Value(result.state.lastReviewedAt),
+          memorizationStatus: Value(result.memorizationStatus.name),
+          updatedAt: Value(now),
+        ),
+      );
+      await _enqueueWord(wordId, 'upsert');
+    });
+
+    return getWord(wordBookId, wordId);
+  }
+
   Future<void> _requireWordBookExists(String id) async {
     await ensureInitialized();
     final exists = await (_db.select(_db.wordBooks)
@@ -360,6 +416,12 @@ class DriftVocabRepository implements VocabRepository {
       ),
       isBookmarked: row.isBookmarked,
       tags: _decodeTags(row.tagsJson),
+      srsEaseFactor: row.srsEaseFactor,
+      srsIntervalDays: row.srsIntervalDays,
+      srsRepetitions: row.srsRepetitions,
+      srsLapses: row.srsLapses,
+      srsDueAt: row.srsDueAt,
+      srsLastReviewedAt: row.srsLastReviewedAt,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       isDeleted: row.isDeleted,
@@ -420,6 +482,13 @@ class DriftVocabRepository implements VocabRepository {
               'memorization_status': row.memorizationStatus,
               'is_bookmarked': row.isBookmarked,
               'tags': _decodeTags(row.tagsJson),
+              'srs_ease_factor': row.srsEaseFactor,
+              'srs_interval_days': row.srsIntervalDays,
+              'srs_repetitions': row.srsRepetitions,
+              'srs_lapses': row.srsLapses,
+              'srs_due_at': row.srsDueAt.toUtc().toIso8601String(),
+              'srs_last_reviewed_at':
+                  row.srsLastReviewedAt?.toUtc().toIso8601String(),
               'created_at': row.createdAt.toUtc().toIso8601String(),
               'updated_at': row.updatedAt.toUtc().toIso8601String(),
               'is_deleted': row.isDeleted,

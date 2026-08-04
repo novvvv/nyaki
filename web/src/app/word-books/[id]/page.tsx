@@ -87,18 +87,18 @@ export default function WordBookDetailPage() {
           }
         />
       ) : (
-        <div className="divide-y divide-ink/[0.06] rounded-lg border border-ink/[0.06]">
+        <div className="divide-y divide-taupe/35 rounded-lg border border-taupe/45">
           {words.map((word) => (
             <Link
               key={word.id}
               href={`/word-books/${book.id}/words/${word.id}`}
-              className="flex items-start justify-between gap-4 px-4 py-3.5 transition hover:bg-subtle"
+              className="flex items-start justify-between gap-4 px-4 py-3.5 transition hover:bg-subtle/60"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-ink">{word.term}</p>
-                <p className="mt-0.5 text-sm text-ink/50">{word.meaning}</p>
+                <p className="mt-0.5 text-sm text-umber/65">{word.meaning}</p>
                 {word.pronunciation ? (
-                  <p className="mt-1 text-xs text-ink/35">{word.pronunciation}</p>
+                  <p className="mt-1 text-xs text-umber/45">{word.pronunciation}</p>
                 ) : null}
               </div>
               <Badge>

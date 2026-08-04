@@ -119,3 +119,18 @@ def list_words(session: Session, user_id: str, word_book_id: str) -> list[WordMo
             .order_by(WordModel.created_at)
         )
     )
+
+
+def list_due_words(session: Session, user_id: str, limit: int) -> list[WordModel]:
+    return list(
+        session.scalars(
+            select(WordModel)
+            .where(
+                WordModel.user_id == user_id,
+                WordModel.is_deleted.is_(False),
+                WordModel.srs_due_at <= utc_now(),
+            )
+            .order_by(WordModel.srs_due_at.asc())
+            .limit(limit)
+        )
+    )

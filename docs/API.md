@@ -69,6 +69,12 @@ Authorization: Bearer <Firebase ID token>
   "memorization_status": "unmemorized",
   "is_bookmarked": false,
   "tags": ["N3"],
+  "srs_ease_factor": 2.5,
+  "srs_interval_days": 0,
+  "srs_repetitions": 0,
+  "srs_lapses": 0,
+  "srs_due_at": "2026-07-22T01:00:00Z",
+  "srs_last_reviewed_at": null,
   "created_at": "2026-07-22T01:00:00Z",
   "updated_at": "2026-07-22T01:00:00Z",
   "is_deleted": false
@@ -76,7 +82,24 @@ Authorization: Bearer <Firebase ID token>
 ```
 
 `memorization_status`: `unmemorized` | `memorized`  
-`tags`: 문자열 배열 (기본 `[]`) · `is_bookmarked`: 북마크 여부 (기본 `false`)
+`tags`: 문자열 배열 (기본 `[]`) · `is_bookmarked`: 북마크 여부 (기본 `false`)  
+`srs_*`: SM-2 복습 스케줄 필드 — 계산 규칙은 [SRS.md](SRS.md), 필드 의미는 [DOMAIN.md](DOMAIN.md) 참고. 구버전 클라이언트는 이 필드 없이 upsert 가능(서버 기본값 사용).
+
+### `GET /v1/review/due`
+
+오늘 복습할 단어 목록. `is_deleted = false` 이고 `srs_due_at <= now`인 `Word`를 `srs_due_at` 오름차순으로 반환.
+
+| Query | 기본 | 설명 |
+|-------|------|------|
+| `limit` | 50 | 최대 반환 개수 |
+
+**Response**
+
+```json
+{
+  "words": [ { "...Word payload..." } ]
+}
+```
 
 ---
 

@@ -45,28 +45,28 @@ function CatIcon({ className = "" }: { className?: string }) {
 function tierStyles(tier: Plan["tier"]) {
   if (tier === "free") {
     return {
-      card: "border-ink/[0.08] bg-card/50 hover:border-ink/14 hover:shadow-[0_6px_28px_rgba(29,29,27,0.06)]",
-      accent: "text-ink/40 group-hover:text-ink/55",
-      badge: "bg-subtle text-ink/45",
-      glow: "from-ink/[0.025] to-transparent",
-      dot: "bg-ink/20",
+      card: "border-taupe/45 bg-card/50 hover:border-taupe/80 hover:shadow-[0_6px_28px_rgba(68,58,53,0.06)]",
+      accent: "text-umber/45 group-hover:text-umber/65",
+      badge: "bg-subtle text-umber/55",
+      glow: "from-umber/[0.03] to-transparent",
+      dot: "bg-taupe",
     };
   }
   if (tier === "pro") {
     return {
-      card: "border-ink/[0.08] bg-card/50 hover:border-ink/20 hover:shadow-[0_10px_40px_rgba(29,29,27,0.08)]",
-      accent: "text-ink/70",
+      card: "border-taupe/50 bg-card/50 hover:border-ink/20 hover:shadow-[0_10px_40px_rgba(37,37,37,0.08)]",
+      accent: "text-umber/70",
       badge: "bg-ink text-cream",
       glow: "from-ink/[0.03] to-transparent",
       dot: "bg-ink/25",
     };
   }
   return {
-    card: "border-amber-900/10 bg-[linear-gradient(180deg,#faf6ec_0%,#f5f0e4_100%)] hover:border-amber-900/25 hover:shadow-[0_12px_44px_rgba(146,110,40,0.14)]",
-    accent: "text-amber-900/75 plan-shimmer",
-    badge: "bg-amber-900/90 text-[#faf6ec]",
-    glow: "from-amber-900/[0.06] to-transparent",
-    dot: "bg-amber-900/30",
+    card: "border-umber/15 bg-[linear-gradient(180deg,#f8f4ee_0%,#f3eee6_100%)] hover:border-umber/30 hover:shadow-[0_12px_44px_rgba(68,58,53,0.12)]",
+    accent: "text-umber/80 plan-shimmer",
+    badge: "bg-umber text-cream",
+    glow: "from-umber/[0.06] to-transparent",
+    dot: "bg-umber/35",
   };
 }
 
@@ -77,7 +77,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
   return (
     <Card
       className={`group relative flex h-full min-h-[400px] flex-col px-5 py-6 transition duration-300 ${styles.card} ${
-        plan.highlight ? "border-ink/15 shadow-[0_1px_0_rgba(29,29,27,0.04)]" : ""
+        plan.highlight ? "border-taupe/70 shadow-[0_1px_0_rgba(68,58,53,0.04)]" : ""
       }`}
     >
       <div
@@ -96,7 +96,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
             {plan.tier === "premium" ? (
               <span className="relative flex shrink-0 items-center">
                 <CrownIcon className={`h-4 w-4 transition duration-300 ${styles.accent}`} />
-                <SparkleIcon className="absolute -right-2 -top-1 h-2.5 w-2.5 text-amber-800/50 opacity-0 transition group-hover:opacity-100" />
+                <SparkleIcon className="absolute -right-2 -top-1 h-2.5 w-2.5 text-umber/45 opacity-0 transition group-hover:opacity-100" />
               </span>
             ) : null}
             <h3 className="text-lg font-semibold tracking-tight text-ink">
@@ -147,7 +147,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
           </PrimaryButton>
         ) : (
           <GhostButton
-            className="h-10 w-full text-ink/40 transition group-hover:border-ink/10 group-hover:bg-subtle group-hover:text-ink/55"
+            className="h-10 w-full text-umber/45 transition group-hover:border-taupe/50 group-hover:bg-subtle group-hover:text-ink/70"
             disabled
           >
             {plan.comingSoon || plan.tier === "premium"

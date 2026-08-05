@@ -40,7 +40,9 @@ class WordTestOptions {
   }
 }
 
-/// 세로 스와이프(릴스 스타일) 단어 테스트.
+/// 카드 1장을 화면 중앙에 놓고 좌우로 밀어서 채점하는 단어 테스트.
+/// ← 왼쪽으로 밀기 = 모름(Again)   → 오른쪽으로 밀기 = 외움(Good)
+/// 위/아래 방향은 채점에 쓰이지 않는다.
 /// 기본은 단어만 표시, 탭하면 발음·뜻 공개.
 class WordTestSessionScreen extends StatefulWidget {
   const WordTestSessionScreen({
@@ -58,18 +60,20 @@ class WordTestSessionScreen extends StatefulWidget {
 }
 
 class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
-  late final List<Word> _words = widget.options.selectWords(widget.wordBooks);
-  final _pageController = PageController();
+  // 세션 시작 시점에 한 번 고정되는 전체 출제 목록 (진행률/뜻 공개 초기값 계산용).
+  late final List<Word> _initialWords =
+      widget.options.selectWords(widget.wordBooks);
+
+  // 실제로 화면에 남아있는 큐. 채점될 때마다 앞에서부터 하나씩 사라진다.
+  late final List<Word> _queue = List.of(_initialWords);
+
+  late final int _total = _initialWords.length;
+
   late final Set<String> _revealed = widget.options.hideMeaning
       ? <String>{}
-      : _words.map((word) => word.id).toSet();
-  int _currentPage = 0;
+      : _initialWords.map((word) => word.id).toSet();
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
+  int get _completedCount => _total - _queue.length;
 
   void _toggleReveal(String wordId) {
     setState(() {
@@ -79,21 +83,25 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
     });
   }
 
-  // 모름/외움을 누르면 SM-2로 채점한다.
-  // 예전에는 updateWord로 memorizationStatus만 뒤집었지만, 이제는 gradeWord가
-  // ease/interval/반복횟수/다음 복습일(srs_due_at)까지 함께 계산해서 저장한다.
-  // 계산 규칙: docs/SRS.md · 구현: lib/data/srs/sm2.dart
-  Future<void> _grade(int index, ReviewGrade grade) async {
-    final word = _words[index];
+  // 카드를 큐에서 먼저 낙관적으로 제거한 뒤(드래그 애니메이션과 같은 타이밍),
+  // 실제 채점 저장은 별도로(비동기) 진행한다. 화면 전환이 DB 응답을 기다리지
+  // 않게 하기 위함 — 로컬 DB 쓰기라 실패 확률은 낮지만, 실패해도 카드는 이미
+  // 넘어간 상태로 두고 스낵바로만 알린다.
+  void _grade(Word word, ReviewGrade grade) {
+    setState(() {
+      _queue.removeWhere((w) => w.id == word.id);
+      _revealed.remove(word.id);
+    });
+    _persistGrade(word, grade);
+  }
 
+  Future<void> _persistGrade(Word word, ReviewGrade grade) async {
     try {
-      final updated = await NyakiScope.of(context).gradeWord(
+      await NyakiScope.of(context).gradeWord(
         wordBookId: word.wordBookId,
         wordId: word.id,
         grade: grade,
       );
-      if (!mounted) return;
-      setState(() => _words[index] = updated);
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,8 +110,7 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
     }
   }
 
-  Future<void> _toggleBookmark(int index) async {
-    final word = _words[index];
+  Future<void> _toggleBookmark(Word word) async {
     final next = !word.isBookmarked;
 
     try {
@@ -113,7 +120,10 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
         input: UpdateWordInput(isBookmarked: next),
       );
       if (!mounted) return;
-      setState(() => _words[index] = updated);
+      setState(() {
+        final index = _queue.indexWhere((w) => w.id == word.id);
+        if (index != -1) _queue[index] = updated;
+      });
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -136,6 +146,8 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final done = _queue.isEmpty;
+
     return Scaffold(
       backgroundColor: NyakiColors.cream,
       body: SafeArea(
@@ -154,7 +166,7 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    '${_currentPage + 1} / ${_words.length}',
+                    done ? '$_total / $_total' : '${_completedCount + 1} / $_total',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13,
@@ -168,31 +180,178 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
               ),
             ),
             Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                scrollDirection: Axis.vertical,
-                itemCount: _words.length,
-                onPageChanged: (page) => setState(() => _currentPage = page),
-                itemBuilder: (context, index) {
-                  final word = _words[index];
-                  final revealed = _revealed.contains(word.id);
-                  final isLast = index == _words.length - 1;
-
-                  return _WordTestCard(
-                    word: word,
-                    revealed: revealed,
-                    isLast: isLast,
-                    onTap: () => _toggleReveal(word.id),
-                    onMarkUnmemorized: () => _grade(index, ReviewGrade.again),
-                    onMarkMemorized: () => _grade(index, ReviewGrade.good),
-                    onToggleLike: () => _toggleBookmark(index),
-                    onOpenComments: () => _openDescriptionSheet(word),
-                  );
-                },
-              ),
+              child: done ? const _SessionCompleteView() : _buildCardStack(),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCardStack() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        _DraggableCard(
+          key: ValueKey(_queue.first.id),
+          onSwipeLeft: () => _grade(_queue.first, ReviewGrade.again),
+          onSwipeRight: () => _grade(_queue.first, ReviewGrade.good),
+          child: Builder(
+            builder: (context) {
+              final word = _queue.first;
+              final revealed = _revealed.contains(word.id);
+              final isLast = _queue.length == 1;
+
+              return _WordTestCard(
+                word: word,
+                revealed: revealed,
+                isLast: isLast,
+                onTap: () => _toggleReveal(word.id),
+                onToggleLike: () => _toggleBookmark(word),
+                onOpenComments: () => _openDescriptionSheet(word),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 좌우로만 드래그해서 채점하는 카드. 왼쪽으로 밀면 [onSwipeLeft](모름),
+/// 오른쪽으로 밀면 [onSwipeRight](외움)를 호출하고 그 방향으로 날아가며
+/// 사라진다. 위/아래 드래그는 채점에 쓰이지 않고, 기준을 못 채우면 원래
+/// 자리로 스냅백된다.
+class _DraggableCard extends StatefulWidget {
+  const _DraggableCard({
+    super.key,
+    required this.child,
+    required this.onSwipeLeft,
+    required this.onSwipeRight,
+  });
+
+  final Widget child;
+  final VoidCallback onSwipeLeft;
+  final VoidCallback onSwipeRight;
+
+  @override
+  State<_DraggableCard> createState() => _DraggableCardState();
+}
+
+class _DraggableCardState extends State<_DraggableCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+  )..addListener(() {
+      if (_animation != null) {
+        setState(() => _offset = _animation!.value);
+      }
+    });
+
+  Animation<Offset>? _animation;
+  Offset _offset = Offset.zero;
+
+  // 이 거리(또는 이 속도)를 넘으면 채점으로 확정한다. 좌우 판정만 쓰므로
+  // 화면 크기와 무관한 고정 픽셀 값 하나면 충분하다.
+  static const double _dismissDistance = 120;
+  static const double _velocityThreshold = 700;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    _controller.stop();
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    setState(() => _offset += details.delta);
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    final screen = MediaQuery.sizeOf(context);
+    final velocity = details.velocity.pixelsPerSecond;
+
+    // 위/아래로 움직인 거리(_offset.dy)는 채점 판정에 전혀 안 쓴다 —
+    // 오직 가로 이동(dx)만 본다. 그래서 세로로 아무리 밀어도 스냅백된다.
+    final passedRight = _offset.dx > 0 &&
+        (_offset.dx > _dismissDistance || velocity.dx > _velocityThreshold);
+    final passedLeft = _offset.dx < 0 &&
+        (-_offset.dx > _dismissDistance || -velocity.dx > _velocityThreshold);
+
+    if (passedRight) {
+      _flingTo(Offset(screen.width * 1.4, _offset.dy), widget.onSwipeRight);
+    } else if (passedLeft) {
+      _flingTo(Offset(-screen.width * 1.4, _offset.dy), widget.onSwipeLeft);
+    } else {
+      _snapBack();
+    }
+  }
+
+  void _flingTo(Offset target, VoidCallback onComplete) {
+    _animation = Tween<Offset>(begin: _offset, end: target).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+    _controller.forward(from: 0).whenComplete(onComplete);
+  }
+
+  void _snapBack() {
+    _animation = Tween<Offset>(begin: _offset, end: Offset.zero).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    _controller.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 옆으로 밀수록 카드가 살짝 기울어져서 손으로 넘기는 느낌을 준다.
+    // num.clamp()는 num을 반환하므로 Transform.rotate(angle: double)에 맞춰 변환한다.
+    final double angle = (_offset.dx / 320).clamp(-0.22, 0.22).toDouble();
+
+    return GestureDetector(
+      onPanStart: _onPanStart,
+      onPanUpdate: _onPanUpdate,
+      onPanEnd: _onPanEnd,
+      child: Transform.translate(
+        offset: _offset,
+        child: Transform.rotate(
+          angle: angle,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// 세션이 끝났을 때(큐가 비었을 때) 보여주는 화면.
+class _SessionCompleteView extends StatelessWidget {
+  const _SessionCompleteView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 40,
+            color: NyakiColors.ink,
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            '오늘 테스트 끝났어요',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: NyakiColors.ink,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -204,8 +363,6 @@ class _WordTestCard extends StatelessWidget {
     required this.revealed,
     required this.isLast,
     required this.onTap,
-    required this.onMarkUnmemorized,
-    required this.onMarkMemorized,
     required this.onToggleLike,
     required this.onOpenComments,
   });
@@ -214,8 +371,6 @@ class _WordTestCard extends StatelessWidget {
   final bool revealed;
   final bool isLast;
   final VoidCallback onTap;
-  final VoidCallback onMarkUnmemorized;
-  final VoidCallback onMarkMemorized;
   final VoidCallback onToggleLike;
   final VoidCallback onOpenComments;
 
@@ -304,42 +459,57 @@ class _WordTestCard extends StatelessWidget {
                           ),
                         ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 32),
+                // 방향 힌트 — 드래그 중이 아니어도 항상 보이는 작은 안내.
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _MemorizationButton(
-                      label: '모름',
-                      selected: !word.isMemorized,
-                      onTap: onMarkUnmemorized,
+                    Icon(
+                      Icons.arrow_back_rounded,
+                      size: 14,
+                      color: NyakiColors.taupe,
                     ),
-                    const SizedBox(width: 8),
-                    _MemorizationButton(
-                      label: '외움',
-                      selected: word.isMemorized,
-                      onTap: onMarkMemorized,
+                    const SizedBox(width: 4),
+                    Text(
+                      '모름',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: NyakiColors.umber.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: NyakiColors.taupe,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '외움',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: NyakiColors.umber.withValues(alpha: 0.45),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
-                Icon(
-                  isLast
-                      ? Icons.check_circle_outline_rounded
-                      : Icons.keyboard_arrow_up_rounded,
-                  size: 18,
-                  color: NyakiColors.taupe.withValues(alpha: 0.8),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isLast ? '마지막' : '위로 밀기',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: NyakiColors.umber.withValues(alpha: 0.35),
+                if (isLast) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '마지막 단어',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: NyakiColors.umber.withValues(alpha: 0.35),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -573,50 +743,6 @@ class _InstagramCommentRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _MemorizationButton extends StatelessWidget {
-  const _MemorizationButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? NyakiColors.ink : Colors.transparent,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: selected ? NyakiColors.ink : NyakiColors.taupe,
-        ),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.1,
-              color: selected
-                  ? NyakiColors.cream
-                  : NyakiColors.ink.withValues(alpha: 0.45),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

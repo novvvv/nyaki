@@ -206,16 +206,65 @@ class _TestOptionsSheet extends StatefulWidget {
 }
 
 class _TestOptionsSheetState extends State<_TestOptionsSheet> {
+  static const _dailyLimitKey = 'test_daily_limit';
+
   bool _hideMeaning = true;
   bool _shuffle = false;
+  int _limit = 1;
+  bool _limitLoaded = false;
+  late final TextEditingController _limitController;
 
-  // 대상 단어는 SM-2가 정한다 (srs_due_at이 지난 단어). 사용자가 고르는 게 아니다.
-  int get _targetCount =>
+  // 대상 단어는 SM-2가 정한다 (srs_due_at이 지난 단어). 사용자가 고르는 건
+  // "그중 몇 개를 오늘 풀지"뿐이다.
+  int get _dueCount =>
       const WordTestOptions().selectWords(widget.wordBooks).length;
 
   @override
+  void initState() {
+    super.initState();
+    _limitController = TextEditingController();
+    _restoreLimit();
+  }
+
+  @override
+  void dispose() {
+    _limitController.dispose();
+    super.dispose();
+  }
+
+  // 마지막으로 고른 개수를 기억해뒀다가 다음에 열 때 그대로 보여준다.
+  // (오늘 due 개수가 그때보다 줄었으면 줄어든 개수로 clamp)
+  Future<void> _restoreLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt(_dailyLimitKey);
+    final count = _dueCount;
+    if (!mounted) return;
+    setState(() {
+      _limit = count == 0 ? 0 : (saved ?? count).clamp(1, count).toInt();
+      _limitController.text = '$_limit';
+      _limitLoaded = true;
+    });
+  }
+
+  Future<void> _persistLimit(int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_dailyLimitKey, value);
+  }
+
+  void _setLimit(int value) {
+    final count = _dueCount;
+    if (count == 0) return;
+    final clamped = value.clamp(1, count).toInt();
+    setState(() {
+      _limit = clamped;
+      _limitController.text = '$_limit';
+    });
+    _persistLimit(clamped);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final count = _targetCount;
+    final count = _dueCount;
 
     return SafeArea(
       child: Padding(
@@ -255,6 +304,15 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
                 color: NyakiColors.ink.withValues(alpha: 0.7),
               ),
             ),
+            if (count > 1 && _limitLoaded) ...[
+              const SizedBox(height: 16),
+              _DailyLimitSlider(
+                count: count,
+                value: _limit,
+                controller: _limitController,
+                onChanged: _setLimit,
+              ),
+            ],
             const SizedBox(height: 22),
             _OptionToggleRow(
               label: '뜻 가리기',
@@ -273,12 +331,13 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
             SizedBox(
               height: 50,
               child: FilledButton(
-                onPressed: count == 0
+                onPressed: count == 0 || !_limitLoaded
                     ? null
                     : () => Navigator.of(context).pop(
                           WordTestOptions(
                             hideMeaning: _hideMeaning,
                             shuffle: _shuffle,
+                            dailyLimit: _limit,
                           ),
                         ),
                 style: FilledButton.styleFrom(
@@ -292,7 +351,7 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
                   ),
                 ),
                 child: Text(
-                  count == 0 ? '해당하는 단어가 없어요' : '시작 · $count단어',
+                  count == 0 ? '해당하는 단어가 없어요' : '시작 · $_limit단어',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -304,6 +363,88 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 한 번에 진행할 단어 개수를 고르는 슬라이더. 오른쪽 숫자 칸은 직접 입력도 된다.
+class _DailyLimitSlider extends StatelessWidget {
+  const _DailyLimitSlider({
+    required this.count,
+    required this.value,
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final int count;
+  final int value;
+  final TextEditingController controller;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '한 번에 진행할 개수',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: NyakiColors.umber.withValues(alpha: 0.65),
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: 48,
+              height: 30,
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: NyakiColors.ink,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                  filled: true,
+                  fillColor: NyakiColors.softDune,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onSubmitted: (text) =>
+                    onChanged(int.tryParse(text) ?? value),
+              ),
+            ),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 3,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+          ),
+          child: Slider(
+            value: value.toDouble().clamp(1, count.toDouble()).toDouble(),
+            min: 1,
+            max: count.toDouble(),
+            divisions: count - 1,
+            activeColor: NyakiColors.umber,
+            inactiveColor: NyakiColors.softDune,
+            onChanged: (v) => onChanged(v.round()),
+          ),
+        ),
+      ],
     );
   }
 }

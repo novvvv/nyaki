@@ -17,6 +17,7 @@ class WordTestOptions {
   const WordTestOptions({
     this.hideMeaning = true,
     this.shuffle = false,
+    this.dailyLimit,
   });
 
   /// true면 단어만 먼저 보여주고 탭해야 뜻이 보인다.
@@ -25,18 +26,30 @@ class WordTestOptions {
   /// 단어 순서 섞기.
   final bool shuffle;
 
+  /// 한 세션에서 진행할 최대 단어 수. null이면 오늘 due인 단어 전부.
+  final int? dailyLimit;
+
   /// 선택한 단어장들에서 "오늘 복습할 단어"만 모아 하나의 출제 목록으로 합친다.
+  ///
+  /// due 단어가 dailyLimit보다 많으면 srsDueAt이 가장 오래된(많이 밀린) 단어부터
+  /// dailyLimit개만 자른다 — 나머지는 그날 세션에서 빠지고 다음 테스트에서 다시 계산된다.
   ///
   /// 주의: 이 목록은 세션을 시작할 때 한 번만 계산되고 그 뒤로 고정된다.
   /// 그래서 세션 도중 "모름"을 눌러 즉시 due가 된 단어도 그 판에서는 다시
-  /// 나오지 않고, 다음 번 테스트에 들어갈 때 다시 출제된다. (docs/SRS.md 참고)
+  /// 나오지 않고, 다음 번 테스트에 들어가면 다시 출제된다. (docs/SRS.md 참고)
   List<Word> selectWords(List<WordBook> wordBooks) {
     final words = wordBooks
         .expand((book) => book.activeWords)
         .where((word) => word.isDue)
-        .toList();
-    if (shuffle) words.shuffle();
-    return words;
+        .toList()
+      ..sort((a, b) => a.srsDueAt.compareTo(b.srsDueAt));
+
+    final limit = dailyLimit;
+    final limited =
+        (limit != null && limit < words.length) ? words.sublist(0, limit) : words;
+
+    if (shuffle) limited.shuffle();
+    return limited;
   }
 }
 

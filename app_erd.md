@@ -160,5 +160,5 @@ Hub: word_books ──< words          (+ sync_changes, user_id on rows)
 
 - 도메인 규칙: [docs/DOMAIN.md](docs/DOMAIN.md)
 - API 페이로드: [docs/API.md](docs/API.md)
-- SRS 계산 로직: [docs/SRS.md](docs/SRS.md) · 제품/UX: [docs/SRS-PLAN.md](docs/SRS-PLAN.md)
+- SRS 계산 로직: [docs/SRS.md](docs/SRS.md)
 - 디자인 토큰: [Design.md](Design.md)

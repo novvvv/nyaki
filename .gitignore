@@ -71,6 +71,10 @@ Icon?
 /notes/*
 !/notes/README.md
 
+# 루트 md는 전부 로컬 전용 (README.md만 git에 올림)
+/*.md
+!/README.md
+
 # Firebase / Google config (local only)
 **/GoogleService-Info.plist
 **/GoogleService-Info*.plist

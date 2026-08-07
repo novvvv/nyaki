@@ -75,5 +75,5 @@ erDiagram
 
 - 도메인 규칙: [DOMAIN.md](DOMAIN.md)
 - API 페이로드: [API.md](API.md)
-- SRS 계산 로직: [SRS.md](SRS.md) · 제품/UX: [SRS-PLAN.md](SRS-PLAN.md)
+- SRS 계산 로직: [SRS.md](SRS.md)
 - 앱 로컬 ERD: [../app_erd.md](../app_erd.md)

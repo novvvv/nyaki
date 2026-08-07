@@ -59,7 +59,7 @@ WordBook (1) ──────< (N) Word
 
 ## SRS (복습 스케줄)
 
-계산 규칙은 [SRS.md](SRS.md), 제품/UX 결정은 [SRS-PLAN.md](SRS-PLAN.md) 참고. 요약:
+계산 규칙·제품 결정은 [SRS.md](SRS.md) 참고. 요약:
 
 - 학습자 입력은 **모름 / 외움** 두 가지뿐 (내부적으로 SM-2의 `Again` / `Good`)
 - `memorization_status`는 SRS 채점의 부수 효과: 모름 → 즉시 `unmemorized`, 외움이고 `srs_repetitions >= 2` → `memorized`

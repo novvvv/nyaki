@@ -20,7 +20,7 @@
 3. 크게 바뀌면 **복사 후** 새 버전에서 수정 — 이전 버전은 그대로 둔다
 
 ```bash
-cp notes/requirements/v0.1.md notes/requirements/v0.2.md
+cp notes/product/v0.2.md notes/product/v0.3.md
 # v0.2.md 편집
 ```
 

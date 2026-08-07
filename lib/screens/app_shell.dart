@@ -21,7 +21,7 @@ class _AppShellState extends State<AppShell> {
   static const _screens = [
     HomeScreen(),
     WordBookListScreen(),
-    AddWordScreen(),
+    AddWordScreen(embedded: true),
     WordTestScreen(),
     SettingsScreen(),
   ];

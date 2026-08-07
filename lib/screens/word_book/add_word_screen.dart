@@ -6,7 +6,12 @@ import '../../data/repositories/vocab_repository.dart';
 import '../../models/word_book.dart';
 
 class AddWordScreen extends StatefulWidget {
-  const AddWordScreen({super.key});
+  const AddWordScreen({super.key, this.embedded = false});
+
+  /// true면 AppShell 탭 안에 들어가 있는 상태 — 바깥 Scaffold/SafeArea를 그대로 쓴다.
+  /// false면 단독 화면으로 push된 상태라 자기 Scaffold와 뒤로가기 버튼을 직접 갖는다.
+  /// (Scaffold가 없으면 DropdownButton이 Material 조상을 못 찾아 에러가 난다)
+  final bool embedded;
 
   @override
   State<AddWordScreen> createState() => _AddWordScreenState();
@@ -111,13 +116,28 @@ class _AddWordScreenState extends State<AddWordScreen> {
         final books = vocab.wordBooks;
         final selectedId = _resolveSelectedId(books);
 
-        return Column(
+        final content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 20, 20, 0),
               child: Row(
                 children: [
+                  if (!widget.embedded) ...[
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      iconSize: 18,
+                      color: NyakiColors.ink.withValues(alpha: 0.5),
+                      tooltip: '뒤로',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,6 +260,13 @@ class _AddWordScreenState extends State<AddWordScreen> {
               ),
             ),
           ],
+        );
+
+        if (widget.embedded) return content;
+
+        return Scaffold(
+          backgroundColor: NyakiColors.cream,
+          body: SafeArea(child: content),
         );
       },
     );

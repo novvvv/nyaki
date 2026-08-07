@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/nyaki_colors.dart';
 
+// ===================== ✨ WordTitle ✨ ===================== //
+
 class WordTile extends StatelessWidget {
   const WordTile({
     super.key,
     required this.word,
     required this.meaning,
-    this.isMemorized = false,
     this.onTap,
   });
 
+  // ✨ Variable ✨ 
+  // 
+
   final String word;
   final String meaning;
-  final bool isMemorized;
   final VoidCallback? onTap;
 
   @override
@@ -22,56 +25,25 @@ class WordTile extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    word,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: NyakiColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    meaning,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      color: NyakiColors.ink.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
+            Text(
+              word,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: NyakiColors.ink,
               ),
             ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: isMemorized
-                    ? NyakiColors.softDune
-                    : NyakiColors.cream,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: NyakiColors.taupe.withValues(alpha: 0.7),
-                ),
-              ),
-              child: Text(
-                isMemorized ? '암기' : '미암기',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: isMemorized
-                      ? NyakiColors.umber
-                      : NyakiColors.ink.withValues(alpha: 0.45),
-                ),
+            const SizedBox(height: 2),
+            Text(
+              meaning,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: NyakiColors.ink.withValues(alpha: 0.5),
               ),
             ),
           ],

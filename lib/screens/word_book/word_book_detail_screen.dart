@@ -15,8 +15,11 @@ import 'edit_word_screen.dart';
 // _openEditWord(Word word) -> edit_word_screen.dart
 // ===============================================
 
-// WordListFilter : 화면에 출력할 단어를 필터링하는 enum
-enum WordListFilter { all, unmemorized, memorized }
+// WordBookTab : 하단 탭에서 고를 수 있는 화면 종류
+// - info : 단어장 정보 (표시할 항목은 추후 결정)
+// - all : 단어장의 모든 단어
+// - bookmarked : 북마크(좋아요)한 단어만
+enum WordBookTab { info, all, bookmarked }
 
 // ✨ WordBookDetailScreen ✨
 // - 단어장 목록에서 선택한 단어장의 ID를 받는다.
@@ -30,20 +33,19 @@ class WordBookDetailScreen extends StatefulWidget {
 }
 
 // ✨ WordBookDetailScreenState ✨
-// - 현재 선택된 필터를 저장한다. (default : all)
+// - 현재 선택된 탭을 저장한다. (default : all)
 class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
-  WordListFilter _filter = WordListFilter.all;
+  WordBookTab _tab = WordBookTab.all;
 
   // [method] _applyFilter
-  // - _filter 종류에 따라 단어를 필터링한다.
+  // - 현재 탭에 맞는 단어만 골라낸다. (info 탭은 목록을 쓰지 않는다)
   List<Word> _applyFilter(List<Word> words) {
-    switch (_filter) {
-      case WordListFilter.all:
+    switch (_tab) {
+      case WordBookTab.info:
+      case WordBookTab.all:
         return words;
-      case WordListFilter.unmemorized:
-        return words.where((word) => !word.isMemorized).toList();
-      case WordListFilter.memorized:
-        return words.where((word) => word.isMemorized).toList();
+      case WordBookTab.bookmarked:
+        return words.where((word) => word.isBookmarked).toList();
     }
   }
 
@@ -163,37 +165,39 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
                   ),
                 ),
                 Expanded(
-                  child: words.isEmpty
-                      ? Center(
-                          child: Text(
-                            _filter == WordListFilter.all
-                                ? '단어가 없습니다.'
-                                : '해당하는 단어가 없어요.',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 14,
-                              color: NyakiColors.ink.withValues(alpha: 0.4),
+                  child: _tab == WordBookTab.info
+                      ? const _WordBookInfoView()
+                      : words.isEmpty
+                          ? Center(
+                              child: Text(
+                                _tab == WordBookTab.all
+                                    ? '단어가 없습니다.'
+                                    : '북마크한 단어가 없어요.',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  color: NyakiColors.ink.withValues(alpha: 0.4),
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding:
+                                  const EdgeInsets.fromLTRB(28, 12, 28, 12),
+                              itemCount: words.length,
+                              separatorBuilder: (_, __) => Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: dividerColor,
+                              ),
+                              itemBuilder: (context, index) {
+                                final entry = words[index];
+                                return WordTile(
+                                  word: entry.term,
+                                  meaning: entry.meaning,
+                                  onTap: () => _openEditWord(entry),
+                                );
+                              },
                             ),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(28, 12, 28, 12),
-                          itemCount: words.length,
-                          separatorBuilder: (_, __) => Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: dividerColor,
-                          ),
-                          itemBuilder: (context, index) {
-                            final entry = words[index];
-                            return WordTile(
-                              word: entry.term,
-                              meaning: entry.meaning,
-                              isMemorized: entry.isMemorized,
-                              onTap: () => _openEditWord(entry),
-                            );
-                          },
-                        ),
                 ),
                 Container(
                   decoration: const BoxDecoration(
@@ -204,24 +208,20 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _FilterTab(
+                        label: '단어장 정보',
+                        selected: _tab == WordBookTab.info,
+                        onTap: () => setState(() => _tab = WordBookTab.info),
+                      ),
+                      _FilterTab(
                         label: '전체',
-                        selected: _filter == WordListFilter.all,
+                        selected: _tab == WordBookTab.all,
+                        onTap: () => setState(() => _tab = WordBookTab.all),
+                      ),
+                      _FilterTab(
+                        label: '북마크',
+                        selected: _tab == WordBookTab.bookmarked,
                         onTap: () =>
-                            setState(() => _filter = WordListFilter.all),
-                      ),
-                      _FilterTab(
-                        label: '미암기',
-                        selected: _filter == WordListFilter.unmemorized,
-                        onTap: () => setState(
-                          () => _filter = WordListFilter.unmemorized,
-                        ),
-                      ),
-                      _FilterTab(
-                        label: '암기',
-                        selected: _filter == WordListFilter.memorized,
-                        onTap: () => setState(
-                          () => _filter = WordListFilter.memorized,
-                        ),
+                            setState(() => _tab = WordBookTab.bookmarked),
                       ),
                     ],
                   ),
@@ -235,9 +235,29 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
   }
 }
 
+// ✨ WordBookInfoView ✨
+// - "단어장 정보" 탭의 내용. 어떤 항목을 넣을지는 아직 정하지 않았다.
+class _WordBookInfoView extends StatelessWidget {
+  const _WordBookInfoView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        '단어장 정보는 준비 중이에요.',
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          color: NyakiColors.ink.withValues(alpha: 0.4),
+        ),
+      ),
+    );
+  }
+}
+
 // ✨ FilterTab ✨
 // Parameter
-// - label : 전체, 미암기, 암기 (단어 상태)
+// - label : 단어장 정보, 전체, 북마크 (하단 탭 이름)
 // - selected : 현재 데이터 선택 여부
 // - onTap : 단어 컴포넌트 클릭 시 실행 함수 리스너
 

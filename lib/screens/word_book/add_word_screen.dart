@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../data/repositories/vocab_repository.dart';
@@ -99,9 +100,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '단어 추가에 실패했어요.', error: error);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -139,29 +138,15 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     const SizedBox(width: 8),
                   ],
                   const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '단어 추가',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.3,
-                            color: NyakiColors.ink,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '새로운 단어와 의미를 기록합니다.',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 14,
-                            color: Color(0x731D1D1B),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      '단어 추가',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                        color: NyakiColors.ink,
+                      ),
                     ),
                   ),
                   TextButton(

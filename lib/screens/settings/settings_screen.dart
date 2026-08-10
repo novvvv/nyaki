@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/auth_scope.dart';
+import '../../core/error_snackbar.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../data/auth/auth_controller.dart';
 import '../../data/auth/auth_repository.dart';
@@ -25,9 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await auth.signOut();
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '로그아웃에 실패했어요.', error: error);
     }
   }
 
@@ -70,14 +69,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final signedIn = auth.status == AuthStatus.signedIn;
         final user = auth.user;
 
-        final welcomeName = user?.displayName ?? user?.email;
-
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Padding(
-                padding: EdgeInsets.fromLTRB(28, 20, 28, 4),
+                padding: EdgeInsets.fromLTRB(28, 20, 28, 20),
                 child: Text(
                   '설정',
                   style: TextStyle(
@@ -86,19 +83,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
                     color: NyakiColors.ink,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
-                child: Text(
-                  signedIn
-                      ? (welcomeName == null ? '환영해요!' : '$welcomeName님, 환영해요!')
-                      : '로그인하면 계정을 연결할 수 있어요.',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    color: NyakiColors.ink.withValues(alpha: 0.45),
                   ),
                 ),
               ),

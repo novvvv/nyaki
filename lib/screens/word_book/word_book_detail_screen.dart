@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../models/word.dart';
@@ -162,12 +163,9 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
         title: title,
         description: description,
       );
-    } 
-    catch (error) {
+    } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '저장에 실패했어요.', error: error);
     }
   }
 
@@ -225,13 +223,9 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
       await NyakiScope.of(context).deleteWordBook(wordBook.id);
       if (!mounted) return;
       Navigator.of(context).pop();
-    } 
-    
-    catch (error) {
+    } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '삭제에 실패했어요.', error: error);
     }
   }
 

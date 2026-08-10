@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../data/repositories/vocab_repository.dart';
@@ -117,9 +118,7 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '채점 저장에 실패했어요.', error: error);
     }
   }
 
@@ -139,9 +138,7 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
       });
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '북마크 변경에 실패했어요.', error: error);
     }
   }
 

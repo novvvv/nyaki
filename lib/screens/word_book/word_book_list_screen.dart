@@ -69,15 +69,6 @@ class WordBookListScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '모바일과 동기화되는 단어장을 관리합니다.',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      color: NyakiColors.umber.withValues(alpha: 0.7),
-                    ),
-                  ),
                 ],
               ),
             ),

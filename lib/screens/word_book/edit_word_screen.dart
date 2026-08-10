@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../data/repositories/vocab_repository.dart';
@@ -93,9 +94,7 @@ class _EditWordScreenState extends State<EditWordScreen> {
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '저장에 실패했어요.', error: error);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -146,9 +145,7 @@ class _EditWordScreenState extends State<EditWordScreen> {
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '삭제에 실패했어요.', error: error);
     }
   }
 

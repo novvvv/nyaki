@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 
@@ -40,9 +41,7 @@ class _AddWordBookScreenState extends State<AddWordBookScreen> {
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '단어장 생성에 실패했어요.', error: error);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

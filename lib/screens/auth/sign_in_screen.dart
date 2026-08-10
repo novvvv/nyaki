@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/auth_scope.dart';
+import '../../core/error_snackbar.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../data/auth/auth_repository.dart';
 
@@ -23,9 +24,7 @@ class SignInScreen extends StatelessWidget {
       // 사용자가 로그인 창을 닫은 경우.
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      showErrorSnackBar(context, message: '로그인에 실패했어요.', error: error);
     }
   }
 

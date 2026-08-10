@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
-  Badge,
   EmptyState,
   GhostButton,
   PageHeader,
@@ -13,12 +12,19 @@ import {
 } from "@/components/ui";
 import { activeWords, bookMeta, useVocab } from "@/lib/vocab-store";
 
+const PAGE_SIZE = 20;
+
 export default function WordBookDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { getWordBook, deleteWordBook } = useVocab();
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
   const book = getWordBook(params.id);
+
+  useEffect(() => {
+    setPage(1);
+  }, [params.id]);
 
   if (!book) {
     return (
@@ -36,8 +42,14 @@ export default function WordBookDetailPage() {
 
   const meta = bookMeta(book);
   const words = activeWords(book);
+  const totalPages = Math.max(1, Math.ceil(words.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedWords = words.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
-  async function handleDeleteBook() {
+  const handleDeleteBook = async () => {
     if (!window.confirm(`"${book.title}" 단어장을 삭제할까요?\n안의 단어도 함께 삭제됩니다.`)) {
       return;
     }
@@ -87,26 +99,47 @@ export default function WordBookDetailPage() {
           }
         />
       ) : (
-        <div className="divide-y divide-taupe/35 rounded-lg border border-taupe/45">
-          {words.map((word) => (
-            <Link
-              key={word.id}
-              href={`/word-books/${book.id}/words/${word.id}`}
-              className="flex items-start justify-between gap-4 px-4 py-3.5 transition hover:bg-subtle/60"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-ink">{word.term}</p>
-                <p className="mt-0.5 text-sm text-umber/65">{word.meaning}</p>
-                {word.pronunciation ? (
-                  <p className="mt-1 text-xs text-umber/45">{word.pronunciation}</p>
-                ) : null}
-              </div>
-              <Badge>
-                {word.memorizationStatus === "memorized" ? "암기" : "미암기"}
-              </Badge>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="divide-y divide-taupe/35 rounded-lg border border-taupe/45">
+            {pagedWords.map((word) => (
+              <Link
+                key={word.id}
+                href={`/word-books/${book.id}/words/${word.id}`}
+                className="flex items-start justify-between gap-4 px-4 py-3.5 transition hover:bg-subtle/60"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">{word.term}</p>
+                  <p className="mt-0.5 text-sm text-umber/65">{word.meaning}</p>
+                  {word.pronunciation ? (
+                    <p className="mt-1 text-xs text-umber/45">{word.pronunciation}</p>
+                  ) : null}
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {totalPages > 1 ? (
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <GhostButton
+                disabled={currentPage === 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                이전
+              </GhostButton>
+              <span className="text-sm text-umber/65">
+                {currentPage} / {totalPages}
+              </span>
+              <GhostButton
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setPage((current) => Math.min(totalPages, current + 1))
+                }
+              >
+                다음
+              </GhostButton>
+            </div>
+          ) : null}
+        </>
       )}
     </main>
   );

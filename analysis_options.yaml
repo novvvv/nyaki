@@ -9,6 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  # build/는 flutter run이 만드는 산출물 폴더. iOS Swift Package Manager 마이그레이션 이후
+  # build/ios/SourcePackages/checkouts/ 밑에 의존 플러그인(flutterfire 등)의 소스가 통째로
+  # 체크아웃되면서 그 안의 테스트 코드까지 analyze 대상에 잡혀 무관한 에러가 쏟아지는 문제 있었음.
+  exclude:
+    - build/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

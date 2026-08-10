@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../models/word.dart';
+import '../../models/word_book.dart';
 import '../../widgets/word_tile.dart';
 import 'add_word_screen.dart';
 import 'edit_word_screen.dart';
@@ -21,6 +22,11 @@ import 'edit_word_screen.dart';
 // - bookmarked : 북마크(좋아요)한 단어만
 enum WordBookTab { info, all, bookmarked }
 
+// _WordBookMenuAction : 단어장 관리 팝업 메뉴(⋯)에서 고를 수 있는 동작
+// - rename : 단어장 이름 수정
+// - delete : 단어장 삭제
+enum _WordBookMenuAction { rename, delete }
+
 // ✨ WordBookDetailScreen ✨
 // - 단어장 목록에서 선택한 단어장의 ID를 받는다.
 // - 해당 아이디를 사용해 현재 화면에 표시할 WordBook Data를 탐색한다.
@@ -36,6 +42,20 @@ class WordBookDetailScreen extends StatefulWidget {
 // - 현재 선택된 탭을 저장한다. (default : all)
 class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
   WordBookTab _tab = WordBookTab.all;
+
+  // 이름 수정 다이얼로그 전용 컨트롤러.
+  // - showDialog가 닫혀도(pop) 다이얼로그는 exit 애니메이션 동안 몇 프레임 더 컨트롤러를 참조하므로,
+  //   다이얼로그가 닫히자마자 dispose하면 "used after being disposed" 에러가 난다.
+  // - 화면(State) 자체가 dispose될 때만 함께 정리하도록 필드로 둔다.
+  final _renameTitleController = TextEditingController();
+  final _renameDescriptionController = TextEditingController();
+
+  @override
+  void dispose() {
+    _renameTitleController.dispose();
+    _renameDescriptionController.dispose();
+    super.dispose();
+  }
 
   // [method] _applyFilter
   // - 현재 탭에 맞는 단어만 골라낸다. (info 탭은 목록을 쓰지 않는다)
@@ -57,6 +77,162 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
         builder: (_) => EditWordScreen(word: word),
       ),
     );
+  }
+
+  // [method] _renameWordBook
+  // 🔗 Chain
+  //  - WordBookListScreen (단어장 목록 화면) -> [User] WordBookTitle Tap 
+  //    -> WordBookDetailScreen (wordBookId: "...") (widget.wordBookId로 저장)
+  //  위치
+  //  - ... 메뉴 버튼 "이름 수정"
+  // [Logic]
+  //  - 1. 현재 단어장의 이름/설명이 채워진 입력창 다이얼로그를 띄운다. 
+  //  - 2. 사용자가 "저장"을 누르면 입력값을 받늗나. 
+  //  - 3. 해당 값으로 단어장의 이름/설명을 실제로 바꾼다. (로컬DB 갱신 및 화면 즉시 반영)
+
+  Future<void> _renameWordBook(WordBook wordBook) async {
+
+    // 1. 입력창 초기화 - 파라미터로 받은 wordBook의 title과 description을 입력창 컨트롤러 초기값으로 넣는다.
+    // (단, description의 경우는 nulld일 수 있기에 ?? ''로 빈 문자열 처리)
+    _renameTitleController.text = wordBook.title;
+    _renameDescriptionController.text = wordBook.description ?? '';
+
+    // 2. AlertDialog [입력창]]
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: NyakiColors.cream,
+        title: const Text(
+          '단어장 이름 수정',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: NyakiColors.ink,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _renameTitleController,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: '이름'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _renameDescriptionController,
+              decoration: const InputDecoration(labelText: '설명'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+
+    // [Exception] Controller 내부의 텍스트를 꺼내어 .trim()으로 앞뒤 공백을 제거한다. 
+    final title = _renameTitleController.text.trim();
+    final description = _renameDescriptionController.text.trim();
+
+    // [Exception] 취소를 눌렀거나 다이얼로그를 탭/뒤로가기로 닫아버린 경우 
+    if (confirmed != true || !mounted) return;
+
+    // [Exception] Title이 비어있는 경우 
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('단어장 이름을 입력해 주세요.')),
+      );
+      return;
+    }
+
+    // 3. [MainLogic] NyakiScope.of(context)로 전역 VocabController를 가져와서 
+    // updateWordBook Method를 호출한다. 
+    try {
+      await NyakiScope.of(context).updateWordBook(
+        id: wordBook.id,
+        title: title,
+        description: description,
+      );
+    } 
+    catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  // [method] _deleteWordBook
+  // 🔗 Chain
+  //  - WordBookListScreen (단어장 목록 화면) -> [User] WordBookTitle Tap
+  //    -> WordBookDetailScreen (wordBookId: "...") (widget.wordBookId로 저장)
+  //  위치
+  //  - ... 메뉴 버튼 "삭제"
+  // [Logic]
+  //  - 1. 삭제할지 묻는 확인 다이얼로그를 띄운다. (입력창 없이 텍스트 확인만)
+  //  - 2. 사용자가 "삭제"를 누르면 deleteWordBook을 호출해 실제로 지운다. (로컬DB soft delete)
+  //  - 3. 성공하면 이 상세 화면을 닫고 단어장 목록 화면으로 돌아간다.
+
+  Future<void> _deleteWordBook(WordBook wordBook) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: NyakiColors.cream,
+        title: const Text(
+          '단어장 삭제',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: NyakiColors.ink,
+          ),
+        ),
+        content: Text(
+          "'${wordBook.title}' 단어장을 삭제할까요? 안에 있는 단어도 함께 삭제됩니다.",
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            color: NyakiColors.ink,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+
+    // [Exception] 취소 or 뒤로가기로 다이어로그를 닫은 경우 예외처리
+    if (confirmed != true || !mounted) return;
+
+    // [API] Delete Call 
+    try {
+      await NyakiScope.of(context).deleteWordBook(wordBook.id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } 
+    
+    catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 
   @override
@@ -109,6 +285,42 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
                             ),
                           ),
                           const Spacer(),
+
+                          // 버튼 -> 누르면 메뉴 펼침 
+                          PopupMenuButton<_WordBookMenuAction>(
+                            icon: Icon(
+                              Icons.more_horiz_rounded,
+                              color: NyakiColors.ink.withValues(alpha: 0.5),
+                            ),
+                            tooltip: '단어장 관리',
+                            color: NyakiColors.cream,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            onSelected: (action) {
+                              switch (action) {
+                                case _WordBookMenuAction.rename:
+                                  _renameWordBook(wordBook);
+                                  break;
+                                case _WordBookMenuAction.delete:
+                                  _deleteWordBook(wordBook);
+                                  break;
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: _WordBookMenuAction.rename,
+                                child: Text('이름 수정'),
+                              ),
+                              PopupMenuItem(
+                                value: _WordBookMenuAction.delete,
+                                child: Text('삭제'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
                           TextButton(
                             onPressed: () {
                               Navigator.of(context).push<void>(

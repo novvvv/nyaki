@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'core/auth_scope.dart';
+import 'core/error_screen.dart';
 import 'core/nyaki_scope.dart';
 import 'core/theme/nyaki_theme.dart';
 import 'data/auth/auth_controller.dart';
@@ -13,6 +14,7 @@ import 'screens/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  installNyakiErrorWidget();
   await Firebase.initializeApp();
 
   final repository = await DriftVocabRepository.create();

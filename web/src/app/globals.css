@@ -10,6 +10,20 @@
   --nyaki-card: #f3eee6;
   --nyaki-stroke: rgba(197, 180, 157, 0.55);
   --nyaki-subtle: #e4ddcc;
+
+  /* shadcn/Bklit 차트가 참조하는 토큰 — nyaki 팔레트에 매핑 */
+  --border: rgba(197, 180, 157, 0.38);
+  --foreground: var(--nyaki-ink);
+  --muted: var(--nyaki-subtle);
+  --chart-background: var(--nyaki-cream);
+  --chart-foreground: var(--nyaki-ink);
+  --chart-foreground-muted: rgba(68, 58, 53, 0.6);
+  --chart-label: rgba(68, 58, 53, 0.62);
+  --chart-1: #443a35;
+  --chart-2: #a08a6c;
+  --chart-3: #c5b49d;
+  --chart-4: #8a7f6d;
+  --chart-5: #d8cbb4;
 }
 
 @theme inline {
@@ -20,6 +34,14 @@
   --color-taupe: var(--nyaki-taupe);
   --color-card: var(--nyaki-card);
   --color-subtle: var(--nyaki-subtle);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-chart-label: var(--chart-label);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --font-sans: var(--font-inter);
 }
 

@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import {
-  EmptyState,
-  GhostButton,
-  PageHeader,
-  PrimaryLink,
-} from "@/components/ui";
-import { activeWords, bookMeta, useVocab } from "@/lib/vocab-store";
+import { EmptyState, GhostButton, PageHeader, PrimaryLink } from "@/components/ui";
+import { WordBookStats } from "@/components/word-book-stats";
+import { activeWords, useVocab } from "@/lib/vocab-store";
 
 const PAGE_SIZE = 20;
 
@@ -20,15 +16,18 @@ export default function WordBookDetailPage() {
   const { getWordBook, deleteWordBook } = useVocab();
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
+  const [pagedBookId, setPagedBookId] = useState(params.id);
   const book = getWordBook(params.id);
 
-  useEffect(() => {
+  // 다른 단어장으로 이동하면 페이지를 1로 되돌린다 (렌더 중 상태 조정 패턴)
+  if (pagedBookId !== params.id) {
+    setPagedBookId(params.id);
     setPage(1);
-  }, [params.id]);
+  }
 
   if (!book) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-8 py-10 lg:px-12">
+      <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
         <PageHeader
           title="단어장을 찾을 수 없습니다"
           description="목록에서 다른 단어장을 선택해 주세요."
@@ -40,7 +39,6 @@ export default function WordBookDetailPage() {
     );
   }
 
-  const meta = bookMeta(book);
   const words = activeWords(book);
   const totalPages = Math.max(1, Math.ceil(words.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -50,7 +48,11 @@ export default function WordBookDetailPage() {
   );
 
   const handleDeleteBook = async () => {
-    if (!window.confirm(`"${book.title}" 단어장을 삭제할까요?\n안의 단어도 함께 삭제됩니다.`)) {
+    if (
+      !window.confirm(
+        `"${book.title}" 단어장을 삭제할까요?\n안의 단어도 함께 삭제됩니다.`,
+      )
+    ) {
       return;
     }
     setDeleting(true);
@@ -63,30 +65,30 @@ export default function WordBookDetailPage() {
       );
       setDeleting(false);
     }
-  }
+  };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-8 py-10 lg:px-12">
+    <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
       <PageHeader
         title={book.title}
-        description={
-          book.description ?? `${meta.count}개 · 암기 ${meta.rate}%`
-        }
+        description={book.description}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1">
             <PrimaryLink href={`/word-books/${book.id}/words/new`}>
               단어 추가
             </PrimaryLink>
             <GhostButton
-              className="text-red-600 hover:bg-red-50"
+              className="text-umber/45 hover:bg-transparent hover:text-red-600"
               disabled={deleting}
               onClick={() => void handleDeleteBook()}
             >
-              {deleting ? "삭제 중…" : "단어장 삭제"}
+              {deleting ? "삭제 중…" : "삭제"}
             </GhostButton>
           </div>
         }
       />
+
+      <WordBookStats book={book} />
 
       {words.length === 0 ? (
         <EmptyState
@@ -100,33 +102,46 @@ export default function WordBookDetailPage() {
         />
       ) : (
         <>
-          <div className="divide-y divide-taupe/35 rounded-lg border border-taupe/45">
+          <ul className="divide-y divide-taupe/25 border-t border-taupe/25">
             {pagedWords.map((word) => (
-              <Link
-                key={word.id}
-                href={`/word-books/${book.id}/words/${word.id}`}
-                className="flex items-start justify-between gap-4 px-4 py-3.5 transition hover:bg-subtle/60"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink">{word.term}</p>
-                  <p className="mt-0.5 text-sm text-umber/65">{word.meaning}</p>
-                  {word.pronunciation ? (
-                    <p className="mt-1 text-xs text-umber/45">{word.pronunciation}</p>
-                  ) : null}
-                </div>
-              </Link>
+              <li key={word.id}>
+                <Link
+                  href={`/word-books/${book.id}/words/${word.id}`}
+                  className="group flex items-baseline gap-6 py-3.5 transition-colors"
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink group-hover:text-umber">
+                    {word.term}
+                    {word.pronunciation ? (
+                      <span className="ml-2 text-xs font-normal text-umber/40">
+                        {word.pronunciation}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-umber/60">
+                    {word.meaning}
+                  </span>
+                  {word.memorizationStatus === "memorized" ? (
+                    <span
+                      aria-label="암기함"
+                      className="size-1.5 shrink-0 rounded-full bg-[var(--chart-1)]"
+                    />
+                  ) : (
+                    <span aria-hidden className="size-1.5 shrink-0" />
+                  )}
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
 
           {totalPages > 1 ? (
-            <div className="mt-4 flex items-center justify-center gap-3">
+            <div className="mt-8 flex items-center justify-center gap-4">
               <GhostButton
                 disabled={currentPage === 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 이전
               </GhostButton>
-              <span className="text-sm text-umber/65">
+              <span className="text-xs tabular-nums text-umber/50">
                 {currentPage} / {totalPages}
               </span>
               <GhostButton

@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-full">
-      <aside className="fixed inset-y-0 left-0 flex w-56 flex-col border-r border-taupe/40 bg-cream px-3 py-4">
+      <aside className="fixed inset-y-0 left-0 flex w-56 flex-col border-r border-taupe/30 bg-cream px-3 py-4">
         <Link
           href="/"
           className="mb-4 px-2.5 text-sm font-semibold tracking-tight text-ink"
@@ -82,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
-        <div className="mt-3 border-t border-taupe/40 pt-3">
+        <div className="mt-3 border-t border-taupe/30 pt-3">
           <GhostButton
             className="w-full justify-start px-2.5 text-ink/40"
             onClick={() => void signOutUser()}

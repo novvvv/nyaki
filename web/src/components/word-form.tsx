@@ -46,7 +46,7 @@ export function WordForm({ mode }: WordFormProps) {
 
   if (!book) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-8 py-10 lg:px-12">
+      <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
         <PageHeader title="단어장을 찾을 수 없습니다" />
       </main>
     );
@@ -54,7 +54,7 @@ export function WordForm({ mode }: WordFormProps) {
 
   if (mode === "edit" && !existing) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-8 py-10 lg:px-12">
+      <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
         <PageHeader title="단어를 찾을 수 없습니다" />
       </main>
     );
@@ -110,13 +110,13 @@ export function WordForm({ mode }: WordFormProps) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-8 py-10 lg:px-12">
-      <div className="mb-6 text-xs text-ink/35">
-        <Link href="/" className="hover:text-ink/55">
+    <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
+      <div className="mb-7 text-xs text-umber/40">
+        <Link href="/word-books" className="transition-colors hover:text-ink">
           단어장
         </Link>
         <span className="mx-1.5">/</span>
-        <Link href={`/word-books/${book.id}`} className="hover:text-ink/55">
+        <Link href={`/word-books/${book.id}`} className="transition-colors hover:text-ink">
           {book.title}
         </Link>
       </div>
@@ -127,7 +127,7 @@ export function WordForm({ mode }: WordFormProps) {
       />
 
       <form
-        className="space-y-5"
+        className="max-w-xl space-y-6"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSubmit();
@@ -194,7 +194,7 @@ export function WordForm({ mode }: WordFormProps) {
           />
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-umber/70">
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-umber/60">
           <input
             type="checkbox"
             className="size-4 rounded border-taupe/60 accent-ink"
@@ -204,7 +204,7 @@ export function WordForm({ mode }: WordFormProps) {
           북마크
         </label>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-taupe/40 pt-5">
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-taupe/25 pt-6">
           <PrimaryButton type="submit">
             {mode === "create" ? "추가" : "저장"}
           </PrimaryButton>
@@ -214,7 +214,7 @@ export function WordForm({ mode }: WordFormProps) {
           {mode === "edit" ? (
             <GhostButton
               type="button"
-              className="ml-auto text-red-600 hover:bg-red-50"
+              className="ml-auto text-umber/45 hover:bg-transparent hover:text-red-600"
               onClick={() => void handleDelete()}
             >
               삭제

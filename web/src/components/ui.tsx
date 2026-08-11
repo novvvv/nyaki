@@ -70,6 +70,22 @@ export function GhostButton({
   );
 }
 
+export function SubtleButton({
+  children,
+  className = "",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={`inline-flex items-center justify-center rounded-lg border border-taupe/40 bg-transparent px-3 py-2 text-sm text-umber/65 transition hover:border-taupe/70 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <label className="mb-1.5 block text-xs font-medium text-umber/55">
@@ -122,13 +138,13 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-8 flex items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+    <div className="mb-10 flex items-start justify-between gap-6">
+      <div className="min-w-0">
+        <h1 className="truncate text-[22px] font-semibold tracking-tight text-ink">
           {title}
         </h1>
         {description ? (
-          <p className="mt-1 text-sm text-umber/65">{description}</p>
+          <p className="mt-1.5 text-sm text-umber/55">{description}</p>
         ) : null}
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
@@ -146,12 +162,12 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-taupe/60 px-6 py-12 text-center">
-      <p className="text-sm font-medium text-ink/70">{title}</p>
+    <div className="rounded-xl border border-dashed border-taupe/45 px-6 py-16 text-center">
+      <p className="text-sm font-medium text-ink/65">{title}</p>
       {description ? (
-        <p className="mt-1 text-sm text-umber/55">{description}</p>
+        <p className="mt-1.5 text-sm text-umber/45">{description}</p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
 }

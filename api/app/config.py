@@ -9,10 +9,15 @@ class Settings(BaseSettings):
     database_url: str
     firebase_project_id: str
     cors_origins: str = "http://localhost:3000"
+    admin_uids: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def admin_uid_list(self) -> list[str]:
+        return [uid.strip() for uid in self.admin_uids.split(",") if uid.strip()]
 
 
 @lru_cache

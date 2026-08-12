@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .auth import initialize_firebase
 from .config import get_settings
+from .content_routes import router as content_router
 from .routes import router
 
 
@@ -28,6 +29,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 app.include_router(router)
+app.include_router(content_router)
 
 
 @app.get("/health", tags=["health"])

@@ -22,15 +22,17 @@ class ArtistModel(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
-class SongModel(Base):
-    __tablename__ = "songs"
+class PostModel(Base):
+    __tablename__ = "posts"
     __table_args__ = (
-        Index("ix_songs_artist_slug", "artist_slug"),
-        Index("ix_songs_posted_at", "posted_at"),
+        Index("ix_posts_artist_slug", "artist_slug"),
+        Index("ix_posts_posted_at", "posted_at"),
     )
 
     slug: Mapped[str] = mapped_column(String(120), primary_key=True)
-    artist_slug: Mapped[str] = mapped_column(String(120))
+    # "song"만 artist_slug를 가짐. "notice"/"note"는 artist_slug가 None — ArtistModel과 무관.
+    kind: Mapped[str] = mapped_column(String(20), default="song", server_default="song")
+    artist_slug: Mapped[str | None] = mapped_column(String(120), nullable=True)
     title: Mapped[str] = mapped_column(String(300))
     body: Mapped[str] = mapped_column(Text)
     posted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

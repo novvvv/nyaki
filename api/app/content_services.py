@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .content_models import ArtistModel, SongModel
-from .content_schemas import ArtistPayload, SongPayload
+from .content_models import ArtistModel, PostModel
+from .content_schemas import ArtistPayload, PostPayload
 
 
 def utc_now() -> datetime:
@@ -50,25 +50,38 @@ def delete_artist(session: Session, slug: str) -> ArtistModel | None:
     return entity
 
 
-def list_songs(session: Session, artist_slug: str | None = None) -> list[SongModel]:
-    query = select(SongModel).where(SongModel.is_deleted.is_(False))
+def list_posts(
+    session: Session,
+    artist_slug: str | None = None,
+    kind: str | None = None,
+) -> list[PostModel]:
+    query = select(PostModel).where(PostModel.is_deleted.is_(False))
     if artist_slug is not None:
-        query = query.where(SongModel.artist_slug == artist_slug)
-    query = query.order_by(SongModel.posted_at.desc())
+        query = query.where(PostModel.artist_slug == artist_slug)
+    if kind is not None:
+        query = query.where(PostModel.kind == kind)
+    query = query.order_by(PostModel.posted_at.desc())
     return list(session.scalars(query))
 
 
-def get_song(session: Session, artist_slug: str, slug: str) -> SongModel | None:
-    entity = session.get(SongModel, slug)
-    if entity is None or entity.is_deleted or entity.artist_slug != artist_slug:
+def get_post(session: Session, slug: str) -> PostModel | None:
+    entity = session.get(PostModel, slug)
+    if entity is None or entity.is_deleted:
         return None
     return entity
 
 
-def upsert_song(session: Session, payload: SongPayload) -> SongModel:
-    entity = session.get(SongModel, payload.slug)
+def get_post_for_artist(session: Session, artist_slug: str, slug: str) -> PostModel | None:
+    entity = get_post(session, slug)
+    if entity is None or entity.artist_slug != artist_slug:
+        return None
+    return entity
+
+
+def upsert_post(session: Session, payload: PostPayload) -> PostModel:
+    entity = session.get(PostModel, payload.slug)
     if entity is None:
-        entity = SongModel(**payload.model_dump())
+        entity = PostModel(**payload.model_dump())
         session.add(entity)
     else:
         for field, value in payload.model_dump().items():
@@ -77,8 +90,8 @@ def upsert_song(session: Session, payload: SongPayload) -> SongModel:
     return entity
 
 
-def delete_song(session: Session, slug: str) -> SongModel | None:
-    entity = session.get(SongModel, slug)
+def delete_post(session: Session, slug: str) -> PostModel | None:
+    entity = session.get(PostModel, slug)
     if entity is None or entity.is_deleted:
         return None
     entity.is_deleted = True

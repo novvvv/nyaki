@@ -35,7 +35,7 @@ class _FakeAuthRepository implements AuthRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('홈에 고양이와 퀘스트 버튼이 있고 탭하면 퀘스트로 간다', (WidgetTester tester) async {
+  testWidgets('홈이 보이고 하단 퀘스트 탭을 누르면 퀘스트 화면으로 간다', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
 
     final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -64,9 +64,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('홈'), findsOneWidget);
-    expect(find.image(const AssetImage('assets/icon/quest.png')), findsOneWidget);
+    expect(find.text('퀘스트'), findsOneWidget);
 
-    await tester.tap(find.image(const AssetImage('assets/icon/quest.png')));
+    await tester.tap(find.text('퀘스트'));
     await tester.pumpAndSettle();
 
     expect(find.text('Daily Quest'), findsOneWidget);

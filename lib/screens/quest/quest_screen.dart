@@ -19,52 +19,55 @@ class QuestScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const dividerColor = NyakiColors.softDune;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(28, 20, 28, 0),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Daily Quest',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.3,
-                    color: NyakiColors.ink,
+    return ColoredBox(
+      color: NyakiColors.cream,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 20, 28, 0),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Daily Quest',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                      color: NyakiColors.ink,
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                '0 / ${_quests.length}',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  color: NyakiColors.ink.withValues(alpha: 0.35),
+                Text(
+                  '0 / ${_quests.length}',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    color: NyakiColors.ink.withValues(alpha: 0.35),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
-            itemCount: _quests.length,
-            separatorBuilder: (_, __) => Divider(
-              height: 1,
-              thickness: 1,
-              color: dividerColor,
+              ],
             ),
-            itemBuilder: (context, index) {
-              final quest = _quests[index];
-              return _QuestRow(title: quest.title, subtitle: quest.subtitle);
-            },
           ),
-        ),
-      ],
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
+              itemCount: _quests.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                thickness: 1,
+                color: dividerColor,
+              ),
+              itemBuilder: (context, index) {
+                final quest = _quests[index];
+                return _QuestRow(title: quest.title, subtitle: quest.subtitle);
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

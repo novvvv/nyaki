@@ -1,7 +1,7 @@
 # SRS (SM-2) 복습 — 설계 · 계산 로직 · 구현
 
 > 상태: **구현 완료** (2026-08 기준)
-> 관련: [DOMAIN.md](DOMAIN.md) (Word 도메인) · [API.md](API.md) · [hub_erd.md](hub_erd.md) · [../app_erd.md](../app_erd.md)
+> 관련: [DOMAIN.md](DOMAIN.md) (Word 도메인) · [API.md](API.md) · [hub_erd.md](hub_erd.md) · [app_erd.md](app_erd.md)
 >
 > 원래 SRS-PLAN / SRS / SRS-IMPLEMENTATION / SRS-PROGRESS 4개로 나뉘어 있던 것을 구현 완료 후 이 문서 하나로 합쳤다.
 
@@ -246,5 +246,5 @@ Anki는 2023년부터 FSRS로 전환했고 SM-2보다 예측 정확도가 검증
 
 - [ ] `flutter analyze` / `flutter test` 전체 통과 확인
 - [ ] 채점 → `srs_due_at` 갱신 → 화면 반영까지 앱 내 직접 확인
-- [ ] Drift v3 → v4 마이그레이션 실기기 검증 ([../RELEASE-CHECKLIST.md](../RELEASE-CHECKLIST.md) P0)
+- [ ] Drift v3 → v4 마이그레이션 실기기 검증 ([RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md) P0)
 - [ ] `sync_changes` 정리 전략 A/B 결정 (§6)

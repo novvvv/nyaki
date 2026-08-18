@@ -9,7 +9,7 @@ import '../../data/auth/auth_repository.dart';
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
-  static const _catAsset = 'assets/images/cat.png';
+  static const _catAsset = 'assets/images/nyaki_sleeping.png';
 
   Future<void> _run(
     BuildContext context,

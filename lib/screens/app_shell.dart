@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../core/theme/nyaki_colors.dart';
 import '../widgets/nyaki_bottom_bar.dart';
 import 'home/home_screen.dart';
+import 'quest/quest_screen.dart';
 import 'settings/settings_screen.dart';
 import 'test/word_test_screen.dart';
-import 'word_book/add_word_screen.dart';
 import 'word_book/word_book_list_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -20,8 +20,8 @@ class _AppShellState extends State<AppShell> {
 
   static const _screens = [
     HomeScreen(),
+    QuestScreen(),
     WordBookListScreen(),
-    AddWordScreen(embedded: true),
     WordTestScreen(),
     SettingsScreen(),
   ];

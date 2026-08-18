@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Nyaki design tokens — see [Design.md](../../../Design.md).
+/// Nyaki design tokens — see [Design.md](../../../docs/Design.md).
 abstract final class NyakiColors {
   /// Vanilla #F8F4EE — page / scaffold background
   static const Color cream = Color(0xFFF8F4EE);

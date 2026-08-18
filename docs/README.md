@@ -11,7 +11,7 @@
 
 확정 안 된 추후 아이디어(웹 복습 UI, 로컬→클라우드 이관, sync 로그 스케일링 등)는 [SRS.md](SRS.md)의 "향후 개선 검토" 섹션에 모아둔다.
 
-Flutter 앱 **로컬 DB(Drift) ERD**는 루트 [app_erd.md](../app_erd.md) (웹 DB 없음 · Hub는 `api/app/models.py`).
+Flutter 앱 **로컬 DB(Drift) ERD**는 [app_erd.md](app_erd.md) (웹 DB 없음 · Hub는 `api/app/models.py`).
 
 서버 실행·배포는 [api/README.md](../api/README.md) 참고.
 

@@ -57,7 +57,7 @@ models.py    word_books · words · sync_changes
 
 ## 문서
 
-- **앱 로컬 ERD (Drift)**: [app_erd.md](app_erd.md)
+- **앱 로컬 ERD (Drift)**: [docs/app_erd.md](docs/app_erd.md)
 - 도메인: [docs/DOMAIN.md](docs/DOMAIN.md)
 - API: [docs/API.md](docs/API.md)
 - 실행 · 배포: [api/README.md](api/README.md)

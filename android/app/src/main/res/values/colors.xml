@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FCF9F2</color>
+    <!-- NyakiColors.cream (lib/core/theme/nyaki_colors.dart) — 네이티브 스플래시 배경 -->
+    <color name="launch_background">#F8F4EE</color>
 </resources>

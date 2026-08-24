@@ -17,8 +17,8 @@ from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 
-from app.auth import require_admin_id
-from app.database import Base, engine
+from app.core.auth import require_admin_id
+from app.core.database import Base, engine
 from app.main import app
 
 

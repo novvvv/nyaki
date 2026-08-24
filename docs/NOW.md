@@ -87,7 +87,7 @@
 
 로그인 UI/Hub 서버 코드는 그대로 두고, **특정 계정(본인 테스트 계정)만 실제로 클라우드 sync가 동작**하게 하는 방식. 나머지 계정은 로그인해도 자동으로 로컬 전용처럼 동작 — 로그인 진입점을 아예 막을지 고민하는 대신 쓸 수 있는 제3의 선택지.
 
-- 지금 Hub엔 User 테이블 자체가 없음 ([api/app/models.py](api/app/models.py)) — `user_id`(Firebase UID)가 `word_books`/`words`에 컬럼으로만 존재. 등급/플랜 필드 없음.
-- **서버 쪽에서 막아야 실효성 있음** (클라이언트 판단은 우회 가능). `api/app/auth.py`의 `get_current_user_id`에 이메일 allowlist 체크하는 `require_sync_access` 의존성 추가 → `/v1/sync/push`·`/v1/sync/pull`에만 적용. `api/.env`에 `SYNC_ALLOWED_EMAILS=...` 추가하면 끝, DB 마이그레이션 불필요.
+- 지금 Hub엔 User 테이블 자체가 없음 ([api/app/models/](api/app/models/)) — `user_id`(Firebase UID)가 `word_books`/`words`에 컬럼으로만 존재. 등급/플랜 필드 없음.
+- **서버 쪽에서 막아야 실효성 있음** (클라이언트 판단은 우회 가능). `api/app/core/auth.py`의 `get_current_user_id`에 이메일 allowlist 체크하는 `require_sync_access` 의존성 추가 → `/v1/sync/push`·`/v1/sync/pull`에만 적용. `api/.env`에 `SYNC_ALLOWED_EMAILS=...` 추가하면 끝, DB 마이그레이션 불필요.
 - 403 받으면 [sync_coordinator.dart](lib/data/sync/sync_coordinator.dart)의 `catch (_) {}`가 삼키고 재시도만 반복 → outbox가 무한히 쌓이는 부작용 있음. 제대로 하려면 403 시 클라이언트가 타이머를 멈추는 로직 추가 필요.
 - 나중에 진짜 요금제(쿼터) 붙일 때 이 allowlist를 `role` 컬럼으로 자연스럽게 확장 가능 — 일회성 땜빵이 아니라 향후 플랜 시스템의 시작점이 될 수 있음.

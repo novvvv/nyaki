@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 
-from app.auth import get_current_user_id
-from app.database import Base, engine
+from app.core.auth import get_current_user_id
+from app.core.database import Base, engine
 from app.main import app
 
 

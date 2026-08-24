@@ -3,10 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .auth import initialize_firebase
-from .config import get_settings
-from .content_routes import router as content_router
-from .routes import router
+from .content.routes import router as content_router
+from .core.auth import initialize_firebase
+from .core.config import get_settings
+from .vocab.routes import router
 
 
 @asynccontextmanager

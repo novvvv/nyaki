@@ -3,7 +3,7 @@
 Flutter 앱이 기기에 저장하는 스키마와 동기화 보조 테이블 정리.
 
 > **웹 ERD가 아님.** Next.js 웹은 DB가 없고 Hub REST API만 사용한다.  
-> Hub(Postgres) 스키마는 [api/app/models.py](api/app/models.py) · [docs/DOMAIN.md](docs/DOMAIN.md) 참고.  
+> Hub(Postgres) 스키마는 [api/app/models/](api/app/models/) · [docs/DOMAIN.md](docs/DOMAIN.md) 참고.  
 > 도메인 필드 규칙(암기 상태, soft delete 등)은 앱·웹·Hub가 같은 `Word` / `WordBook` 모델을 따른다.
 
 ---

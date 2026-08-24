@@ -18,7 +18,7 @@
 | `lib/data/repositories/vocab_repository.dart` | `CreateWordInput` · `UpdateWordInput`의 `imagePath` |
 | `drift_vocab_repository.dart` · `in_memory_vocab_repository.dart` | 양쪽 다 처리 |
 | `lib/data/sync/sync_coordinator.dart` | `image_path` 직렬화 · 역직렬화 |
-| `api/app/models.py` | `WordModel.image_path` (nullable Text) |
+| `api/app/models/vocab.py` | `WordModel.image_path` (nullable Text) |
 | `web/src/lib/api-client.ts` | `image_path` 타입 정의 |
 | `word_test_session_screen.dart` | `_WordImage` — `assets/` 접두사 분기 |
 

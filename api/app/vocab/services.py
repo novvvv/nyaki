@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import SyncChangeModel, WordBookModel, WordModel
+from ..models import SyncChangeModel, WordBookModel, WordModel
 from .schemas import WordBookPayload, WordPayload
 
 

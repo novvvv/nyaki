@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from .auth import require_admin_id
-from .content_schemas import ArtistPayload, ArtistResponse, PostPayload, PostResponse
-from .content_services import (
+from ..core.auth import require_admin_id
+from .schemas import ArtistPayload, ArtistResponse, PostPayload, PostResponse
+from .services import (
     delete_artist,
     delete_post,
     get_artist,
@@ -14,7 +14,7 @@ from .content_services import (
     upsert_artist,
     upsert_post,
 )
-from .database import get_session
+from ..core.database import get_session
 
 router = APIRouter(prefix="/v1/content", tags=["content"])
 

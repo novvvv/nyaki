@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .database import Base
+from ..core.database import Base
 
 # ==================== 📃 Note ======================= #
 # nyaki-web(블로그) 콘텐츠 전용 테이블. Word/WordBook과는 완전히 별도.

@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .auth import get_current_user_id
-from .database import get_session
-from .models import SyncChangeModel, WordBookModel, WordModel
+from ..core.auth import get_current_user_id
+from ..core.database import get_session
+from ..models import SyncChangeModel, WordBookModel, WordModel
 from .schemas import (
     ReviewDueResponse,
     SyncChange,

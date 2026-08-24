@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .content_models import ArtistModel, PostModel
-from .content_schemas import ArtistPayload, PostPayload
+from ..models import ArtistModel, PostModel
+from .schemas import ArtistPayload, PostPayload
 
 
 def utc_now() -> datetime:

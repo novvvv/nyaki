@@ -1,6 +1,6 @@
 # Hub ERD — Postgres
 
-Sync Hub(`api/`)가 실제로 저장하는 스키마 정리. 구현: [api/app/models.py](../api/app/models.py).
+Sync Hub(`api/`)가 실제로 저장하는 스키마 정리. 구현: [api/app/models/](../api/app/models/).
 
 > 앱 로컬(Drift) ERD는 [app_erd.md](app_erd.md) — 컬럼 이름은 대부분 같지만 Hub는 `(id, user_id)` 복합 PK로 여러 사용자를 한 DB에 격리하고, 앱은 `user_id` 없이 기기당 한 사용자만 저장한다는 차이가 있다.
 

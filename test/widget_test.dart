@@ -63,10 +63,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('홈'), findsOneWidget);
-    expect(find.text('퀘스트'), findsOneWidget);
+    expect(find.byKey(const ValueKey('nyakiBottomBar_홈')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nyakiBottomBar_퀘스트')), findsOneWidget);
 
-    await tester.tap(find.text('퀘스트'));
+    await tester.tap(find.byKey(const ValueKey('nyakiBottomBar_퀘스트')));
     await tester.pumpAndSettle();
 
     expect(find.text('Daily Quest'), findsOneWidget);

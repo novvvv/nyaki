@@ -2,6 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../core/auth_scope.dart';
+import '../../core/progress_scope.dart';
+import '../../data/auth/auth_controller.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -62,7 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _catAsset = _pickCatAsset(_catAssets, excluding: _catAsset);
     });
-    // TODO(게이미피케이션 2단계): 퀘스트5 "냥키 쓰다듬기" 완료 처리 훅.
-    // 퀘스트/streak 로직(UserProgress·QuestCompletion)이 아직 없어서 지금은 이미지 전환만 함.
+
+    // 이미지 전환은 로그인 여부와 무관하게 항상 동작. 퀘스트 완료 알림만
+    // 로그인 상태일 때 시도한다 — 실패해도 completeQuest()가 조용히
+    // 캐시값으로 폴백하므로 여기서 결과를 기다리지 않는다.
+    if (AuthScope.of(context).status == AuthStatus.signedIn) {
+      ProgressScope.of(context).completeQuest('pet_cat');
+    }
   }
 }

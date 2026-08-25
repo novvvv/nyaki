@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nyaki/data/auth/auth_controller.dart';
 import 'package:nyaki/data/auth/auth_repository.dart';
 import 'package:nyaki/data/local/app_database.dart';
+import 'package:nyaki/data/progress_controller.dart';
 import 'package:nyaki/data/repositories/drift_vocab_repository.dart';
+import 'package:nyaki/data/repositories/progress_repository.dart';
 import 'package:nyaki/data/sync/sync_coordinator.dart';
 import 'package:nyaki/data/vocab_controller.dart';
 import 'package:nyaki/main.dart';
@@ -50,6 +52,12 @@ void main() {
     await authController.initialize();
     await authController.skipSignIn();
 
+    final progressController = ProgressController(
+      repository: ProgressRepository(database: db, auth: authController),
+      auth: authController,
+    );
+    await progressController.initialize();
+
     await tester.pumpWidget(
       NyakiApp(
         controller: controller,
@@ -59,6 +67,7 @@ void main() {
           auth: authController,
           vocab: controller,
         ),
+        progressController: progressController,
       ),
     );
     await tester.pumpAndSettle();

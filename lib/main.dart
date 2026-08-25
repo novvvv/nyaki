@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'core/auth_scope.dart';
 import 'core/error_screen.dart';
 import 'core/nyaki_scope.dart';
+import 'core/progress_scope.dart';
 import 'core/theme/nyaki_theme.dart';
 import 'data/auth/auth_controller.dart';
 import 'data/auth/firebase_auth_repository.dart';
+import 'data/progress_controller.dart';
 import 'data/repositories/drift_vocab_repository.dart';
+import 'data/repositories/progress_repository.dart';
 import 'data/sync/sync_coordinator.dart';
 import 'data/vocab_controller.dart';
 import 'screens/auth/auth_gate.dart';
@@ -31,11 +34,22 @@ Future<void> main() async {
     vocab: controller,
   )..start();
 
+  final progressRepository = ProgressRepository(
+    database: repository.database,
+    auth: authController,
+  );
+  final progressController = ProgressController(
+    repository: progressRepository,
+    auth: authController,
+  );
+  await progressController.initialize();
+
   runApp(
     NyakiApp(
       controller: controller,
       authController: authController,
       syncCoordinator: syncCoordinator,
+      progressController: progressController,
     ),
   );
 }
@@ -46,11 +60,13 @@ class NyakiApp extends StatefulWidget {
     required this.controller,
     required this.authController,
     required this.syncCoordinator,
+    required this.progressController,
   });
 
   final VocabController controller;
   final AuthController authController;
   final SyncCoordinator syncCoordinator;
+  final ProgressController progressController;
 
   @override
   State<NyakiApp> createState() => _NyakiAppState();
@@ -67,13 +83,16 @@ class _NyakiAppState extends State<NyakiApp> {
   Widget build(BuildContext context) {
     return AuthScope(
       controller: widget.authController,
-      child: NyakiScope(
-        controller: widget.controller,
-        child: MaterialApp(
-          title: 'Nyaki',
-          debugShowCheckedModeBanner: false,
-          theme: buildNyakiTheme(),
-          home: const AuthGate(),
+      child: ProgressScope(
+        controller: widget.progressController,
+        child: NyakiScope(
+          controller: widget.controller,
+          child: MaterialApp(
+            title: 'Nyaki',
+            debugShowCheckedModeBanner: false,
+            theme: buildNyakiTheme(),
+            home: const AuthGate(),
+          ),
         ),
       ),
     );

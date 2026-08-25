@@ -1833,6 +1833,663 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
   }
 }
 
+class $UserProgressTable extends UserProgress
+    with TableInfo<$UserProgressTable, UserProgressRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _churuBalanceMeta =
+      const VerificationMeta('churuBalance');
+  @override
+  late final GeneratedColumn<int> churuBalance = GeneratedColumn<int>(
+      'churu_balance', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _streakCountMeta =
+      const VerificationMeta('streakCount');
+  @override
+  late final GeneratedColumn<int> streakCount = GeneratedColumn<int>(
+      'streak_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _lastActiveDateMeta =
+      const VerificationMeta('lastActiveDate');
+  @override
+  late final GeneratedColumn<DateTime> lastActiveDate =
+      GeneratedColumn<DateTime>('last_active_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _dailyReviewGoalMeta =
+      const VerificationMeta('dailyReviewGoal');
+  @override
+  late final GeneratedColumn<int> dailyReviewGoal = GeneratedColumn<int>(
+      'daily_review_goal', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _morningReviewCountMeta =
+      const VerificationMeta('morningReviewCount');
+  @override
+  late final GeneratedColumn<int> morningReviewCount = GeneratedColumn<int>(
+      'morning_review_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _eveningReviewCountMeta =
+      const VerificationMeta('eveningReviewCount');
+  @override
+  late final GeneratedColumn<int> eveningReviewCount = GeneratedColumn<int>(
+      'evening_review_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns => [
+        userId,
+        churuBalance,
+        streakCount,
+        lastActiveDate,
+        dailyReviewGoal,
+        morningReviewCount,
+        eveningReviewCount
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_progress';
+  @override
+  VerificationContext validateIntegrity(Insertable<UserProgressRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('churu_balance')) {
+      context.handle(
+          _churuBalanceMeta,
+          churuBalance.isAcceptableOrUnknown(
+              data['churu_balance']!, _churuBalanceMeta));
+    }
+    if (data.containsKey('streak_count')) {
+      context.handle(
+          _streakCountMeta,
+          streakCount.isAcceptableOrUnknown(
+              data['streak_count']!, _streakCountMeta));
+    }
+    if (data.containsKey('last_active_date')) {
+      context.handle(
+          _lastActiveDateMeta,
+          lastActiveDate.isAcceptableOrUnknown(
+              data['last_active_date']!, _lastActiveDateMeta));
+    }
+    if (data.containsKey('daily_review_goal')) {
+      context.handle(
+          _dailyReviewGoalMeta,
+          dailyReviewGoal.isAcceptableOrUnknown(
+              data['daily_review_goal']!, _dailyReviewGoalMeta));
+    }
+    if (data.containsKey('morning_review_count')) {
+      context.handle(
+          _morningReviewCountMeta,
+          morningReviewCount.isAcceptableOrUnknown(
+              data['morning_review_count']!, _morningReviewCountMeta));
+    }
+    if (data.containsKey('evening_review_count')) {
+      context.handle(
+          _eveningReviewCountMeta,
+          eveningReviewCount.isAcceptableOrUnknown(
+              data['evening_review_count']!, _eveningReviewCountMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId};
+  @override
+  UserProgressRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserProgressRow(
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      churuBalance: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}churu_balance'])!,
+      streakCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}streak_count'])!,
+      lastActiveDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_active_date']),
+      dailyReviewGoal: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}daily_review_goal']),
+      morningReviewCount: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}morning_review_count'])!,
+      eveningReviewCount: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}evening_review_count'])!,
+    );
+  }
+
+  @override
+  $UserProgressTable createAlias(String alias) {
+    return $UserProgressTable(attachedDatabase, alias);
+  }
+}
+
+class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
+  final String userId;
+  final int churuBalance;
+  final int streakCount;
+  final DateTime? lastActiveDate;
+  final int? dailyReviewGoal;
+  final int morningReviewCount;
+  final int eveningReviewCount;
+  const UserProgressRow(
+      {required this.userId,
+      required this.churuBalance,
+      required this.streakCount,
+      this.lastActiveDate,
+      this.dailyReviewGoal,
+      required this.morningReviewCount,
+      required this.eveningReviewCount});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['churu_balance'] = Variable<int>(churuBalance);
+    map['streak_count'] = Variable<int>(streakCount);
+    if (!nullToAbsent || lastActiveDate != null) {
+      map['last_active_date'] = Variable<DateTime>(lastActiveDate);
+    }
+    if (!nullToAbsent || dailyReviewGoal != null) {
+      map['daily_review_goal'] = Variable<int>(dailyReviewGoal);
+    }
+    map['morning_review_count'] = Variable<int>(morningReviewCount);
+    map['evening_review_count'] = Variable<int>(eveningReviewCount);
+    return map;
+  }
+
+  UserProgressCompanion toCompanion(bool nullToAbsent) {
+    return UserProgressCompanion(
+      userId: Value(userId),
+      churuBalance: Value(churuBalance),
+      streakCount: Value(streakCount),
+      lastActiveDate: lastActiveDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastActiveDate),
+      dailyReviewGoal: dailyReviewGoal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dailyReviewGoal),
+      morningReviewCount: Value(morningReviewCount),
+      eveningReviewCount: Value(eveningReviewCount),
+    );
+  }
+
+  factory UserProgressRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserProgressRow(
+      userId: serializer.fromJson<String>(json['userId']),
+      churuBalance: serializer.fromJson<int>(json['churuBalance']),
+      streakCount: serializer.fromJson<int>(json['streakCount']),
+      lastActiveDate: serializer.fromJson<DateTime?>(json['lastActiveDate']),
+      dailyReviewGoal: serializer.fromJson<int?>(json['dailyReviewGoal']),
+      morningReviewCount: serializer.fromJson<int>(json['morningReviewCount']),
+      eveningReviewCount: serializer.fromJson<int>(json['eveningReviewCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'churuBalance': serializer.toJson<int>(churuBalance),
+      'streakCount': serializer.toJson<int>(streakCount),
+      'lastActiveDate': serializer.toJson<DateTime?>(lastActiveDate),
+      'dailyReviewGoal': serializer.toJson<int?>(dailyReviewGoal),
+      'morningReviewCount': serializer.toJson<int>(morningReviewCount),
+      'eveningReviewCount': serializer.toJson<int>(eveningReviewCount),
+    };
+  }
+
+  UserProgressRow copyWith(
+          {String? userId,
+          int? churuBalance,
+          int? streakCount,
+          Value<DateTime?> lastActiveDate = const Value.absent(),
+          Value<int?> dailyReviewGoal = const Value.absent(),
+          int? morningReviewCount,
+          int? eveningReviewCount}) =>
+      UserProgressRow(
+        userId: userId ?? this.userId,
+        churuBalance: churuBalance ?? this.churuBalance,
+        streakCount: streakCount ?? this.streakCount,
+        lastActiveDate:
+            lastActiveDate.present ? lastActiveDate.value : this.lastActiveDate,
+        dailyReviewGoal: dailyReviewGoal.present
+            ? dailyReviewGoal.value
+            : this.dailyReviewGoal,
+        morningReviewCount: morningReviewCount ?? this.morningReviewCount,
+        eveningReviewCount: eveningReviewCount ?? this.eveningReviewCount,
+      );
+  UserProgressRow copyWithCompanion(UserProgressCompanion data) {
+    return UserProgressRow(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      churuBalance: data.churuBalance.present
+          ? data.churuBalance.value
+          : this.churuBalance,
+      streakCount:
+          data.streakCount.present ? data.streakCount.value : this.streakCount,
+      lastActiveDate: data.lastActiveDate.present
+          ? data.lastActiveDate.value
+          : this.lastActiveDate,
+      dailyReviewGoal: data.dailyReviewGoal.present
+          ? data.dailyReviewGoal.value
+          : this.dailyReviewGoal,
+      morningReviewCount: data.morningReviewCount.present
+          ? data.morningReviewCount.value
+          : this.morningReviewCount,
+      eveningReviewCount: data.eveningReviewCount.present
+          ? data.eveningReviewCount.value
+          : this.eveningReviewCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserProgressRow(')
+          ..write('userId: $userId, ')
+          ..write('churuBalance: $churuBalance, ')
+          ..write('streakCount: $streakCount, ')
+          ..write('lastActiveDate: $lastActiveDate, ')
+          ..write('dailyReviewGoal: $dailyReviewGoal, ')
+          ..write('morningReviewCount: $morningReviewCount, ')
+          ..write('eveningReviewCount: $eveningReviewCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(userId, churuBalance, streakCount,
+      lastActiveDate, dailyReviewGoal, morningReviewCount, eveningReviewCount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserProgressRow &&
+          other.userId == this.userId &&
+          other.churuBalance == this.churuBalance &&
+          other.streakCount == this.streakCount &&
+          other.lastActiveDate == this.lastActiveDate &&
+          other.dailyReviewGoal == this.dailyReviewGoal &&
+          other.morningReviewCount == this.morningReviewCount &&
+          other.eveningReviewCount == this.eveningReviewCount);
+}
+
+class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
+  final Value<String> userId;
+  final Value<int> churuBalance;
+  final Value<int> streakCount;
+  final Value<DateTime?> lastActiveDate;
+  final Value<int?> dailyReviewGoal;
+  final Value<int> morningReviewCount;
+  final Value<int> eveningReviewCount;
+  final Value<int> rowid;
+  const UserProgressCompanion({
+    this.userId = const Value.absent(),
+    this.churuBalance = const Value.absent(),
+    this.streakCount = const Value.absent(),
+    this.lastActiveDate = const Value.absent(),
+    this.dailyReviewGoal = const Value.absent(),
+    this.morningReviewCount = const Value.absent(),
+    this.eveningReviewCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserProgressCompanion.insert({
+    required String userId,
+    this.churuBalance = const Value.absent(),
+    this.streakCount = const Value.absent(),
+    this.lastActiveDate = const Value.absent(),
+    this.dailyReviewGoal = const Value.absent(),
+    this.morningReviewCount = const Value.absent(),
+    this.eveningReviewCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId);
+  static Insertable<UserProgressRow> custom({
+    Expression<String>? userId,
+    Expression<int>? churuBalance,
+    Expression<int>? streakCount,
+    Expression<DateTime>? lastActiveDate,
+    Expression<int>? dailyReviewGoal,
+    Expression<int>? morningReviewCount,
+    Expression<int>? eveningReviewCount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (churuBalance != null) 'churu_balance': churuBalance,
+      if (streakCount != null) 'streak_count': streakCount,
+      if (lastActiveDate != null) 'last_active_date': lastActiveDate,
+      if (dailyReviewGoal != null) 'daily_review_goal': dailyReviewGoal,
+      if (morningReviewCount != null)
+        'morning_review_count': morningReviewCount,
+      if (eveningReviewCount != null)
+        'evening_review_count': eveningReviewCount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserProgressCompanion copyWith(
+      {Value<String>? userId,
+      Value<int>? churuBalance,
+      Value<int>? streakCount,
+      Value<DateTime?>? lastActiveDate,
+      Value<int?>? dailyReviewGoal,
+      Value<int>? morningReviewCount,
+      Value<int>? eveningReviewCount,
+      Value<int>? rowid}) {
+    return UserProgressCompanion(
+      userId: userId ?? this.userId,
+      churuBalance: churuBalance ?? this.churuBalance,
+      streakCount: streakCount ?? this.streakCount,
+      lastActiveDate: lastActiveDate ?? this.lastActiveDate,
+      dailyReviewGoal: dailyReviewGoal ?? this.dailyReviewGoal,
+      morningReviewCount: morningReviewCount ?? this.morningReviewCount,
+      eveningReviewCount: eveningReviewCount ?? this.eveningReviewCount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (churuBalance.present) {
+      map['churu_balance'] = Variable<int>(churuBalance.value);
+    }
+    if (streakCount.present) {
+      map['streak_count'] = Variable<int>(streakCount.value);
+    }
+    if (lastActiveDate.present) {
+      map['last_active_date'] = Variable<DateTime>(lastActiveDate.value);
+    }
+    if (dailyReviewGoal.present) {
+      map['daily_review_goal'] = Variable<int>(dailyReviewGoal.value);
+    }
+    if (morningReviewCount.present) {
+      map['morning_review_count'] = Variable<int>(morningReviewCount.value);
+    }
+    if (eveningReviewCount.present) {
+      map['evening_review_count'] = Variable<int>(eveningReviewCount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserProgressCompanion(')
+          ..write('userId: $userId, ')
+          ..write('churuBalance: $churuBalance, ')
+          ..write('streakCount: $streakCount, ')
+          ..write('lastActiveDate: $lastActiveDate, ')
+          ..write('dailyReviewGoal: $dailyReviewGoal, ')
+          ..write('morningReviewCount: $morningReviewCount, ')
+          ..write('eveningReviewCount: $eveningReviewCount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $QuestStateTable extends QuestState
+    with TableInfo<$QuestStateTable, QuestStateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QuestStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _questIdMeta =
+      const VerificationMeta('questId');
+  @override
+  late final GeneratedColumn<String> questId = GeneratedColumn<String>(
+      'quest_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _lastCompletedDateMeta =
+      const VerificationMeta('lastCompletedDate');
+  @override
+  late final GeneratedColumn<DateTime> lastCompletedDate =
+      GeneratedColumn<DateTime>('last_completed_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [userId, questId, lastCompletedDate];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'quest_state';
+  @override
+  VerificationContext validateIntegrity(Insertable<QuestStateRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('quest_id')) {
+      context.handle(_questIdMeta,
+          questId.isAcceptableOrUnknown(data['quest_id']!, _questIdMeta));
+    } else if (isInserting) {
+      context.missing(_questIdMeta);
+    }
+    if (data.containsKey('last_completed_date')) {
+      context.handle(
+          _lastCompletedDateMeta,
+          lastCompletedDate.isAcceptableOrUnknown(
+              data['last_completed_date']!, _lastCompletedDateMeta));
+    } else if (isInserting) {
+      context.missing(_lastCompletedDateMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId, questId};
+  @override
+  QuestStateRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return QuestStateRow(
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      questId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}quest_id'])!,
+      lastCompletedDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}last_completed_date'])!,
+    );
+  }
+
+  @override
+  $QuestStateTable createAlias(String alias) {
+    return $QuestStateTable(attachedDatabase, alias);
+  }
+}
+
+class QuestStateRow extends DataClass implements Insertable<QuestStateRow> {
+  final String userId;
+  final String questId;
+  final DateTime lastCompletedDate;
+  const QuestStateRow(
+      {required this.userId,
+      required this.questId,
+      required this.lastCompletedDate});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['quest_id'] = Variable<String>(questId);
+    map['last_completed_date'] = Variable<DateTime>(lastCompletedDate);
+    return map;
+  }
+
+  QuestStateCompanion toCompanion(bool nullToAbsent) {
+    return QuestStateCompanion(
+      userId: Value(userId),
+      questId: Value(questId),
+      lastCompletedDate: Value(lastCompletedDate),
+    );
+  }
+
+  factory QuestStateRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return QuestStateRow(
+      userId: serializer.fromJson<String>(json['userId']),
+      questId: serializer.fromJson<String>(json['questId']),
+      lastCompletedDate:
+          serializer.fromJson<DateTime>(json['lastCompletedDate']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'questId': serializer.toJson<String>(questId),
+      'lastCompletedDate': serializer.toJson<DateTime>(lastCompletedDate),
+    };
+  }
+
+  QuestStateRow copyWith(
+          {String? userId, String? questId, DateTime? lastCompletedDate}) =>
+      QuestStateRow(
+        userId: userId ?? this.userId,
+        questId: questId ?? this.questId,
+        lastCompletedDate: lastCompletedDate ?? this.lastCompletedDate,
+      );
+  QuestStateRow copyWithCompanion(QuestStateCompanion data) {
+    return QuestStateRow(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      questId: data.questId.present ? data.questId.value : this.questId,
+      lastCompletedDate: data.lastCompletedDate.present
+          ? data.lastCompletedDate.value
+          : this.lastCompletedDate,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuestStateRow(')
+          ..write('userId: $userId, ')
+          ..write('questId: $questId, ')
+          ..write('lastCompletedDate: $lastCompletedDate')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(userId, questId, lastCompletedDate);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is QuestStateRow &&
+          other.userId == this.userId &&
+          other.questId == this.questId &&
+          other.lastCompletedDate == this.lastCompletedDate);
+}
+
+class QuestStateCompanion extends UpdateCompanion<QuestStateRow> {
+  final Value<String> userId;
+  final Value<String> questId;
+  final Value<DateTime> lastCompletedDate;
+  final Value<int> rowid;
+  const QuestStateCompanion({
+    this.userId = const Value.absent(),
+    this.questId = const Value.absent(),
+    this.lastCompletedDate = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  QuestStateCompanion.insert({
+    required String userId,
+    required String questId,
+    required DateTime lastCompletedDate,
+    this.rowid = const Value.absent(),
+  })  : userId = Value(userId),
+        questId = Value(questId),
+        lastCompletedDate = Value(lastCompletedDate);
+  static Insertable<QuestStateRow> custom({
+    Expression<String>? userId,
+    Expression<String>? questId,
+    Expression<DateTime>? lastCompletedDate,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (questId != null) 'quest_id': questId,
+      if (lastCompletedDate != null) 'last_completed_date': lastCompletedDate,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  QuestStateCompanion copyWith(
+      {Value<String>? userId,
+      Value<String>? questId,
+      Value<DateTime>? lastCompletedDate,
+      Value<int>? rowid}) {
+    return QuestStateCompanion(
+      userId: userId ?? this.userId,
+      questId: questId ?? this.questId,
+      lastCompletedDate: lastCompletedDate ?? this.lastCompletedDate,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (questId.present) {
+      map['quest_id'] = Variable<String>(questId.value);
+    }
+    if (lastCompletedDate.present) {
+      map['last_completed_date'] = Variable<DateTime>(lastCompletedDate.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuestStateCompanion(')
+          ..write('userId: $userId, ')
+          ..write('questId: $questId, ')
+          ..write('lastCompletedDate: $lastCompletedDate, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1840,12 +2497,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WordEntriesTable wordEntries = $WordEntriesTable(this);
   late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
+  late final $UserProgressTable userProgress = $UserProgressTable(this);
+  late final $QuestStateTable questState = $QuestStateTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [wordBooks, wordEntries, syncOutbox, syncState];
+      [wordBooks, wordEntries, syncOutbox, syncState, userProgress, questState];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
         [
@@ -2945,6 +3604,361 @@ typedef $$SyncStateTableProcessedTableManager = ProcessedTableManager<
     ),
     SyncStateRow,
     PrefetchHooks Function()>;
+typedef $$UserProgressTableCreateCompanionBuilder = UserProgressCompanion
+    Function({
+  required String userId,
+  Value<int> churuBalance,
+  Value<int> streakCount,
+  Value<DateTime?> lastActiveDate,
+  Value<int?> dailyReviewGoal,
+  Value<int> morningReviewCount,
+  Value<int> eveningReviewCount,
+  Value<int> rowid,
+});
+typedef $$UserProgressTableUpdateCompanionBuilder = UserProgressCompanion
+    Function({
+  Value<String> userId,
+  Value<int> churuBalance,
+  Value<int> streakCount,
+  Value<DateTime?> lastActiveDate,
+  Value<int?> dailyReviewGoal,
+  Value<int> morningReviewCount,
+  Value<int> eveningReviewCount,
+  Value<int> rowid,
+});
+
+class $$UserProgressTableFilterComposer
+    extends Composer<_$AppDatabase, $UserProgressTable> {
+  $$UserProgressTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get churuBalance => $composableBuilder(
+      column: $table.churuBalance, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get streakCount => $composableBuilder(
+      column: $table.streakCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastActiveDate => $composableBuilder(
+      column: $table.lastActiveDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get dailyReviewGoal => $composableBuilder(
+      column: $table.dailyReviewGoal,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get morningReviewCount => $composableBuilder(
+      column: $table.morningReviewCount,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get eveningReviewCount => $composableBuilder(
+      column: $table.eveningReviewCount,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$UserProgressTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserProgressTable> {
+  $$UserProgressTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get churuBalance => $composableBuilder(
+      column: $table.churuBalance,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get streakCount => $composableBuilder(
+      column: $table.streakCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastActiveDate => $composableBuilder(
+      column: $table.lastActiveDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get dailyReviewGoal => $composableBuilder(
+      column: $table.dailyReviewGoal,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get morningReviewCount => $composableBuilder(
+      column: $table.morningReviewCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get eveningReviewCount => $composableBuilder(
+      column: $table.eveningReviewCount,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$UserProgressTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserProgressTable> {
+  $$UserProgressTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<int> get churuBalance => $composableBuilder(
+      column: $table.churuBalance, builder: (column) => column);
+
+  GeneratedColumn<int> get streakCount => $composableBuilder(
+      column: $table.streakCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastActiveDate => $composableBuilder(
+      column: $table.lastActiveDate, builder: (column) => column);
+
+  GeneratedColumn<int> get dailyReviewGoal => $composableBuilder(
+      column: $table.dailyReviewGoal, builder: (column) => column);
+
+  GeneratedColumn<int> get morningReviewCount => $composableBuilder(
+      column: $table.morningReviewCount, builder: (column) => column);
+
+  GeneratedColumn<int> get eveningReviewCount => $composableBuilder(
+      column: $table.eveningReviewCount, builder: (column) => column);
+}
+
+class $$UserProgressTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $UserProgressTable,
+    UserProgressRow,
+    $$UserProgressTableFilterComposer,
+    $$UserProgressTableOrderingComposer,
+    $$UserProgressTableAnnotationComposer,
+    $$UserProgressTableCreateCompanionBuilder,
+    $$UserProgressTableUpdateCompanionBuilder,
+    (
+      UserProgressRow,
+      BaseReferences<_$AppDatabase, $UserProgressTable, UserProgressRow>
+    ),
+    UserProgressRow,
+    PrefetchHooks Function()> {
+  $$UserProgressTableTableManager(_$AppDatabase db, $UserProgressTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserProgressTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserProgressTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserProgressTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> userId = const Value.absent(),
+            Value<int> churuBalance = const Value.absent(),
+            Value<int> streakCount = const Value.absent(),
+            Value<DateTime?> lastActiveDate = const Value.absent(),
+            Value<int?> dailyReviewGoal = const Value.absent(),
+            Value<int> morningReviewCount = const Value.absent(),
+            Value<int> eveningReviewCount = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              UserProgressCompanion(
+            userId: userId,
+            churuBalance: churuBalance,
+            streakCount: streakCount,
+            lastActiveDate: lastActiveDate,
+            dailyReviewGoal: dailyReviewGoal,
+            morningReviewCount: morningReviewCount,
+            eveningReviewCount: eveningReviewCount,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String userId,
+            Value<int> churuBalance = const Value.absent(),
+            Value<int> streakCount = const Value.absent(),
+            Value<DateTime?> lastActiveDate = const Value.absent(),
+            Value<int?> dailyReviewGoal = const Value.absent(),
+            Value<int> morningReviewCount = const Value.absent(),
+            Value<int> eveningReviewCount = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              UserProgressCompanion.insert(
+            userId: userId,
+            churuBalance: churuBalance,
+            streakCount: streakCount,
+            lastActiveDate: lastActiveDate,
+            dailyReviewGoal: dailyReviewGoal,
+            morningReviewCount: morningReviewCount,
+            eveningReviewCount: eveningReviewCount,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$UserProgressTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $UserProgressTable,
+    UserProgressRow,
+    $$UserProgressTableFilterComposer,
+    $$UserProgressTableOrderingComposer,
+    $$UserProgressTableAnnotationComposer,
+    $$UserProgressTableCreateCompanionBuilder,
+    $$UserProgressTableUpdateCompanionBuilder,
+    (
+      UserProgressRow,
+      BaseReferences<_$AppDatabase, $UserProgressTable, UserProgressRow>
+    ),
+    UserProgressRow,
+    PrefetchHooks Function()>;
+typedef $$QuestStateTableCreateCompanionBuilder = QuestStateCompanion Function({
+  required String userId,
+  required String questId,
+  required DateTime lastCompletedDate,
+  Value<int> rowid,
+});
+typedef $$QuestStateTableUpdateCompanionBuilder = QuestStateCompanion Function({
+  Value<String> userId,
+  Value<String> questId,
+  Value<DateTime> lastCompletedDate,
+  Value<int> rowid,
+});
+
+class $$QuestStateTableFilterComposer
+    extends Composer<_$AppDatabase, $QuestStateTable> {
+  $$QuestStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get questId => $composableBuilder(
+      column: $table.questId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastCompletedDate => $composableBuilder(
+      column: $table.lastCompletedDate,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$QuestStateTableOrderingComposer
+    extends Composer<_$AppDatabase, $QuestStateTable> {
+  $$QuestStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get questId => $composableBuilder(
+      column: $table.questId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastCompletedDate => $composableBuilder(
+      column: $table.lastCompletedDate,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$QuestStateTableAnnotationComposer
+    extends Composer<_$AppDatabase, $QuestStateTable> {
+  $$QuestStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get questId =>
+      $composableBuilder(column: $table.questId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastCompletedDate => $composableBuilder(
+      column: $table.lastCompletedDate, builder: (column) => column);
+}
+
+class $$QuestStateTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $QuestStateTable,
+    QuestStateRow,
+    $$QuestStateTableFilterComposer,
+    $$QuestStateTableOrderingComposer,
+    $$QuestStateTableAnnotationComposer,
+    $$QuestStateTableCreateCompanionBuilder,
+    $$QuestStateTableUpdateCompanionBuilder,
+    (
+      QuestStateRow,
+      BaseReferences<_$AppDatabase, $QuestStateTable, QuestStateRow>
+    ),
+    QuestStateRow,
+    PrefetchHooks Function()> {
+  $$QuestStateTableTableManager(_$AppDatabase db, $QuestStateTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$QuestStateTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$QuestStateTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$QuestStateTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> userId = const Value.absent(),
+            Value<String> questId = const Value.absent(),
+            Value<DateTime> lastCompletedDate = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              QuestStateCompanion(
+            userId: userId,
+            questId: questId,
+            lastCompletedDate: lastCompletedDate,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String userId,
+            required String questId,
+            required DateTime lastCompletedDate,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              QuestStateCompanion.insert(
+            userId: userId,
+            questId: questId,
+            lastCompletedDate: lastCompletedDate,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$QuestStateTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $QuestStateTable,
+    QuestStateRow,
+    $$QuestStateTableFilterComposer,
+    $$QuestStateTableOrderingComposer,
+    $$QuestStateTableAnnotationComposer,
+    $$QuestStateTableCreateCompanionBuilder,
+    $$QuestStateTableUpdateCompanionBuilder,
+    (
+      QuestStateRow,
+      BaseReferences<_$AppDatabase, $QuestStateTable, QuestStateRow>
+    ),
+    QuestStateRow,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2957,4 +3971,8 @@ class $AppDatabaseManager {
       $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
   $$SyncStateTableTableManager get syncState =>
       $$SyncStateTableTableManager(_db, _db.syncState);
+  $$UserProgressTableTableManager get userProgress =>
+      $$UserProgressTableTableManager(_db, _db.userProgress);
+  $$QuestStateTableTableManager get questState =>
+      $$QuestStateTableTableManager(_db, _db.questState);
 }

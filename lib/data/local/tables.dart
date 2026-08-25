@@ -81,7 +81,7 @@ class WordEntries extends Table {
   TextColumn get tagsJson => text().withDefault(const Constant('[]'))();
 
   // ==================== ✨ SM-2 SRS 필드 ✨ ==================== //
-  // 계산 규칙: docs/SRS.md · Hub 대응 컬럼: api/app/models.py WordModel
+  // 계산 규칙: docs/SRS.md · Hub 대응 컬럼: api/app/models/vocab.py WordModel
   RealColumn get srsEaseFactor =>
       real().withDefault(const Constant(2.5))();
   IntColumn get srsIntervalDays =>
@@ -100,4 +100,51 @@ class WordEntries extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => {id};
+}
+
+// =================== ✨ UserProgress ✨ =================== //
+// 게이미피케이션 — 유저 진행 상태의 로컬 캐시. Hub의 UserProgressModel이
+// 진실이고, 여기는 서버가 마지막으로 알려준 값을 들고 있을 뿐이다.
+// (api/app/models/gamification.py UserProgressModel 대응)
+//  userId(PK) - 유저 식별자
+//  churuBalance - 츄르 잔액
+//  streakCount - 연속 학습일 수 (이번 라운드 미사용, 컬럼만)
+//  lastActiveDate - 마지막 활동일 (이번 라운드 미사용)
+//  dailyReviewGoal - 하루 복습 목표 개수 (이번 라운드 미사용)
+//  morningReviewCount / eveningReviewCount - TimeQuest용 (이번 라운드 미사용)
+// ======================================================= //
+
+@DataClassName('UserProgressRow')
+class UserProgress extends Table {
+  TextColumn get userId => text()();
+  IntColumn get churuBalance => integer().withDefault(const Constant(0))();
+  IntColumn get streakCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get lastActiveDate => dateTime().nullable()();
+  IntColumn get dailyReviewGoal => integer().nullable()();
+  IntColumn get morningReviewCount =>
+      integer().withDefault(const Constant(0))();
+  IntColumn get eveningReviewCount =>
+      integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {userId};
+}
+
+// =================== ✨ QuestState ✨ =================== //
+// 게이미피케이션 — 퀘스트별 완료 상태의 로컬 캐시. Hub의 QuestStateModel과
+// 동일하게 유저×퀘스트당 딱 1 row만 존재(UPSERT), 완료 이력 로그 아님.
+// (api/app/models/gamification.py QuestStateModel 대응)
+//  userId(PK 일부) - 유저 식별자
+//  questId(PK 일부) - 퀘스트 식별자 (예: pet_cat)
+//  lastCompletedDate - 마지막으로 완료한 날짜
+// ======================================================= //
+
+@DataClassName('QuestStateRow')
+class QuestState extends Table {
+  TextColumn get userId => text()();
+  TextColumn get questId => text()();
+  DateTimeColumn get lastCompletedDate => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {userId, questId};
 }

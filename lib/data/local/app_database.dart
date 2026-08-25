@@ -7,16 +7,27 @@ part 'app_database.g.dart';
 
 // WordBooks - 단어장 테이블
 // WordEntries - 단어 테이블 (SRS 필드 포함)
-// SyncOutbox - Outbox Queue Table ?? 
-// SyncState - 마지막 pull cursor 저장 
-@DriftDatabase(tables: [WordBooks, WordEntries, SyncOutbox, SyncState])
+// SyncOutbox - Outbox Queue Table ??
+// SyncState - 마지막 pull cursor 저장
+// UserProgress - 게이미피케이션 유저 진행 상태 (Hub 캐시)
+// QuestState - 게이미피케이션 퀘스트별 완료 상태 (Hub 캐시)
+@DriftDatabase(
+  tables: [
+    WordBooks,
+    WordEntries,
+    SyncOutbox,
+    SyncState,
+    UserProgress,
+    QuestState,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -48,6 +59,10 @@ class AppDatabase extends _$AppDatabase {
             await migrator.database.customStatement(
               'UPDATE word_entries SET srs_due_at = created_at',
             );
+          }
+          if (from < 5) {
+            await migrator.createTable(userProgress);
+            await migrator.createTable(questState);
           }
         },
       );

@@ -72,9 +72,12 @@ def complete_quest(session: Session, user_id: str, quest_id: str) -> ProgressRes
         completed_today=_completed_today(session, user_id),
     )
 
-
+# [service method] get_progress
+#   feat : 현재 유저의 잔액과 오늘 완료한 퀘스트 목록을 읽기 전용으로 조회한다. 
+#   parameter
+#       session : db session
+#       user_id : user token id  
 def get_progress(session: Session, user_id: str) -> ProgressResponse:
-    """현재 잔액 + 오늘 완료한 퀘스트 목록 조회. 읽기 전용."""
     progress = session.get(UserProgressModel, user_id)
     balance = progress.churu_balance if progress is not None else 0
     return ProgressResponse(

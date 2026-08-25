@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .content.routes import router as content_router
 from .core.auth import initialize_firebase
 from .core.config import get_settings
+from .gamification.routes import router as gamification_router
 from .vocab.routes import router
 
 
@@ -30,6 +31,7 @@ app.add_middleware(
 )
 app.include_router(router)
 app.include_router(content_router)
+app.include_router(gamification_router)
 
 
 @app.get("/health", tags=["health"])

@@ -29,6 +29,7 @@ class CreateWordInput {
     this.pronunciation,
     this.description,
     this.example,
+    this.exampleMeaning,
     this.imagePath,
     this.isBookmarked = false,
     this.tags = const [],
@@ -40,6 +41,7 @@ class CreateWordInput {
   final String? pronunciation;
   final String? description;
   final String? example;
+  final String? exampleMeaning;
   final String? imagePath;
   final bool isBookmarked;
   final List<String> tags;
@@ -52,6 +54,7 @@ class UpdateWordInput {
     this.pronunciation,
     this.description,
     this.example,
+    this.exampleMeaning,
     this.imagePath,
     this.memorizationStatus,
     this.isBookmarked,
@@ -63,6 +66,7 @@ class UpdateWordInput {
   final String? pronunciation;
   final String? description;
   final String? example;
+  final String? exampleMeaning;
   final String? imagePath;
   final WordMemorizationStatus? memorizationStatus;
   final bool? isBookmarked;

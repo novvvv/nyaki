@@ -180,6 +180,7 @@ class SyncCoordinator {
             pronunciation: Value(json['pronunciation'] as String?),
             description: Value(json['description'] as String?),
             example: Value(json['example'] as String?),
+            exampleMeaning: Value(json['example_meaning'] as String?),
             imagePath: Value(json['image_path'] as String?),
             memorizationStatus: json['memorization_status'] as String,
             isBookmarked: Value(json['is_bookmarked'] as bool? ?? false),

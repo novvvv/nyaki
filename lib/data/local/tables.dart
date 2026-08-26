@@ -74,6 +74,7 @@ class WordEntries extends Table {
   TextColumn get pronunciation => text().nullable()();
   TextColumn get description => text().nullable()();
   TextColumn get example => text().nullable()();
+  TextColumn get exampleMeaning => text().nullable()();
   TextColumn get imagePath => text().nullable()();
   TextColumn get memorizationStatus => text()();
   BoolColumn get isBookmarked =>

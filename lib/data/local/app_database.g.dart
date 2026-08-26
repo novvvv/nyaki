@@ -403,6 +403,12 @@ class $WordEntriesTable extends WordEntries
   late final GeneratedColumn<String> example = GeneratedColumn<String>(
       'example', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _exampleMeaningMeta =
+      const VerificationMeta('exampleMeaning');
+  @override
+  late final GeneratedColumn<String> exampleMeaning = GeneratedColumn<String>(
+      'example_meaning', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _imagePathMeta =
       const VerificationMeta('imagePath');
   @override
@@ -510,6 +516,7 @@ class $WordEntriesTable extends WordEntries
         pronunciation,
         description,
         example,
+        exampleMeaning,
         imagePath,
         memorizationStatus,
         isBookmarked,
@@ -574,6 +581,12 @@ class $WordEntriesTable extends WordEntries
     if (data.containsKey('example')) {
       context.handle(_exampleMeta,
           example.isAcceptableOrUnknown(data['example']!, _exampleMeta));
+    }
+    if (data.containsKey('example_meaning')) {
+      context.handle(
+          _exampleMeaningMeta,
+          exampleMeaning.isAcceptableOrUnknown(
+              data['example_meaning']!, _exampleMeaningMeta));
     }
     if (data.containsKey('image_path')) {
       context.handle(_imagePathMeta,
@@ -668,6 +681,8 @@ class $WordEntriesTable extends WordEntries
           .read(DriftSqlType.string, data['${effectivePrefix}description']),
       example: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}example']),
+      exampleMeaning: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}example_meaning']),
       imagePath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}image_path']),
       memorizationStatus: attachedDatabase.typeMapping.read(
@@ -712,6 +727,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
   final String? pronunciation;
   final String? description;
   final String? example;
+  final String? exampleMeaning;
   final String? imagePath;
   final String memorizationStatus;
   final bool isBookmarked;
@@ -733,6 +749,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       this.pronunciation,
       this.description,
       this.example,
+      this.exampleMeaning,
       this.imagePath,
       required this.memorizationStatus,
       required this.isBookmarked,
@@ -761,6 +778,9 @@ class WordRow extends DataClass implements Insertable<WordRow> {
     }
     if (!nullToAbsent || example != null) {
       map['example'] = Variable<String>(example);
+    }
+    if (!nullToAbsent || exampleMeaning != null) {
+      map['example_meaning'] = Variable<String>(exampleMeaning);
     }
     if (!nullToAbsent || imagePath != null) {
       map['image_path'] = Variable<String>(imagePath);
@@ -797,6 +817,9 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       example: example == null && nullToAbsent
           ? const Value.absent()
           : Value(example),
+      exampleMeaning: exampleMeaning == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exampleMeaning),
       imagePath: imagePath == null && nullToAbsent
           ? const Value.absent()
           : Value(imagePath),
@@ -828,6 +851,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       pronunciation: serializer.fromJson<String?>(json['pronunciation']),
       description: serializer.fromJson<String?>(json['description']),
       example: serializer.fromJson<String?>(json['example']),
+      exampleMeaning: serializer.fromJson<String?>(json['exampleMeaning']),
       imagePath: serializer.fromJson<String?>(json['imagePath']),
       memorizationStatus:
           serializer.fromJson<String>(json['memorizationStatus']),
@@ -856,6 +880,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       'pronunciation': serializer.toJson<String?>(pronunciation),
       'description': serializer.toJson<String?>(description),
       'example': serializer.toJson<String?>(example),
+      'exampleMeaning': serializer.toJson<String?>(exampleMeaning),
       'imagePath': serializer.toJson<String?>(imagePath),
       'memorizationStatus': serializer.toJson<String>(memorizationStatus),
       'isBookmarked': serializer.toJson<bool>(isBookmarked),
@@ -880,6 +905,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           Value<String?> pronunciation = const Value.absent(),
           Value<String?> description = const Value.absent(),
           Value<String?> example = const Value.absent(),
+          Value<String?> exampleMeaning = const Value.absent(),
           Value<String?> imagePath = const Value.absent(),
           String? memorizationStatus,
           bool? isBookmarked,
@@ -902,6 +928,8 @@ class WordRow extends DataClass implements Insertable<WordRow> {
             pronunciation.present ? pronunciation.value : this.pronunciation,
         description: description.present ? description.value : this.description,
         example: example.present ? example.value : this.example,
+        exampleMeaning:
+            exampleMeaning.present ? exampleMeaning.value : this.exampleMeaning,
         imagePath: imagePath.present ? imagePath.value : this.imagePath,
         memorizationStatus: memorizationStatus ?? this.memorizationStatus,
         isBookmarked: isBookmarked ?? this.isBookmarked,
@@ -931,6 +959,9 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       description:
           data.description.present ? data.description.value : this.description,
       example: data.example.present ? data.example.value : this.example,
+      exampleMeaning: data.exampleMeaning.present
+          ? data.exampleMeaning.value
+          : this.exampleMeaning,
       imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
       memorizationStatus: data.memorizationStatus.present
           ? data.memorizationStatus.value
@@ -969,6 +1000,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           ..write('pronunciation: $pronunciation, ')
           ..write('description: $description, ')
           ..write('example: $example, ')
+          ..write('exampleMeaning: $exampleMeaning, ')
           ..write('imagePath: $imagePath, ')
           ..write('memorizationStatus: $memorizationStatus, ')
           ..write('isBookmarked: $isBookmarked, ')
@@ -987,27 +1019,29 @@ class WordRow extends DataClass implements Insertable<WordRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      wordBookId,
-      term,
-      meaning,
-      pronunciation,
-      description,
-      example,
-      imagePath,
-      memorizationStatus,
-      isBookmarked,
-      tagsJson,
-      srsEaseFactor,
-      srsIntervalDays,
-      srsRepetitions,
-      srsLapses,
-      srsDueAt,
-      srsLastReviewedAt,
-      createdAt,
-      updatedAt,
-      isDeleted);
+  int get hashCode => Object.hashAll([
+        id,
+        wordBookId,
+        term,
+        meaning,
+        pronunciation,
+        description,
+        example,
+        exampleMeaning,
+        imagePath,
+        memorizationStatus,
+        isBookmarked,
+        tagsJson,
+        srsEaseFactor,
+        srsIntervalDays,
+        srsRepetitions,
+        srsLapses,
+        srsDueAt,
+        srsLastReviewedAt,
+        createdAt,
+        updatedAt,
+        isDeleted
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1019,6 +1053,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           other.pronunciation == this.pronunciation &&
           other.description == this.description &&
           other.example == this.example &&
+          other.exampleMeaning == this.exampleMeaning &&
           other.imagePath == this.imagePath &&
           other.memorizationStatus == this.memorizationStatus &&
           other.isBookmarked == this.isBookmarked &&
@@ -1042,6 +1077,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
   final Value<String?> pronunciation;
   final Value<String?> description;
   final Value<String?> example;
+  final Value<String?> exampleMeaning;
   final Value<String?> imagePath;
   final Value<String> memorizationStatus;
   final Value<bool> isBookmarked;
@@ -1064,6 +1100,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     this.pronunciation = const Value.absent(),
     this.description = const Value.absent(),
     this.example = const Value.absent(),
+    this.exampleMeaning = const Value.absent(),
     this.imagePath = const Value.absent(),
     this.memorizationStatus = const Value.absent(),
     this.isBookmarked = const Value.absent(),
@@ -1087,6 +1124,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     this.pronunciation = const Value.absent(),
     this.description = const Value.absent(),
     this.example = const Value.absent(),
+    this.exampleMeaning = const Value.absent(),
     this.imagePath = const Value.absent(),
     required String memorizationStatus,
     this.isBookmarked = const Value.absent(),
@@ -1116,6 +1154,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     Expression<String>? pronunciation,
     Expression<String>? description,
     Expression<String>? example,
+    Expression<String>? exampleMeaning,
     Expression<String>? imagePath,
     Expression<String>? memorizationStatus,
     Expression<bool>? isBookmarked,
@@ -1139,6 +1178,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       if (pronunciation != null) 'pronunciation': pronunciation,
       if (description != null) 'description': description,
       if (example != null) 'example': example,
+      if (exampleMeaning != null) 'example_meaning': exampleMeaning,
       if (imagePath != null) 'image_path': imagePath,
       if (memorizationStatus != null) 'memorization_status': memorizationStatus,
       if (isBookmarked != null) 'is_bookmarked': isBookmarked,
@@ -1164,6 +1204,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       Value<String?>? pronunciation,
       Value<String?>? description,
       Value<String?>? example,
+      Value<String?>? exampleMeaning,
       Value<String?>? imagePath,
       Value<String>? memorizationStatus,
       Value<bool>? isBookmarked,
@@ -1186,6 +1227,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       pronunciation: pronunciation ?? this.pronunciation,
       description: description ?? this.description,
       example: example ?? this.example,
+      exampleMeaning: exampleMeaning ?? this.exampleMeaning,
       imagePath: imagePath ?? this.imagePath,
       memorizationStatus: memorizationStatus ?? this.memorizationStatus,
       isBookmarked: isBookmarked ?? this.isBookmarked,
@@ -1226,6 +1268,9 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     }
     if (example.present) {
       map['example'] = Variable<String>(example.value);
+    }
+    if (exampleMeaning.present) {
+      map['example_meaning'] = Variable<String>(exampleMeaning.value);
     }
     if (imagePath.present) {
       map['image_path'] = Variable<String>(imagePath.value);
@@ -1282,6 +1327,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
           ..write('pronunciation: $pronunciation, ')
           ..write('description: $description, ')
           ..write('example: $example, ')
+          ..write('exampleMeaning: $exampleMeaning, ')
           ..write('imagePath: $imagePath, ')
           ..write('memorizationStatus: $memorizationStatus, ')
           ..write('isBookmarked: $isBookmarked, ')
@@ -2796,6 +2842,7 @@ typedef $$WordEntriesTableCreateCompanionBuilder = WordEntriesCompanion
   Value<String?> pronunciation,
   Value<String?> description,
   Value<String?> example,
+  Value<String?> exampleMeaning,
   Value<String?> imagePath,
   required String memorizationStatus,
   Value<bool> isBookmarked,
@@ -2820,6 +2867,7 @@ typedef $$WordEntriesTableUpdateCompanionBuilder = WordEntriesCompanion
   Value<String?> pronunciation,
   Value<String?> description,
   Value<String?> example,
+  Value<String?> exampleMeaning,
   Value<String?> imagePath,
   Value<String> memorizationStatus,
   Value<bool> isBookmarked,
@@ -2882,6 +2930,10 @@ class $$WordEntriesTableFilterComposer
 
   ColumnFilters<String> get example => $composableBuilder(
       column: $table.example, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get exampleMeaning => $composableBuilder(
+      column: $table.exampleMeaning,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get imagePath => $composableBuilder(
       column: $table.imagePath, builder: (column) => ColumnFilters(column));
@@ -2974,6 +3026,10 @@ class $$WordEntriesTableOrderingComposer
 
   ColumnOrderings<String> get example => $composableBuilder(
       column: $table.example, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get exampleMeaning => $composableBuilder(
+      column: $table.exampleMeaning,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get imagePath => $composableBuilder(
       column: $table.imagePath, builder: (column) => ColumnOrderings(column));
@@ -3068,6 +3124,9 @@ class $$WordEntriesTableAnnotationComposer
   GeneratedColumn<String> get example =>
       $composableBuilder(column: $table.example, builder: (column) => column);
 
+  GeneratedColumn<String> get exampleMeaning => $composableBuilder(
+      column: $table.exampleMeaning, builder: (column) => column);
+
   GeneratedColumn<String> get imagePath =>
       $composableBuilder(column: $table.imagePath, builder: (column) => column);
 
@@ -3158,6 +3217,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             Value<String?> pronunciation = const Value.absent(),
             Value<String?> description = const Value.absent(),
             Value<String?> example = const Value.absent(),
+            Value<String?> exampleMeaning = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
             Value<String> memorizationStatus = const Value.absent(),
             Value<bool> isBookmarked = const Value.absent(),
@@ -3181,6 +3241,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             pronunciation: pronunciation,
             description: description,
             example: example,
+            exampleMeaning: exampleMeaning,
             imagePath: imagePath,
             memorizationStatus: memorizationStatus,
             isBookmarked: isBookmarked,
@@ -3204,6 +3265,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             Value<String?> pronunciation = const Value.absent(),
             Value<String?> description = const Value.absent(),
             Value<String?> example = const Value.absent(),
+            Value<String?> exampleMeaning = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
             required String memorizationStatus,
             Value<bool> isBookmarked = const Value.absent(),
@@ -3227,6 +3289,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             pronunciation: pronunciation,
             description: description,
             example: example,
+            exampleMeaning: exampleMeaning,
             imagePath: imagePath,
             memorizationStatus: memorizationStatus,
             isBookmarked: isBookmarked,

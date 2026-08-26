@@ -45,6 +45,7 @@ class WordModel(Base):
     pronunciation: Mapped[str | None] = mapped_column(String(500), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     example: Mapped[str | None] = mapped_column(Text, nullable=True)
+    example_meaning: Mapped[str | None] = mapped_column(Text, nullable=True)
     image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     memorization_status: Mapped[str] = mapped_column(String(20), default="unmemorized")
     is_bookmarked: Mapped[bool] = mapped_column(

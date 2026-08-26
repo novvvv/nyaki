@@ -13,6 +13,7 @@ class Word {
     this.pronunciation,
     this.description,
     this.example,
+    this.exampleMeaning,
     this.imagePath,
     this.memorizationStatus = WordMemorizationStatus.unmemorized,
     this.isBookmarked = false,
@@ -37,6 +38,7 @@ class Word {
   final String? pronunciation;
   final String? description;
   final String? example;
+  final String? exampleMeaning;
 
   /// 프로토타입: 로컬 파일 경로. 이후 URL로 확장.
   final String? imagePath;
@@ -73,6 +75,7 @@ class Word {
     String? pronunciation,
     String? description,
     String? example,
+    String? exampleMeaning,
     String? imagePath,
     WordMemorizationStatus? memorizationStatus,
     bool? isBookmarked,
@@ -95,6 +98,7 @@ class Word {
       pronunciation: pronunciation ?? this.pronunciation,
       description: description ?? this.description,
       example: example ?? this.example,
+      exampleMeaning: exampleMeaning ?? this.exampleMeaning,
       imagePath: imagePath ?? this.imagePath,
       memorizationStatus: memorizationStatus ?? this.memorizationStatus,
       isBookmarked: isBookmarked ?? this.isBookmarked,

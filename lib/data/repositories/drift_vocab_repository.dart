@@ -225,6 +225,7 @@ class DriftVocabRepository implements VocabRepository {
               pronunciation: Value(_trimOrNull(input.pronunciation)),
               description: Value(_trimOrNull(input.description)),
               example: Value(_trimOrNull(input.example)),
+              exampleMeaning: Value(_trimOrNull(input.exampleMeaning)),
               imagePath: Value(_trimOrNull(input.imagePath)),
               memorizationStatus: WordMemorizationStatus.unmemorized.name,
               isBookmarked: Value(input.isBookmarked),
@@ -275,6 +276,9 @@ class DriftVocabRepository implements VocabRepository {
           example: input.example == null
               ? const Value.absent()
               : Value(_trimOrNull(input.example)),
+          exampleMeaning: input.exampleMeaning == null
+              ? const Value.absent()
+              : Value(_trimOrNull(input.exampleMeaning)),
           imagePath: input.imagePath == null
               ? const Value.absent()
               : Value(_trimOrNull(input.imagePath)),
@@ -410,6 +414,7 @@ class DriftVocabRepository implements VocabRepository {
       pronunciation: row.pronunciation,
       description: row.description,
       example: row.example,
+      exampleMeaning: row.exampleMeaning,
       imagePath: row.imagePath,
       memorizationStatus: WordMemorizationStatus.values.byName(
         row.memorizationStatus,
@@ -478,6 +483,7 @@ class DriftVocabRepository implements VocabRepository {
               'pronunciation': row.pronunciation,
               'description': row.description,
               'example': row.example,
+              'example_meaning': row.exampleMeaning,
               'image_path': row.imagePath,
               'memorization_status': row.memorizationStatus,
               'is_bookmarked': row.isBookmarked,

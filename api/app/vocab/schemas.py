@@ -21,6 +21,7 @@ class WordPayload(BaseModel):
     pronunciation: str | None = None
     description: str | None = None
     example: str | None = None
+    example_meaning: str | None = None
     image_path: str | None = None
     memorization_status: Literal["unmemorized", "memorized"] = "unmemorized"
     is_bookmarked: bool = False

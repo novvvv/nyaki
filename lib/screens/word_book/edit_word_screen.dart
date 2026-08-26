@@ -30,6 +30,7 @@ class _EditWordScreenState extends State<EditWordScreen> {
   // _pronunciationController : 발음 컨트롤러
   // _descriptionController : 주석 컨트롤러
   // _exampleController : 예시 컨트롤러
+  // _exampleMeaningController : 예시 뜻 컨트롤러
   late final _termController = TextEditingController(text: widget.word.term);
   late final _meaningController =
       TextEditingController(text: widget.word.meaning);
@@ -39,6 +40,8 @@ class _EditWordScreenState extends State<EditWordScreen> {
       TextEditingController(text: widget.word.description ?? '');
   late final _exampleController =
       TextEditingController(text: widget.word.example ?? '');
+  late final _exampleMeaningController =
+      TextEditingController(text: widget.word.exampleMeaning ?? '');
 
   // 화면 상태
   bool _showTermError = false; // 단어 미입력 오류 표시 여부
@@ -54,6 +57,7 @@ class _EditWordScreenState extends State<EditWordScreen> {
     _pronunciationController.dispose();
     _descriptionController.dispose();
     _exampleController.dispose();
+    _exampleMeaningController.dispose();
     super.dispose();
   }
 
@@ -87,6 +91,7 @@ class _EditWordScreenState extends State<EditWordScreen> {
           pronunciation: _pronunciationController.text.trim(),
           description: _descriptionController.text.trim(),
           example: _exampleController.text.trim(),
+          exampleMeaning: _exampleMeaningController.text.trim(),
           isBookmarked: _isBookmarked,
         ),
       );
@@ -222,6 +227,12 @@ class _EditWordScreenState extends State<EditWordScreen> {
                     controller: _exampleController,
                     label: '예문',
                     hint: '예문을 입력해 주세요.',
+                    maxLines: 3,
+                  ),
+                  WordFormField(
+                    controller: _exampleMeaningController,
+                    label: '예문 뜻',
+                    hint: '예문의 뜻을 입력해 주세요.',
                     maxLines: 3,
                   ),
                   const SizedBox(height: 20),

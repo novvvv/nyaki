@@ -25,6 +25,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
   final _pronunciationController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _exampleController = TextEditingController();
+  final _exampleMeaningController = TextEditingController();
 
   String? _selectedWordBookId;
   bool _showTermError = false;
@@ -39,6 +40,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     _pronunciationController.dispose();
     _descriptionController.dispose();
     _exampleController.dispose();
+    _exampleMeaningController.dispose();
     super.dispose();
   }
 
@@ -84,6 +86,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
           pronunciation: _pronunciationController.text.trim(),
           description: _descriptionController.text.trim(),
           example: _exampleController.text.trim(),
+          exampleMeaning: _exampleMeaningController.text.trim(),
           isBookmarked: _isBookmarked,
         ),
       );
@@ -94,6 +97,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       _pronunciationController.clear();
       _descriptionController.clear();
       _exampleController.clear();
+      _exampleMeaningController.clear();
       setState(() {
         _showTermError = false;
         _showMeaningError = false;
@@ -184,6 +188,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     controller: _exampleController,
                     label: '예문',
                     hint: '예문을 입력해 주세요.',
+                    maxLines: 3,
+                  ),
+                  WordFormField(
+                    controller: _exampleMeaningController,
+                    label: '예문 뜻',
+                    hint: '예문의 뜻을 입력해 주세요.',
                     maxLines: 3,
                   ),
                   const SizedBox(height: 12),

@@ -470,43 +470,6 @@ class _WordTestCard extends StatelessWidget {
                         ),
                 ),
                 const SizedBox(height: 32),
-                // 방향 힌트 — 드래그 중이 아니어도 항상 보이는 작은 안내.
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.arrow_back_rounded,
-                      size: 14,
-                      color: NyakiColors.taupe,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '모름',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: NyakiColors.umber.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 14,
-                      color: NyakiColors.taupe,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '외움',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: NyakiColors.umber.withValues(alpha: 0.45),
-                      ),
-                    ),
-                  ],
-                ),
                 if (isLast) ...[
                   const SizedBox(height: 6),
                   Text(
@@ -630,10 +593,19 @@ class _DescriptionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final description = word.description?.trim() ?? '';
     final example = word.example?.trim() ?? '';
+    final exampleMeaning = word.exampleMeaning?.trim() ?? '';
     final createdLabel = _formatCreatedAt(word.createdAt);
-    final comments = <String>[
-      if (description.isNotEmpty) description,
-      if (example.isNotEmpty) example,
+    // 설명(메모)과 예문은 서로 다른 필드라, 라벨을 붙여 구분해서 보여준다.
+    // 예문+예문 뜻은 한 쌍이라 한 행으로 묶는다.
+    final entries = <_MemoEntry>[
+      if (description.isNotEmpty)
+        (label: '설명', body: description, subBody: null),
+      if (example.isNotEmpty)
+        (
+          label: '예문',
+          body: example,
+          subBody: exampleMeaning.isNotEmpty ? exampleMeaning : null,
+        ),
     ];
     final sheetHeight = MediaQuery.sizeOf(context).height * 0.5;
 
@@ -680,7 +652,7 @@ class _DescriptionSheet extends StatelessWidget {
                       const SizedBox(height: 12),
                       const Divider(height: 1, color: NyakiColors.softDune),
                       Expanded(
-                        child: comments.isEmpty
+                        child: entries.isEmpty
                             ? Center(
                                 child: Text(
                                   '아직 메모가 없어요',
@@ -696,13 +668,16 @@ class _DescriptionSheet extends StatelessWidget {
                             : ListView.separated(
                                 padding:
                                     const EdgeInsets.fromLTRB(20, 18, 20, 28),
-                                itemCount: comments.length,
+                                itemCount: entries.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: 18),
                                 itemBuilder: (context, index) {
+                                  final entry = entries[index];
                                   return _InstagramCommentRow(
                                     createdLabel: createdLabel,
-                                    body: comments[index],
+                                    label: entry.label,
+                                    body: entry.body,
+                                    subBody: entry.subBody,
                                   );
                                 },
                               ),
@@ -719,28 +694,57 @@ class _DescriptionSheet extends StatelessWidget {
   }
 }
 
+/// 메모 시트 한 행에 대응하는 항목. [label]로 어떤 필드(설명/예문)인지
+/// 구분하고, [subBody]는 [body]에 딸린 보조 텍스트(예문의 뜻)다.
+typedef _MemoEntry = ({String label, String body, String? subBody});
+
 class _InstagramCommentRow extends StatelessWidget {
   const _InstagramCommentRow({
     required this.createdLabel,
+    required this.label,
     required this.body,
+    this.subBody,
   });
 
   final String createdLabel;
+  final String label;
   final String body;
+  final String? subBody;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          createdLabel,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: NyakiColors.ink,
-          ),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: NyakiColors.softDune,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: NyakiColors.umber,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              createdLabel,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: NyakiColors.ink,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 6),
         Text(
@@ -752,6 +756,18 @@ class _InstagramCommentRow extends StatelessWidget {
             color: NyakiColors.ink.withValues(alpha: 0.92),
           ),
         ),
+        if (subBody != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            subBody!,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              height: 1.4,
+              color: NyakiColors.ink.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
       ],
     );
   }

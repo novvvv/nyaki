@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/auth_scope.dart';
 import '../../core/progress_scope.dart';
+import '../../core/theme/nyaki_colors.dart';
 import '../../data/auth/auth_controller.dart';
+import '../auth/sign_in_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,19 +48,65 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final catSize = (width * 0.68).clamp(220.0, 260.0);
+    final isLoggedIn = AuthScope.of(context).status == AuthStatus.signedIn;
+    final churuBalance = ProgressScope.of(context).snapshot.churuBalance;
 
-    return Center(
-      child: GestureDetector(
-        onTap: _handleCatTap,
-        child: SizedBox(
-          width: catSize,
-          height: catSize,
-          child: Image.asset(
-            _catAsset,
-            fit: BoxFit.contain,
+    return Stack(
+      children: [
+        Center(
+          child: GestureDetector(
+            onTap: _handleCatTap,
+            child: SizedBox(
+              width: catSize,
+              height: catSize,
+              child: Image.asset(
+                _catAsset,
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
         ),
-      ),
+        // 비로그인이어도 배지는 그대로 보여준다(0으로 표시) — 로그인 동기부여.
+        // 탭하면 비로그인일 때만 로그인 화면으로 이동.
+        Positioned(
+          top: 16,
+          right: 20,
+          child: GestureDetector(
+            onTap: isLoggedIn
+                ? null
+                : () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SignInScreen(),
+                      ),
+                    ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: NyakiColors.cardBg,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: NyakiColors.taupe, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 임시 플레이스홀더 — 나중에 커스텀 츄르 아이콘으로 교체 예정.
+                  const Text('🐟', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$churuBalance',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: NyakiColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

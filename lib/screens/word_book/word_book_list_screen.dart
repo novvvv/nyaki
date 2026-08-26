@@ -23,97 +23,84 @@ class WordBookListScreen extends StatelessWidget {
       listenable: NyakiScope.of(context),
       builder: (context, _) {
         final books = NyakiScope.of(context).wordBooks;
-        const dividerColor = NyakiColors.softDune;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 20, 28, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          '단어장',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.3,
-                            color: NyakiColors.ink,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _openAddWordBook(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: NyakiColors.umber,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          '+ 추가',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
             Expanded(
-              child: books.isEmpty
-                  ? Center(
-                      child: Text(
-                        '단어장이 없습니다.',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: NyakiColors.ink.withValues(alpha: 0.4),
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(28, 20, 28, 12),
+                // 목록이 비어있어도 "추가" 카드는 항상 마지막 항목으로 남는다.
+                itemCount: books.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  if (index == books.length) {
+                    return _AddWordBookCard(
+                      onTap: () => _openAddWordBook(context),
+                    );
+                  }
+                  final book = books[index];
+                  return WordBookTile(
+                    title: book.title,
+                    description: book.description,
+                    meta: book.metaLabel,
+                    onTap: () {
+                      Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (_) => WordBookDetailScreen(
+                            wordBookId: book.id,
+                          ),
                         ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(28, 16, 28, 28),
-                      itemCount: books.length,
-                      separatorBuilder: (_, __) => Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: dividerColor,
-                      ),
-                      itemBuilder: (context, index) {
-                        final book = books[index];
-                        return WordBookTile(
-                          title: book.title,
-                          description: book.description,
-                          meta: book.metaLabel,
-                          onTap: () {
-                            Navigator.of(context).push<void>(
-                              MaterialPageRoute<void>(
-                                builder: (_) => WordBookDetailScreen(
-                                  wordBookId: book.id,
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         );
       },
+    );
+  }
+}
+
+class _AddWordBookCard extends StatelessWidget {
+  const _AddWordBookCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: NyakiColors.taupe, width: 1.2),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add,
+              size: 16,
+              color: NyakiColors.ink.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '새 단어장 추가',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: NyakiColors.ink.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

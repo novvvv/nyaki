@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
 
 /// Nyaki design tokens — see [Design.md](../../../docs/Design.md).
+/// 2026-08-26: Off white / Ivory / Nude / Obsidian 4색으로 고정.
+/// 토큰 이름(cream/ink/umber/softDune/taupe/cardBg)은 기존 코드와의
+/// 호환을 위해 유지하고, 값만 새 팔레트로 교체했다.
 abstract final class NyakiColors {
-  /// Vanilla #F8F4EE — page / scaffold background
-  static const Color cream = Color(0xFFF8F4EE);
+  /// Ivory #F3F0E9 — page / scaffold background
+  static const Color cream = Color(0xFFF3F0E9);
 
-  /// Black #252525 — primary text / filled controls
-  static const Color ink = Color(0xFF252525);
+  /// Obsidian #101010 — primary text / filled controls
+  static const Color ink = Color(0xFF101010);
 
-  /// Umber #443A35 — warm dark accent / secondary emphasis
-  static const Color umber = Color(0xFF443A35);
+  /// Obsidian #101010 — 액센트 컬러 없음, 강조는 ink와 동일한 Obsidian 채움으로 처리
+  static const Color umber = Color(0xFF101010);
 
-  /// Soft Dune #E4DDCC — subtle surfaces, soft dividers
-  static const Color softDune = Color(0xFFE4DDCC);
+  /// Nude #E3DBCC — subtle surfaces, soft dividers
+  static const Color softDune = Color(0xFFE3DBCC);
 
-  /// Classic Taupe #C5B49D — borders, chips, unselected strokes
-  static const Color taupe = Color(0xFFC5B49D);
+  /// Nude #E3DBCC — borders, chips, unselected strokes
+  static const Color taupe = Color(0xFFE3DBCC);
 
-  /// Alias: muted surfaces (Soft Dune)
+  /// Alias: muted surfaces (Nude)
   static const Color muted = softDune;
 
-  /// Alias: card / elevated cream-tint on Soft Dune blend
-  static const Color cardBg = Color(0xFFF3EEE6);
+  /// Off white #FDFCF8 — 카드/떠있는 요소의 표면
+  static const Color cardBg = Color(0xFFFDFCF8);
 
-  /// Alias: check / stroke (Classic Taupe)
+  /// Alias: check / stroke (Nude)
   static const Color checkBorder = taupe;
 
   /// Alias: progress dots

@@ -20,9 +20,15 @@ class WordBookTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        decoration: BoxDecoration(
+          color: NyakiColors.cardBg,
+          borderRadius: BorderRadius.circular(22),
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
@@ -34,13 +40,13 @@ class WordBookTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
                       color: NyakiColors.ink,
                     ),
                   ),
                   if (description != null && description!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 5),
                     Text(
                       description!,
                       maxLines: 1,
@@ -48,7 +54,7 @@ class WordBookTile extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
-                        color: NyakiColors.ink.withValues(alpha: 0.4),
+                        color: NyakiColors.ink.withValues(alpha: 0.45),
                       ),
                     ),
                   ],
@@ -61,8 +67,15 @@ class WordBookTile extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
-                color: NyakiColors.ink.withValues(alpha: 0.35),
+                fontWeight: FontWeight.w600,
+                color: NyakiColors.ink.withValues(alpha: 0.5),
               ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: NyakiColors.ink.withValues(alpha: 0.3),
             ),
           ],
         ),

@@ -1,29 +1,31 @@
 @import "tailwindcss";
 
-/* Design.md — Vanilla / Black / Soft Dune / Classic Taupe / Umber */
+/* Design.md — 2026-08-26 확정: Off white / Ivory / Nude / Obsidian 4색 고정.
+   토큰 이름(--nyaki-cream 등)은 기존 코드 호환을 위해 유지하고 값만 교체했다. */
 :root {
-  --nyaki-cream: #f8f4ee;
-  --nyaki-ink: #252525;
-  --nyaki-umber: #443a35;
-  --nyaki-muted: #e4ddcc;
-  --nyaki-taupe: #c5b49d;
-  --nyaki-card: #f3eee6;
-  --nyaki-stroke: rgba(197, 180, 157, 0.55);
-  --nyaki-subtle: #e4ddcc;
+  --nyaki-cream: #f3f0e9; /* Ivory — 기본 배경 */
+  --nyaki-ink: #101010; /* Obsidian — 텍스트/강조 */
+  --nyaki-umber: #101010; /* Obsidian — 액센트 없음, ink와 동일 */
+  --nyaki-muted: #e3dbcc; /* Nude */
+  --nyaki-taupe: #e3dbcc; /* Nude */
+  --nyaki-card: #fdfcf8; /* Off white — 카드/떠있는 요소 */
+  --nyaki-stroke: rgba(16, 16, 16, 0.14);
+  --nyaki-subtle: #e3dbcc;
 
   /* shadcn/Bklit 차트가 참조하는 토큰 — nyaki 팔레트에 매핑 */
-  --border: rgba(197, 180, 157, 0.38);
+  --border: rgba(16, 16, 16, 0.12);
   --foreground: var(--nyaki-ink);
   --muted: var(--nyaki-subtle);
   --chart-background: var(--nyaki-cream);
   --chart-foreground: var(--nyaki-ink);
-  --chart-foreground-muted: rgba(68, 58, 53, 0.6);
-  --chart-label: rgba(68, 58, 53, 0.62);
-  --chart-1: #443a35;
-  --chart-2: #a08a6c;
-  --chart-3: #c5b49d;
-  --chart-4: #8a7f6d;
-  --chart-5: #d8cbb4;
+  --chart-foreground-muted: rgba(16, 16, 16, 0.6);
+  --chart-label: rgba(16, 16, 16, 0.62);
+  /* 액센트 컬러가 없어져서, Obsidian → Nude 사이 그레이스케일 램프로 대체 */
+  --chart-1: #101010;
+  --chart-2: #3a3a3a;
+  --chart-3: #676767;
+  --chart-4: #9a9a9a;
+  --chart-5: #e3dbcc;
 }
 
 @theme inline {

@@ -83,13 +83,12 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
 
   late final int _total = _initialWords.length;
 
+  // 단어 뜻·발음·예문 뜻을 한꺼번에 여닫는 공개 상태. 예전엔 예문 뜻만 따로
+  // 토글해서 두 번 탭해야 다 보였는데, 탭 한 번에 전부 드러나는 게 의도한
+  // 설계라 하나의 세트로 합쳤다.
   late final Set<String> _revealed = widget.options.hideMeaning
       ? <String>{}
       : _initialWords.map((word) => word.id).toSet();
-
-  // 예문 뜻 공개 여부 — 단어 뜻 공개(_revealed)와는 별개의 상태.
-  // 예문은 항상 보이고, 예문의 "뜻"만 탭해서 토글한다.
-  final Set<String> _exampleRevealed = <String>{};
 
   int get _completedCount => _total - _queue.length;
 
@@ -97,14 +96,6 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
     setState(() {
       if (!_revealed.add(wordId)) {
         _revealed.remove(wordId);
-      }
-    });
-  }
-
-  void _toggleExampleReveal(String wordId) {
-    setState(() {
-      if (!_exampleRevealed.add(wordId)) {
-        _exampleRevealed.remove(wordId);
       }
     });
   }
@@ -117,7 +108,6 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
     setState(() {
       _queue.removeWhere((w) => w.id == word.id);
       _revealed.remove(word.id);
-      _exampleRevealed.remove(word.id);
     });
     _persistGrade(word, grade);
   }
@@ -223,16 +213,13 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
             builder: (context) {
               final word = _queue.first;
               final revealed = _revealed.contains(word.id);
-              final exampleRevealed = _exampleRevealed.contains(word.id);
               final isLast = _queue.length == 1;
 
               return _WordTestCard(
                 word: word,
                 revealed: revealed,
-                exampleRevealed: exampleRevealed,
                 isLast: isLast,
                 onTap: () => _toggleReveal(word.id),
-                onToggleExample: () => _toggleExampleReveal(word.id),
                 onToggleLike: () => _toggleBookmark(word),
                 onOpenComments: () => _openDescriptionSheet(word),
               );
@@ -387,20 +374,16 @@ class _WordTestCard extends StatelessWidget {
   const _WordTestCard({
     required this.word,
     required this.revealed,
-    required this.exampleRevealed,
     required this.isLast,
     required this.onTap,
-    required this.onToggleExample,
     required this.onToggleLike,
     required this.onOpenComments,
   });
 
   final Word word;
   final bool revealed;
-  final bool exampleRevealed;
   final bool isLast;
   final VoidCallback onTap;
-  final VoidCallback onToggleExample;
   final VoidCallback onToggleLike;
   final VoidCallback onOpenComments;
 
@@ -497,8 +480,7 @@ class _WordTestCard extends StatelessWidget {
                   _ExampleBlock(
                     example: example,
                     exampleMeaning: exampleMeaning,
-                    meaningRevealed: exampleRevealed,
-                    onTap: onToggleExample,
+                    meaningRevealed: revealed,
                   ),
                 ],
                 const SizedBox(height: 32),
@@ -534,27 +516,25 @@ class _WordTestCard extends StatelessWidget {
   }
 }
 
-/// 예문 카드. 예문 원문은 항상 보이고, 예문 뜻이 있으면 탭해서 토글
-/// 공개한다(단어 뜻 리빌과는 별개 상태). 예문 뜻이 없으면 탭 힌트 없이
-/// 예문만 정적으로 보여준다.
+/// 예문 카드. 예문 원문은 항상 보이고, 예문 뜻은 카드 전체를 탭해서 단어
+/// 뜻·발음과 함께 한 번에 공개된다(별도 탭 불필요 — [meaningRevealed]는
+/// 상위 `_WordTestCard`의 `revealed`를 그대로 물려받는다).
 class _ExampleBlock extends StatelessWidget {
   const _ExampleBlock({
     required this.example,
     required this.exampleMeaning,
     required this.meaningRevealed,
-    required this.onTap,
   });
 
   final String example;
   final String exampleMeaning;
   final bool meaningRevealed;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final hasMeaning = exampleMeaning.isNotEmpty;
 
-    final content = Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -585,28 +565,10 @@ class _ExampleBlock extends StatelessWidget {
                     ),
                   ),
                 )
-              : hasMeaning
-                  ? Padding(
-                      key: const ValueKey('example-hint'),
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        '탭하여 뜻 보기',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: NyakiColors.taupe,
-                        ),
-                      ),
-                    )
-                  : const SizedBox(key: ValueKey('example-none')),
+              : const SizedBox(key: ValueKey('example-hidden')),
         ),
       ],
     );
-
-    if (!hasMeaning) return content;
-    return GestureDetector(onTap: onTap, child: content);
   }
 }
 

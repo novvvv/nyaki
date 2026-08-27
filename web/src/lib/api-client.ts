@@ -183,3 +183,25 @@ export async function removeWordBook(
     method: "DELETE",
   });
 }
+
+// =============== ✨ completeQuest API ✨ =============== //
+// feat
+//     - 게이미피케이션 퀘스트 완료 신고. 서버가 idempotent 처리(오늘 이미
+//       완료했으면 중복 지급 없이 현재 상태만 반환) — 호출부는 실패해도
+//       원래 하려던 동작(단어 추가 등)을 막지 않는 best-effort로 다뤄야 함.
+// parameter
+//     - token: string -> Firebase login JWT
+//     - questId: string -> 퀘스트 식별자 (예: 'add_word')
+// url
+//     - /v1/progress/quests/${questId}/complete
+//     - method : POST
+// ========================================================= //
+
+export async function completeQuest(
+  token: string,
+  questId: string,
+): Promise<void> {
+  await request<unknown>(`/v1/progress/quests/${questId}/complete`, token, {
+    method: "POST",
+  });
+}

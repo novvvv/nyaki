@@ -6,6 +6,7 @@ from .schemas import ProgressResponse
 
 QUEST_REWARDS: dict[str, int] = {
     "pet_cat": 5,
+    "add_word": 5,
 }
 
 # ====================== ✨ today util method ✨ ====================== #

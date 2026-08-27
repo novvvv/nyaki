@@ -32,7 +32,7 @@ class QuestScreen extends StatelessWidget {
       icon: Icons.add_circle_outline,
       reward: 5,
       currency: 'churu',
-      questId: null,
+      questId: 'add_word',
     ),
     (
       title: '아침 복습 완료',

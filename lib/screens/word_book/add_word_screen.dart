@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/auth_scope.dart';
 import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
+import '../../core/progress_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
+import '../../data/auth/auth_controller.dart';
 import '../../data/repositories/vocab_repository.dart';
 import '../../models/word_book.dart';
 import 'widgets/word_form_field.dart';
@@ -92,6 +95,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
       );
 
       if (!mounted) return;
+
+      // 단어 추가 자체는 로그인 여부와 무관하게 항상 성공. 퀘스트 완료
+      // 알림만 로그인 상태일 때 시도한다 — 실패해도 completeQuest()가
+      // 조용히 캐시값으로 폴백하므로 여기서 결과를 기다리지 않는다.
+      // 오늘 이미 완료된 걸로 로컬 캐시에 있으면 호출 자체를 스킵(서버가
+      // idempotent라 어차피 안전하지만, 불필요한 호출을 줄이기 위함).
+      final progress = ProgressScope.of(context);
+      if (AuthScope.of(context).status == AuthStatus.signedIn &&
+          !progress.snapshot.completedQuestIds.contains('add_word')) {
+        progress.completeQuest('add_word');
+      }
+
       _termController.clear();
       _meaningController.clear();
       _pronunciationController.clear();

@@ -14,6 +14,7 @@ import { useAuth } from "@/components/auth-provider";
 
 
 import {
+  completeQuest,
   listBooks,
   putBook,
   putWord,
@@ -101,6 +102,12 @@ export function VocabProvider({ children }: { children: ReactNode }) {
           : book,
       ),
     );
+
+    // 퀘스트 완료 신고는 best-effort — 실패해도 단어 생성 자체는 이미
+    // 끝난 뒤라 사용자에게 영향 없음(오늘 이미 완료했으면 서버가 idempotent
+    // 처리하니 매번 호출해도 안전).
+    void completeQuest(token, "add_word").catch(() => {});
+
     return created;
   }, [getToken]);
 

@@ -19,9 +19,17 @@ class QuestScreen extends StatelessWidget {
   // 아직 구현 전 — 나중에 붙인다.
   static const _quests = [
     (
-      title: '단어 시험 테스트 누르기',
-      meta: '테스트 탭 진입',
-      icon: Icons.quiz_outlined,
+      title: '냐키 쓰다듬기',
+      meta: '냐키를 쓰담어주세요!',
+      icon: Icons.pets_outlined,
+      reward: 5,
+      currency: 'churu',
+      questId: 'pet_cat',
+    ),
+    (
+      title: '단어 1개 추가하기',
+      meta: '단어장에 새 단어 추가',
+      icon: Icons.add_circle_outline,
       reward: 5,
       currency: 'churu',
       questId: null,
@@ -41,22 +49,6 @@ class QuestScreen extends StatelessWidget {
       reward: 1,
       currency: 'capelin',
       questId: null,
-    ),
-    (
-      title: '단어 1개 추가하기',
-      meta: '단어장에 새 단어 추가',
-      icon: Icons.add_circle_outline,
-      reward: 5,
-      currency: 'churu',
-      questId: null,
-    ),
-    (
-      title: '냐키 쓰다듬기',
-      meta: '냐키를 쓰담어주세요!',
-      icon: Icons.pets_outlined,
-      reward: 5,
-      currency: 'churu',
-      questId: 'pet_cat',
     ),
   ];
 

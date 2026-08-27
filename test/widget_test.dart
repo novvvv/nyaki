@@ -78,7 +78,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('nyakiBottomBar_퀘스트')));
     await tester.pumpAndSettle();
 
-    expect(find.text('냥키 쓰다듬기'), findsOneWidget);
+    expect(find.text('냐키 쓰다듬기'), findsOneWidget);
 
     await db.close();
   });

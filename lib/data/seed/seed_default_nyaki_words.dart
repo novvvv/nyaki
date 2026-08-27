@@ -1,7 +1,7 @@
 import '../repositories/vocab_repository.dart';
 import '../vocab_constants.dart';
 
-/// 기본 냥키 단어장에 시드 단어가 없으면 더미 3개를 넣는다.
+/// 기본 냐키 단어장에 시드 단어가 없으면 더미 3개를 넣는다.
 /// 이미 시드된 경우에도 cat에 기본 이미지가 없으면 채워 넣는다.
 Future<void> seedDefaultNyakiWords(VocabRepository repository) async {
   final wordBooks = await repository.listWordBooks();

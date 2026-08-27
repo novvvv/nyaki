@@ -473,7 +473,7 @@ class _DriveBackupProgressSheetState extends State<_DriveBackupProgressSheet> {
           ),
           const SizedBox(height: 10),
           Text(
-            '냥키 단어장 2권 · 단어 47개',
+            '냐키 단어장 2권 · 단어 47개',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 13,

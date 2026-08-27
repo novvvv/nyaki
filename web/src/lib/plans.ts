@@ -43,7 +43,7 @@ export const PLANS: Plan[] = [
         hint: "기기 바꿔도 복원",
       },
       {
-        label: "냥키에게 세 번 물어보기",
+        label: "냐키에게 세 번 물어보기",
         hint: "뜻·예문 맛보기",
       },
       {
@@ -75,7 +75,7 @@ export const PLANS: Plan[] = [
         hint: "웹에서 모으고 앱에서 복습",
       },
       {
-        label: "냥키 질의 쿠폰 스무 장",
+        label: "냐키 질의 쿠폰 스무 장",
         hint: "궁금할 때 바로",
       },
       {
@@ -103,7 +103,7 @@ export const PLANS: Plan[] = [
       },
       {
         label: "곡·콘텐츠 패키지와 깊은 복습",
-        hint: "냥키와 함께",
+        hint: "냐키와 함께",
       },
       {
         label: "혜택과 가격은 곧 공개",

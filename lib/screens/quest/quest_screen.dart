@@ -12,26 +12,34 @@ class QuestScreen extends StatelessWidget {
 
   // GAMIFICATION-PLAN.md 퀘스트 목록. questId가 있는 항목만 Hub에 실제로
   // 구현되어 있음(현재는 pet_cat뿐) — 나머지는 진행 로직 없는 정적 표시.
+  //
+  // currency: 'churu' | 'capelin' — 아침/저녁 복습(기간제 퀘스트)은
+  // GAMIFICATION-PLAN.md "열빙어 — 2번째 재화"에 따라 보상 재화만 열빙어로
+  // 표시해둔다(디자인 미리보기). 실제 지급 로직(questId 연결, Hub 반영)은
+  // 아직 구현 전 — 나중에 붙인다.
   static const _quests = [
     (
       title: '단어 시험 테스트 누르기',
       meta: '테스트 탭 진입',
       icon: Icons.quiz_outlined,
       reward: 5,
+      currency: 'churu',
       questId: null,
     ),
     (
       title: '아침 복습 완료',
       meta: '06:00–14:00',
       icon: Icons.schedule_outlined,
-      reward: 5,
+      reward: 1,
+      currency: 'capelin',
       questId: null,
     ),
     (
       title: '저녁 복습 완료',
       meta: '18:00–24:00',
       icon: Icons.schedule_outlined,
-      reward: 5,
+      reward: 1,
+      currency: 'capelin',
       questId: null,
     ),
     (
@@ -39,13 +47,15 @@ class QuestScreen extends StatelessWidget {
       meta: '단어장에 새 단어 추가',
       icon: Icons.add_circle_outline,
       reward: 5,
+      currency: 'churu',
       questId: null,
     ),
     (
-      title: '냥키 쓰다듬기',
-      meta: '홈 화면 탭 한 번',
+      title: '냐키 쓰다듬기',
+      meta: '냐키를 쓰담어주세요!',
       icon: Icons.pets_outlined,
       reward: 5,
+      currency: 'churu',
       questId: 'pet_cat',
     ),
   ];
@@ -93,6 +103,7 @@ class QuestScreen extends StatelessWidget {
                       meta: quest.meta,
                       icon: quest.icon,
                       reward: quest.reward,
+                      currency: quest.currency,
                       isImplemented: quest.questId != null,
                       isCompleted: isCompleted,
                     );
@@ -175,6 +186,7 @@ class _QuestCard extends StatelessWidget {
     required this.meta,
     required this.icon,
     required this.reward,
+    required this.currency,
     required this.isImplemented,
     required this.isCompleted,
   });
@@ -183,6 +195,9 @@ class _QuestCard extends StatelessWidget {
   final String meta;
   final IconData icon;
   final int reward;
+
+  /// 'churu' | 'capelin' — 보상 재화. GAMIFICATION-PLAN.md "열빙어" 참고.
+  final String currency;
   final bool isImplemented;
   final bool isCompleted;
 
@@ -242,15 +257,32 @@ class _QuestCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            isImplemented
-                ? Text(
-                    '+$reward 츄르',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: NyakiColors.ink,
-                    ),
+            // 열빙어(capelin) 퀘스트는 아직 미구현이어도 보상 재화 미리보기를
+            // 보여준다 — 나머지(구현 전 츄르 퀘스트)는 기존대로 '준비중'.
+            (isImplemented || currency == 'capelin')
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        currency == 'capelin'
+                            ? 'assets/images/fish_item.png'
+                            : 'assets/images/churu.png',
+                        width: 13,
+                        height: 13,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        currency == 'capelin'
+                            ? '열빙어 $reward개'
+                            : '츄르 $reward개',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: NyakiColors.ink.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
                   )
                 : Container(
                     padding: const EdgeInsets.symmetric(

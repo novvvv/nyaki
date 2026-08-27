@@ -118,7 +118,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       wide: true,
                       label: '츄르',
                       value: '${progress.churuBalance}',
-                      valueFontSize: 26,
+                      valueFontSize: 24,
+                      valueFontWeight: FontWeight.w600,
+                      valueIconAsset: 'assets/images/churu.png',
                       sub: '오늘 완료한 퀘스트 ${progress.completedQuestIds.length}개',
                     ),
                     const SizedBox(height: 10),
@@ -338,6 +340,8 @@ class _MyPageCard extends StatelessWidget {
     required this.label,
     required this.value,
     this.valueFontSize = 20,
+    this.valueFontWeight = FontWeight.w700,
+    this.valueIconAsset,
     this.sub,
     this.wide = false,
     this.dim = false,
@@ -347,6 +351,10 @@ class _MyPageCard extends StatelessWidget {
   final String label;
   final String value;
   final double valueFontSize;
+  final FontWeight valueFontWeight;
+
+  /// value 앞에 붙는 작은 아이콘(예: 츄르 아이콘). null이면 안 붙인다.
+  final String? valueIconAsset;
   final String? sub;
   final bool wide;
   final bool dim;
@@ -382,14 +390,27 @@ class _MyPageCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: valueFontSize,
-                  fontWeight: FontWeight.w700,
-                  color: NyakiColors.ink,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (valueIconAsset != null) ...[
+                    Image.asset(
+                      valueIconAsset!,
+                      width: valueFontSize * 0.8,
+                      height: valueFontSize * 0.8,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: valueFontSize,
+                      fontWeight: valueFontWeight,
+                      color: NyakiColors.ink,
+                    ),
+                  ),
+                ],
               ),
               if (sub != null) ...[
                 const SizedBox(height: 2),

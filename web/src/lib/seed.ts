@@ -5,7 +5,7 @@ const now = new Date().toISOString();
 export const seedWordBooks: WordBook[] = [
   {
     id: "default-nyaki",
-    title: "냥키",
+    title: "냐키",
     description: "Nyaki 기본 단어장",
     createdAt: now,
     updatedAt: now,

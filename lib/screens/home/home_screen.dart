@@ -79,16 +79,39 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (_) => const SignInScreen(),
                       ),
                     ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Text(
-                '$churuBalance',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: NyakiColors.ink,
-                ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(10, 7, 15, 7),
+              decoration: BoxDecoration(
+                color: NyakiColors.cardBg,
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: [
+                  BoxShadow(
+                    color: NyakiColors.ink.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/churu.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    '$churuBalance',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                      color: NyakiColors.ink,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

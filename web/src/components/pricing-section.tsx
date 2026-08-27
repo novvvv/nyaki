@@ -16,7 +16,7 @@ export function PricingSection() {
             나에게 맞는 플랜
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-umber/60">
-            앱 로컬은 자유롭게, 클라우드·냥키는 플랜에 맞게.
+            앱 로컬은 자유롭게, 클라우드·냐키는 플랜에 맞게.
             <br className="hidden sm:inline" />
             Drive 백업은 Hub와 별도로 동작합니다.
           </p>

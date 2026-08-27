@@ -16,13 +16,25 @@ import '../../models/word_book.dart';
 /// `memorization_status`만 보고 복습 주기를 무시했기 때문에 제거했다.
 class WordTestOptions {
   const WordTestOptions({
-    this.hideMeaning = true,
+    this.showWordMeaning = false,
+    this.showPronunciation = false,
+    this.showExample = true,
+    this.showExampleMeaning = false,
     this.shuffle = false,
     this.dailyLimit,
   });
 
-  /// true면 단어만 먼저 보여주고 탭해야 뜻이 보인다.
-  final bool hideMeaning;
+  /// true면 단어 뜻을 탭 없이 처음부터 보여준다.
+  final bool showWordMeaning;
+
+  /// true면 발음을 탭 없이 처음부터 보여준다.
+  final bool showPronunciation;
+
+  /// true면 예문을 탭 없이 처음부터 보여준다.
+  final bool showExample;
+
+  /// true면 예문 뜻을 탭 없이 처음부터 보여준다.
+  final bool showExampleMeaning;
 
   /// 단어 순서 섞기.
   final bool shuffle;
@@ -83,12 +95,10 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
 
   late final int _total = _initialWords.length;
 
-  // 단어 뜻·발음·예문 뜻을 한꺼번에 여닫는 공개 상태. 예전엔 예문 뜻만 따로
-  // 토글해서 두 번 탭해야 다 보였는데, 탭 한 번에 전부 드러나는 게 의도한
-  // 설계라 하나의 세트로 합쳤다.
-  late final Set<String> _revealed = widget.options.hideMeaning
-      ? <String>{}
-      : _initialWords.map((word) => word.id).toSet();
+  // 탭으로 "가려진 채 시작한 항목"을 마저 공개하는 상태. 단어 뜻·발음·예문 뜻을
+  // 한꺼번에 여닫는다 — 어느 항목이 이미 옵션으로 처음부터 보이고 있었는지는
+  // _WordTestCard에서 options와 OR로 합쳐서 계산한다.
+  final Set<String> _revealed = <String>{};
 
   int get _completedCount => _total - _queue.length;
 
@@ -217,7 +227,14 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
 
               return _WordTestCard(
                 word: word,
-                revealed: revealed,
+                // 탭으로 마저 공개했거나, 옵션이 애초에 처음부터 보여주기로
+                // 되어 있으면 보인다.
+                wordMeaningVisible: revealed || widget.options.showWordMeaning,
+                pronunciationVisible:
+                    revealed || widget.options.showPronunciation,
+                exampleVisible: revealed || widget.options.showExample,
+                exampleMeaningVisible:
+                    revealed || widget.options.showExampleMeaning,
                 isLast: isLast,
                 onTap: () => _toggleReveal(word.id),
                 onToggleLike: () => _toggleBookmark(word),
@@ -373,7 +390,10 @@ class _SessionCompleteView extends StatelessWidget {
 class _WordTestCard extends StatelessWidget {
   const _WordTestCard({
     required this.word,
-    required this.revealed,
+    required this.wordMeaningVisible,
+    required this.pronunciationVisible,
+    required this.exampleVisible,
+    required this.exampleMeaningVisible,
     required this.isLast,
     required this.onTap,
     required this.onToggleLike,
@@ -381,7 +401,10 @@ class _WordTestCard extends StatelessWidget {
   });
 
   final Word word;
-  final bool revealed;
+  final bool wordMeaningVisible;
+  final bool pronunciationVisible;
+  final bool exampleVisible;
+  final bool exampleMeaningVisible;
   final bool isLast;
   final VoidCallback onTap;
   final VoidCallback onToggleLike;
@@ -429,43 +452,53 @@ class _WordTestCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (word.pronunciation != null) ...[
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: pronunciationVisible
+                        ? Text(
+                            word.pronunciation!,
+                            key: const ValueKey('pron-visible'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: NyakiColors.umber.withValues(alpha: 0.55),
+                            ),
+                          )
+                        : Text(
+                            '탭하여 발음 보기',
+                            key: const ValueKey('pron-hidden'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: NyakiColors.taupe,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 180),
-                  child: revealed
-                      ? Column(
-                          key: const ValueKey('revealed'),
-                          children: [
-                            if (word.pronunciation != null) ...[
-                              Text(
-                                word.pronunciation!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: NyakiColors.umber.withValues(
-                                    alpha: 0.55,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                            Text(
-                              word.meaning,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: NyakiColors.ink.withValues(alpha: 0.88),
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
+                  child: wordMeaningVisible
+                      ? Text(
+                          word.meaning,
+                          key: const ValueKey('meaning-visible'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: NyakiColors.ink.withValues(alpha: 0.88),
+                            height: 1.4,
+                          ),
                         )
                       : Text(
                           '탭하여 뜻 보기',
-                          key: const ValueKey('hidden'),
+                          key: const ValueKey('meaning-hidden'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'Inter',
@@ -480,7 +513,8 @@ class _WordTestCard extends StatelessWidget {
                   _ExampleBlock(
                     example: example,
                     exampleMeaning: exampleMeaning,
-                    meaningRevealed: revealed,
+                    exampleVisible: exampleVisible,
+                    meaningVisible: exampleMeaningVisible,
                   ),
                 ],
                 const SizedBox(height: 32),
@@ -516,58 +550,71 @@ class _WordTestCard extends StatelessWidget {
   }
 }
 
-/// 예문 카드. 예문 원문은 항상 보이고, 예문 뜻은 카드 전체를 탭해서 단어
-/// 뜻·발음과 함께 한 번에 공개된다(별도 탭 불필요 — [meaningRevealed]는
-/// 상위 `_WordTestCard`의 `revealed`를 그대로 물려받는다).
+/// 예문 카드. [exampleVisible]이 false면 예문 자체를 힌트로 가려두고,
+/// true여도 예문 뜻은 [meaningVisible]이 따로 켜져야 보인다. 둘 다 카드
+/// 전체 탭(옵션으로 처음부터 켜져 있지 않은 항목만)으로 함께 공개된다.
 class _ExampleBlock extends StatelessWidget {
   const _ExampleBlock({
     required this.example,
     required this.exampleMeaning,
-    required this.meaningRevealed,
+    required this.exampleVisible,
+    required this.meaningVisible,
   });
 
   final String example;
   final String exampleMeaning;
-  final bool meaningRevealed;
+  final bool exampleVisible;
+  final bool meaningVisible;
 
   @override
   Widget build(BuildContext context) {
     final hasMeaning = exampleMeaning.isNotEmpty;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          example,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 15,
-            height: 1.45,
-            color: NyakiColors.ink.withValues(alpha: 0.85),
-          ),
-        ),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 150),
-          child: hasMeaning && meaningRevealed
-              ? Padding(
-                  key: const ValueKey('example-meaning'),
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    exampleMeaning,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      height: 1.4,
-                      color: NyakiColors.ink.withValues(alpha: 0.5),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 150),
+      child: !exampleVisible
+          ? Text(
+              '탭하여 예문 보기',
+              key: const ValueKey('example-hint'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: NyakiColors.taupe,
+              ),
+            )
+          : Column(
+              key: const ValueKey('example-visible'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  example,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 15,
+                    height: 1.45,
+                    color: NyakiColors.ink.withValues(alpha: 0.85),
+                  ),
+                ),
+                if (hasMeaning && meaningVisible)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      exampleMeaning,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        height: 1.4,
+                        color: NyakiColors.ink.withValues(alpha: 0.5),
+                      ),
                     ),
                   ),
-                )
-              : const SizedBox(key: ValueKey('example-hidden')),
-        ),
-      ],
+              ],
+            ),
     );
   }
 }

@@ -88,6 +88,10 @@ class _WordTestScreenState extends State<WordTestScreen> {
     final options = await showModalBottomSheet<WordTestOptions>(
       context: context,
       backgroundColor: NyakiColors.cream,
+      // 기본 바텀시트는 화면의 절반 정도로 높이가 제한된다. 옵션이 늘어나며
+      // 내용이 더 필요해져서, isScrollControlled로 그 상한을 풀고 시트
+      // 내부에서 직접 화면의 2/3 높이를 잡는다.
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -204,7 +208,10 @@ class _TestOptionsSheet extends StatefulWidget {
 class _TestOptionsSheetState extends State<_TestOptionsSheet> {
   static const _dailyLimitKey = 'test_daily_limit';
 
-  bool _hideMeaning = true;
+  bool _hideWordMeaning = true;
+  bool _hidePronunciation = true;
+  bool _hideExample = false;
+  bool _hideExampleMeaning = true;
   bool _shuffle = false;
   int _limit = 1;
   bool _limitLoaded = false;
@@ -261,102 +268,139 @@ class _TestOptionsSheetState extends State<_TestOptionsSheet> {
   @override
   Widget build(BuildContext context) {
     final count = _dueCount;
+    final sheetHeight = MediaQuery.sizeOf(context).height * 2 / 3;
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              '테스트 설정',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: NyakiColors.ink,
+      child: SizedBox(
+        height: sheetHeight,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                '테스트 설정',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: NyakiColors.ink,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              '대상 단어',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: NyakiColors.umber.withValues(alpha: 0.65),
+              const SizedBox(height: 20),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (count > 1 && _limitLoaded) ...[
+                        _DailyLimitSlider(
+                          count: count,
+                          value: _limit,
+                          controller: _limitController,
+                          onChanged: _setLimit,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                      Text(
+                        '가리기',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: NyakiColors.umber.withValues(alpha: 0.65),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '켜두면 탭해야 보여요',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: NyakiColors.ink.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _RevealOptionChip(
+                            label: '단어 뜻',
+                            value: _hideWordMeaning,
+                            onChanged: (value) =>
+                                setState(() => _hideWordMeaning = value),
+                          ),
+                          _RevealOptionChip(
+                            label: '발음',
+                            value: _hidePronunciation,
+                            onChanged: (value) =>
+                                setState(() => _hidePronunciation = value),
+                          ),
+                          _RevealOptionChip(
+                            label: '예문',
+                            value: _hideExample,
+                            onChanged: (value) =>
+                                setState(() => _hideExample = value),
+                          ),
+                          _RevealOptionChip(
+                            label: '예문 뜻',
+                            value: _hideExampleMeaning,
+                            onChanged: (value) =>
+                                setState(() => _hideExampleMeaning = value),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                      _OptionToggleRow(
+                        label: '순서 섞기',
+                        description: '단어를 무작위 순서로 출제',
+                        value: _shuffle,
+                        onChanged: (value) => setState(() => _shuffle = value),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              count == 0
-                  ? '오늘 복습할 단어가 없어요'
-                  : '복습 주기가 돌아온 $count단어',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: NyakiColors.ink.withValues(alpha: 0.7),
-              ),
-            ),
-            if (count > 1 && _limitLoaded) ...[
-              const SizedBox(height: 16),
-              _DailyLimitSlider(
-                count: count,
-                value: _limit,
-                controller: _limitController,
-                onChanged: _setLimit,
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 50,
+                child: FilledButton(
+                  onPressed: count == 0 || !_limitLoaded
+                      ? null
+                      : () => Navigator.of(context).pop(
+                            WordTestOptions(
+                              // 시트의 칩은 "가리기" 기준이라 반대로 뒤집어 넘긴다.
+                              showWordMeaning: !_hideWordMeaning,
+                              showPronunciation: !_hidePronunciation,
+                              showExample: !_hideExample,
+                              showExampleMeaning: !_hideExampleMeaning,
+                              shuffle: _shuffle,
+                              dailyLimit: _limit,
+                            ),
+                          ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: NyakiColors.ink,
+                    foregroundColor: NyakiColors.cream,
+                    disabledBackgroundColor: NyakiColors.softDune,
+                    disabledForegroundColor:
+                        NyakiColors.umber.withValues(alpha: 0.45),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    count == 0 ? '해당하는 단어가 없어요' : '시작 · $_limit단어',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
             ],
-            const SizedBox(height: 22),
-            _OptionToggleRow(
-              label: '뜻 가리기',
-              description: '단어만 먼저 보여주고 탭하면 공개',
-              value: _hideMeaning,
-              onChanged: (value) => setState(() => _hideMeaning = value),
-            ),
-            const SizedBox(height: 6),
-            _OptionToggleRow(
-              label: '순서 섞기',
-              description: '단어를 무작위 순서로 출제',
-              value: _shuffle,
-              onChanged: (value) => setState(() => _shuffle = value),
-            ),
-            const SizedBox(height: 22),
-            SizedBox(
-              height: 50,
-              child: FilledButton(
-                onPressed: count == 0 || !_limitLoaded
-                    ? null
-                    : () => Navigator.of(context).pop(
-                          WordTestOptions(
-                            hideMeaning: _hideMeaning,
-                            shuffle: _shuffle,
-                            dailyLimit: _limit,
-                          ),
-                        ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: NyakiColors.ink,
-                  foregroundColor: NyakiColors.cream,
-                  disabledBackgroundColor: NyakiColors.softDune,
-                  disabledForegroundColor:
-                      NyakiColors.umber.withValues(alpha: 0.45),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  count == 0 ? '해당하는 단어가 없어요' : '시작 · $_limit단어',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -497,6 +541,64 @@ class _OptionToggleRow extends StatelessWidget {
           inactiveTrackColor: NyakiColors.softDune,
         ),
       ],
+    );
+  }
+}
+
+/// "가리기" 항목 하나를 나타내는 알약 모양 토글 칩. 켜지면(=가려짐) 잉크색으로
+/// 채워지고 체크가 붙으며, 꺼지면 옅은 테두리만 남는다.
+class _RevealOptionChip extends StatelessWidget {
+  const _RevealOptionChip({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: value ? NyakiColors.ink : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: value ? NyakiColors.ink : NyakiColors.taupe,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (value) ...[
+              const Icon(
+                Icons.check_rounded,
+                size: 15,
+                color: NyakiColors.cream,
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: value
+                    ? NyakiColors.cream
+                    : NyakiColors.ink.withValues(alpha: 0.55),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

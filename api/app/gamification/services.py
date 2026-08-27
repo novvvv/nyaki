@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..models import QuestStateModel, UserProgressModel
@@ -9,10 +9,16 @@ QUEST_REWARDS: dict[str, int] = {
     "add_word": 5,
 }
 
+# 한국 표준시(KST, UTC+9) 고정 오프셋 — DST 없는 시간대라 zoneinfo/tzdata
+# 의존성 없이 고정 오프셋으로 충분함(python:3.13-slim 이미지엔 tzdata가 없음).
+_KST = timezone(timedelta(hours=9))
+
 # ====================== ✨ today util method ✨ ====================== #
-# - 오늘 날짜 (UTC) 기준으로 오늘이 며칠인지 계산 
+# - 오늘 날짜(KST) 기준으로 오늘이 며칠인지 계산 — 클라이언트(로컬시간)와
+#   기준을 맞춰서 자정(00:00 KST)에 딱 맞게 리셋되게 한다(2026-08-28 변경,
+#   기존엔 UTC라 오전 9시에야 날짜가 바뀌었음).
 def _today() -> date:
-    return datetime.now(timezone.utc).date()
+    return datetime.now(_KST).date()
 # ===================================================================== #
 
 # ====================== ✨ [method] get_or_create_progress ✨ ====================== #

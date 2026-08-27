@@ -1,8 +1,21 @@
+from datetime import date, datetime, timezone
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user_id
 from app.core.database import Base, engine
+from app.gamification.services import _today
 from app.main import app
+
+
+def test_today_resets_at_kst_midnight_not_utc_midnight() -> None:
+    # 2026-08-27 23:00 UTC == 2026-08-28 08:00 KST — UTC 기준이면 아직
+    # 8/27이지만, KST 기준이면 이미 8/28로 날짜가 넘어가 있어야 한다.
+    fixed_utc = datetime(2026, 8, 27, 23, 0, tzinfo=timezone.utc)
+    with patch("app.gamification.services.datetime") as mock_datetime:
+        mock_datetime.now.side_effect = lambda tz=None: fixed_utc.astimezone(tz)
+        assert _today() == date(2026, 8, 28)
 
 
 def test_complete_quest_add_word_is_idempotent_per_day() -> None:

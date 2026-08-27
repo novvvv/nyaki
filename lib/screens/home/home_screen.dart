@@ -79,29 +79,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (_) => const SignInScreen(),
                       ),
                     ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: NyakiColors.cardBg,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: NyakiColors.taupe, width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 임시 플레이스홀더 — 나중에 커스텀 츄르 아이콘으로 교체 예정.
-                  const Text('🐟', style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$churuBalance',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: NyakiColors.ink,
-                    ),
-                  ),
-                ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Text(
+                '$churuBalance',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: NyakiColors.ink,
+                ),
               ),
             ),
           ),

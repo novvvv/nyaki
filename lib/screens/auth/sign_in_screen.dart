@@ -54,17 +54,6 @@ class SignInScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Vocabulary, calmly',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 2.4,
-                      color: NyakiColors.ink.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
                   const Text(
                     'Nyaki',
                     style: TextStyle(
@@ -75,30 +64,7 @@ class SignInScreen extends StatelessWidget {
                       color: NyakiColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '폰과 웹에서 같은 단어장을\n외우고, 기록하고, 어디서든 이어서.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 15,
-                      height: 1.65,
-                      color: NyakiColors.ink.withValues(alpha: 0.45),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Text(
-                    '궁금한 거 있으면 언제든지 물어보라냥',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      height: 1.5,
-                      color: NyakiColors.ink.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Image.asset(
                     _catAsset,
                     width: catSize,
@@ -111,13 +77,6 @@ class SignInScreen extends StatelessWidget {
                     filled: true,
                     enabled: !auth.busy,
                     onTap: () => _run(context, auth.signInWithGoogle),
-                  ),
-                  const SizedBox(height: 10),
-                  _SignInButton(
-                    label: 'Apple로 계속',
-                    filled: false,
-                    enabled: !auth.busy,
-                    onTap: () => _run(context, auth.signInWithApple),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
@@ -132,15 +91,6 @@ class SignInScreen extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '모바일 앱과 실시간 동기화',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      color: NyakiColors.ink.withValues(alpha: 0.3),
                     ),
                   ),
                 ],

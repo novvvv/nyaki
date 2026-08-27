@@ -137,11 +137,7 @@ class _WordTestScreenState extends State<WordTestScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(28, 20, 28, 16),
                         itemCount: books.length,
-                        separatorBuilder: (_, __) => const Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: NyakiColors.softDune,
-                        ),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final book = books[index];
                           return _TestBookTile(
@@ -520,11 +516,20 @@ class _TestBookTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const textColor = NyakiColors.ink;
+
     return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+      borderRadius: BorderRadius.circular(22),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        decoration: BoxDecoration(
+          color: selected ? NyakiColors.softDune : NyakiColors.cardBg,
+          borderRadius: BorderRadius.circular(22),
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
@@ -536,32 +541,22 @@ class _TestBookTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 14,
+                      fontSize: 14.5,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: NyakiColors.ink,
+                      color: textColor,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 5),
                   Text(
                     meta,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
-                      color: NyakiColors.ink.withValues(alpha: 0.35),
+                      color: textColor.withValues(alpha: selected ? 0.65 : 0.45),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 12),
-            Icon(
-              selected
-                  ? Icons.check_circle_rounded
-                  : Icons.circle_outlined,
-              size: 20,
-              color: selected
-                  ? NyakiColors.ink
-                  : NyakiColors.taupe,
             ),
           ],
         ),

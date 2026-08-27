@@ -87,12 +87,24 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
       ? <String>{}
       : _initialWords.map((word) => word.id).toSet();
 
+  // 예문 뜻 공개 여부 — 단어 뜻 공개(_revealed)와는 별개의 상태.
+  // 예문은 항상 보이고, 예문의 "뜻"만 탭해서 토글한다.
+  final Set<String> _exampleRevealed = <String>{};
+
   int get _completedCount => _total - _queue.length;
 
   void _toggleReveal(String wordId) {
     setState(() {
       if (!_revealed.add(wordId)) {
         _revealed.remove(wordId);
+      }
+    });
+  }
+
+  void _toggleExampleReveal(String wordId) {
+    setState(() {
+      if (!_exampleRevealed.add(wordId)) {
+        _exampleRevealed.remove(wordId);
       }
     });
   }
@@ -105,6 +117,7 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
     setState(() {
       _queue.removeWhere((w) => w.id == word.id);
       _revealed.remove(word.id);
+      _exampleRevealed.remove(word.id);
     });
     _persistGrade(word, grade);
   }
@@ -210,13 +223,16 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
             builder: (context) {
               final word = _queue.first;
               final revealed = _revealed.contains(word.id);
+              final exampleRevealed = _exampleRevealed.contains(word.id);
               final isLast = _queue.length == 1;
 
               return _WordTestCard(
                 word: word,
                 revealed: revealed,
+                exampleRevealed: exampleRevealed,
                 isLast: isLast,
                 onTap: () => _toggleReveal(word.id),
+                onToggleExample: () => _toggleExampleReveal(word.id),
                 onToggleLike: () => _toggleBookmark(word),
                 onOpenComments: () => _openDescriptionSheet(word),
               );
@@ -371,21 +387,28 @@ class _WordTestCard extends StatelessWidget {
   const _WordTestCard({
     required this.word,
     required this.revealed,
+    required this.exampleRevealed,
     required this.isLast,
     required this.onTap,
+    required this.onToggleExample,
     required this.onToggleLike,
     required this.onOpenComments,
   });
 
   final Word word;
   final bool revealed;
+  final bool exampleRevealed;
   final bool isLast;
   final VoidCallback onTap;
+  final VoidCallback onToggleExample;
   final VoidCallback onToggleLike;
   final VoidCallback onOpenComments;
 
   @override
   Widget build(BuildContext context) {
+    final example = word.example?.trim() ?? '';
+    final exampleMeaning = word.exampleMeaning?.trim() ?? '';
+
     return Stack(
       children: [
         GestureDetector(
@@ -469,6 +492,15 @@ class _WordTestCard extends StatelessWidget {
                           ),
                         ),
                 ),
+                if (example.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  _ExampleBlock(
+                    example: example,
+                    exampleMeaning: exampleMeaning,
+                    meaningRevealed: exampleRevealed,
+                    onTap: onToggleExample,
+                  ),
+                ],
                 const SizedBox(height: 32),
                 if (isLast) ...[
                   const SizedBox(height: 6),
@@ -499,6 +531,82 @@ class _WordTestCard extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// 예문 카드. 예문 원문은 항상 보이고, 예문 뜻이 있으면 탭해서 토글
+/// 공개한다(단어 뜻 리빌과는 별개 상태). 예문 뜻이 없으면 탭 힌트 없이
+/// 예문만 정적으로 보여준다.
+class _ExampleBlock extends StatelessWidget {
+  const _ExampleBlock({
+    required this.example,
+    required this.exampleMeaning,
+    required this.meaningRevealed,
+    required this.onTap,
+  });
+
+  final String example;
+  final String exampleMeaning;
+  final bool meaningRevealed;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMeaning = exampleMeaning.isNotEmpty;
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          example,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 15,
+            height: 1.45,
+            color: NyakiColors.ink.withValues(alpha: 0.85),
+          ),
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          child: hasMeaning && meaningRevealed
+              ? Padding(
+                  key: const ValueKey('example-meaning'),
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    exampleMeaning,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      height: 1.4,
+                      color: NyakiColors.ink.withValues(alpha: 0.5),
+                    ),
+                  ),
+                )
+              : hasMeaning
+                  ? Padding(
+                      key: const ValueKey('example-hint'),
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        '탭하여 뜻 보기',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: NyakiColors.taupe,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(key: ValueKey('example-none')),
+        ),
+      ],
+    );
+
+    if (!hasMeaning) return content;
+    return GestureDetector(onTap: onTap, child: content);
   }
 }
 
@@ -592,20 +700,12 @@ class _DescriptionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final description = word.description?.trim() ?? '';
-    final example = word.example?.trim() ?? '';
-    final exampleMeaning = word.exampleMeaning?.trim() ?? '';
     final createdLabel = _formatCreatedAt(word.createdAt);
-    // 설명(메모)과 예문은 서로 다른 필드라, 라벨을 붙여 구분해서 보여준다.
-    // 예문+예문 뜻은 한 쌍이라 한 행으로 묶는다.
+    // 예문은 카드에 직접 보여주므로(_ExampleBlock) 메모 시트엔 안 넣는다 —
+    // 여기는 "설명"(메모) 전용.
     final entries = <_MemoEntry>[
       if (description.isNotEmpty)
         (label: '설명', body: description, subBody: null),
-      if (example.isNotEmpty)
-        (
-          label: '예문',
-          body: example,
-          subBody: exampleMeaning.isNotEmpty ? exampleMeaning : null,
-        ),
     ];
     final sheetHeight = MediaQuery.sizeOf(context).height * 0.5;
 

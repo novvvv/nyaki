@@ -19,6 +19,7 @@ type ApiWord = {
   pronunciation: string | null;
   description: string | null;
   example: string | null;
+  example_meaning: string | null;
   image_path: string | null;
   memorization_status: "unmemorized" | "memorized";
   is_bookmarked: boolean;
@@ -48,6 +49,7 @@ function toWord(value: ApiWord): Word {
     pronunciation: value.pronunciation ?? undefined,
     description: value.description ?? undefined,
     example: value.example ?? undefined,
+    exampleMeaning: value.example_meaning ?? undefined,
     memorizationStatus: value.memorization_status,
     isBookmarked: value.is_bookmarked ?? false,
     tags: value.tags ?? [],
@@ -138,6 +140,7 @@ export async function putWord(
         pronunciation: input.pronunciation?.trim() || null,
         description: input.description?.trim() || null,
         example: input.example?.trim() || null,
+        example_meaning: input.exampleMeaning?.trim() || null,
         image_path: null,
         memorization_status: input.memorizationStatus ?? "unmemorized",
         is_bookmarked: input.isBookmarked ?? false,

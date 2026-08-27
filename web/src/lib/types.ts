@@ -8,6 +8,7 @@ export interface Word {
   pronunciation?: string;
   description?: string;
   example?: string;
+  exampleMeaning?: string;
   memorizationStatus: MemorizationStatus;
   isBookmarked: boolean;
   tags: string[];
@@ -31,6 +32,7 @@ export interface WordInput {
   pronunciation?: string;
   description?: string;
   example?: string;
+  exampleMeaning?: string;
   isBookmarked?: boolean;
   tags?: string[];
   memorizationStatus?: MemorizationStatus;

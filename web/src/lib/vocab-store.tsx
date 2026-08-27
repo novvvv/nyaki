@@ -97,7 +97,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     setWordBooks((prev) =>
       prev.map((book) =>
         book.id === wordBookId
-          ? { ...book, words: [created, ...book.words], updatedAt: created.updatedAt }
+          ? { ...book, words: [...book.words, created], updatedAt: created.updatedAt }
           : book,
       ),
     );

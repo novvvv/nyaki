@@ -12,6 +12,7 @@ import {
   TextArea,
   TextInput,
 } from "@/components/ui";
+import { WORD_PAGE_SIZE } from "@/lib/constants";
 import { activeWords, useVocab } from "@/lib/vocab-store";
 import type { WordInput } from "@/lib/types";
 
@@ -36,6 +37,7 @@ export function WordForm({ mode }: WordFormProps) {
     pronunciation: existing?.pronunciation ?? "",
     description: existing?.description ?? "",
     example: existing?.example ?? "",
+    exampleMeaning: existing?.exampleMeaning ?? "",
     isBookmarked: existing?.isBookmarked ?? false,
     tags: existing?.tags ?? [],
   }));
@@ -81,10 +83,17 @@ export function WordForm({ mode }: WordFormProps) {
     try {
       if (mode === "create") {
         await createWord(book.id, payload);
-      } else if (existing) {
-        await updateWord(book.id, existing.id, payload);
+        // 새 단어는 목록 맨 끝에 추가되므로(전체/최신순 기준), 그 단어가
+        // 실제로 있는 페이지로 이동한다 — 항상 1페이지로 보내지 않는다.
+        const newCount = activeWords(book).length + 1;
+        const targetPage = Math.ceil(newCount / WORD_PAGE_SIZE);
+        router.push(`/word-books/${book.id}?page=${targetPage}`);
+      } else {
+        if (existing) {
+          await updateWord(book.id, existing.id, payload);
+        }
+        router.push(`/word-books/${book.id}`);
       }
-      router.push(`/word-books/${book.id}`);
     } catch (reason) {
       window.alert(
         reason instanceof Error ? reason.message : "단어를 저장하지 못했어요.",
@@ -182,6 +191,15 @@ export function WordForm({ mode }: WordFormProps) {
             value={form.example ?? ""}
             onChange={(e) => setField("example", e.target.value)}
             placeholder="I have a cat."
+          />
+        </div>
+
+        <div>
+          <FieldLabel>예문 뜻</FieldLabel>
+          <TextArea
+            value={form.exampleMeaning ?? ""}
+            onChange={(e) => setField("exampleMeaning", e.target.value)}
+            placeholder="나는 고양이가 있다."
           />
         </div>
 

@@ -109,19 +109,7 @@ export default function WordBooksPage() {
 
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="text-xs tabular-nums text-umber/45">
-                      {meta.count}
-                    </span>
-                    <span
-                      aria-hidden
-                      className="h-1 w-16 overflow-hidden rounded-full bg-taupe/25"
-                    >
-                      <span
-                        className="block h-full rounded-full bg-[var(--chart-1)] transition-[width] duration-500"
-                        style={{ width: `${meta.rate}%` }}
-                      />
-                    </span>
-                    <span className="w-9 text-right text-xs tabular-nums text-umber/45">
-                      {meta.rate}%
+                      {meta.count}개
                     </span>
                   </div>
                 </Link>

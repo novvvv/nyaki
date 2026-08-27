@@ -54,6 +54,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             label="전체 단어장"
             active={pathname === "/word-books"}
           />
+          <SidebarItem
+            href="/word-books/overview"
+            label="전체 통계"
+            active={pathname === "/word-books/overview"}
+          />
         </nav>
 
         <p className="mb-2 px-2.5 text-[11px] font-medium uppercase tracking-wider text-ink/35">

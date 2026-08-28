@@ -7,6 +7,7 @@ import '../../core/progress_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
 import '../../data/auth/auth_controller.dart';
 import '../auth/sign_in_screen.dart';
+import '../store/store_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -71,49 +72,64 @@ class _HomeScreenState extends State<HomeScreen> {
         Positioned(
           top: 16,
           right: 20,
-          child: GestureDetector(
-            onTap: isLoggedIn
-                ? null
-                : () => Navigator.of(context).push<void>(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const SignInScreen(),
+          child: Row(
+            children: [
+              // 상점 — 재화(츄르) 옆에 두는 게 실제 게임 UI 관례에 가까움
+              // (2026-08-28, 퀘스트는 따로 두기로 하고 플로팅 버튼은 정리).
+              _HubIconButton(
+                assetPath: 'assets/icon/shop_icon.png',
+                containerSize: 38,
+                iconSize: 36,
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(builder: (_) => const StoreScreen()),
+                ),
+              ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: isLoggedIn
+                    ? null
+                    : () => Navigator.of(context).push<void>(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SignInScreen(),
+                          ),
+                        ),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 7, 15, 7),
+                  decoration: BoxDecoration(
+                    color: NyakiColors.cardBg,
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: NyakiColors.ink.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(10, 7, 15, 7),
-              decoration: BoxDecoration(
-                color: NyakiColors.cardBg,
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [
-                  BoxShadow(
-                    color: NyakiColors.ink.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/images/churu.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        '$churuBalance',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                          color: NyakiColors.ink,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'assets/images/churu.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  const SizedBox(width: 7),
-                  Text(
-                    '$churuBalance',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                      color: NyakiColors.ink,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
       ],
@@ -131,5 +147,50 @@ class _HomeScreenState extends State<HomeScreen> {
     if (AuthScope.of(context).status == AuthStatus.signedIn) {
       ProgressScope.of(context).completeQuest('pet_cat');
     }
+  }
+}
+
+/// 홈 화면 상단 진입 버튼(상점) — 원형 오프화이트 배경 + 은은한 그림자로
+/// 츄르 배지와 톤을 맞춘다. (2026-08-28) 퀘스트는 따로 두기로 하고 상점만
+/// 츄르 배지 옆으로 옮김 — 재화 옆에 상점을 두는 건 실제 게임 UI에서도
+/// 흔한 배치.
+class _HubIconButton extends StatelessWidget {
+  const _HubIconButton({
+    required this.assetPath,
+    required this.onTap,
+    this.containerSize = 52,
+    this.iconSize = 28,
+  });
+
+  final String assetPath;
+  final VoidCallback onTap;
+  final double containerSize;
+
+  /// 에셋마다 캔버스 내 여백 비율이 달라서(체감 크기가 다름) 개별 보정할
+  /// 수 있게 뺐다.
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: containerSize,
+        height: containerSize,
+        decoration: BoxDecoration(
+          color: NyakiColors.cardBg,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: NyakiColors.ink.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Image.asset(assetPath, width: iconSize, height: iconSize),
+      ),
+    );
   }
 }

@@ -62,47 +62,63 @@ class QuestScreen extends StatelessWidget {
     final completedIds = ProgressScope.of(context).snapshot.completedQuestIds;
     final completedCount = completedIds.intersection(implementedIds).length;
     final isLoggedIn = AuthScope.of(context).status == AuthStatus.signedIn;
+    final canPop = Navigator.canPop(context);
 
     return Stack(
       children: [
         ColoredBox(
           color: NyakiColors.cream,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 20, 28, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _CounterPill(
-                      label: '$completedCount / ${implementedIds.length}',
-                    ),
-                  ],
+          child: SafeArea(
+            // 바텀탭에 붙어있을 때는 app_shell.dart가 이미 SafeArea(bottom:
+            // false)로 감싸주지만, 홈 화면 아이콘에서 push로 들어올 땐 이
+            // 화면이 그 밖에서 단독으로 뜨기 때문에 뒤로가기 버튼이 상태바와
+            // 겹쳐서 눌리지 않았음(2026-08-28) — 여기서 직접 SafeArea를
+            // 씌운다. 이미 SafeArea 안이면 상단 인셋이 0이라 중첩돼도 무해함.
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 20, 28, 0),
+                  child: Row(
+                    mainAxisAlignment: canPop
+                        ? MainAxisAlignment.spaceBetween
+                        : MainAxisAlignment.end,
+                    children: [
+                      // 바텀탭 전용이던 때는 뒤로가기가 필요 없었지만, 홈 화면
+                      // 아이콘에서 push로 들어오는 지금은 canPop일 때만 보여준다
+                      // (2026-08-28, 홈 화면 허브화).
+                      if (canPop)
+                        _BackButton(onTap: () => Navigator.of(context).pop()),
+                      _CounterPill(
+                        label: '$completedCount / ${implementedIds.length}',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
-                  itemCount: _quests.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final quest = _quests[index];
-                    final isCompleted = quest.questId != null &&
-                        completedIds.contains(quest.questId);
-                    return _QuestCard(
-                      title: quest.title,
-                      meta: quest.meta,
-                      icon: quest.icon,
-                      reward: quest.reward,
-                      currency: quest.currency,
-                      isImplemented: quest.questId != null,
-                      isCompleted: isCompleted,
-                    );
-                  },
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
+                    itemCount: _quests.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final quest = _quests[index];
+                      final isCompleted = quest.questId != null &&
+                          completedIds.contains(quest.questId);
+                      return _QuestCard(
+                        title: quest.title,
+                        meta: quest.meta,
+                        icon: quest.icon,
+                        reward: quest.reward,
+                        currency: quest.currency,
+                        isImplemented: quest.questId != null,
+                        isCompleted: isCompleted,
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         // 비로그인: 리스트 전체(바텀바 제외 — 이 화면 범위 밖)를 반투명
@@ -141,6 +157,35 @@ class QuestScreen extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// 좌측 상단 뒤로가기 버튼 — canPop일 때만(홈 화면 아이콘에서 push로
+/// 들어온 경우) 보여준다.
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: const BoxDecoration(
+          color: NyakiColors.cardBg,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: 15,
+          color: NyakiColors.ink,
+        ),
+      ),
     );
   }
 }
@@ -264,9 +309,7 @@ class _QuestCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        currency == 'capelin'
-                            ? '열빙어 $reward개'
-                            : '츄르 $reward개',
+                        currency == 'capelin' ? '열빙어 $reward개' : '츄르 $reward개',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11.5,

@@ -74,15 +74,27 @@ class ProgressRepository {
     final today = _todayLocal();
 
     // 🔑 transaction 🔑
-    // - 잔액 + 퀘스트 상태 갱신을 하나의 트랜잭션으로 처리한다. 
+    // - 잔액 + 퀘스트 상태 갱신을 하나의 트랜잭션으로 처리한다.
     await _db.transaction(() async {
-      // balance Upsert 
+      // balance Upsert
       await _db.into(_db.userProgress).insertOnConflictUpdate(
             UserProgressCompanion.insert(
               userId: userId,
               churuBalance: Value(churuBalance),
             ),
           );
+
+      // 이 유저의 완료 기록을 전부 지우고 서버가 방금 내려준 목록으로만
+      // 다시 채운다 — 서버 응답이 "오늘의 완전한 진실"이라는 전제.
+      // (2026-08-28 개정) 예전엔 "오늘보다 이전 날짜" row만 지웠는데, 그건
+      // "오늘 날짜로 남아있지만 서버는 더 이상 완료로 안 치는" row는 못
+      // 잡아냈다 — 실기기 로그로 실제 재현됨(로컬엔 오늘 날짜로
+      // add_word가 남아있는데 서버 응답엔 없는 상황). 부분 upsert 대신
+      // 통째로 교체해서 이런 드리프트 자체가 안 생기게 한다.
+      await (_db.delete(_db.questState)
+            ..where((row) => row.userId.equals(userId)))
+          .go();
+
       // quest Upsert
       for (final questId in completedQuestIds) {
         await _db.into(_db.questState).insertOnConflictUpdate(
@@ -110,7 +122,7 @@ class ProgressRepository {
           ..where((row) => row.userId.equals(userId)))
         .getSingleOrNull();
 
-    // 완료 퀘스트 조회 
+    // 완료 퀘스트 조회
     //  - QuestState table에서 유저의 날짜가 오늘인 row를 모두 탐색한다.
     final today = _todayLocal();
     final completedRows = await (_db.select(_db.questState)
@@ -140,7 +152,7 @@ class ProgressRepository {
 
     try {
 
-      // Http get - Authorization header 
+      // Http get - Authorization header
       final response = await _client.get(
         Uri.parse('$_apiBaseUrl/v1/progress'),
         headers: _headers(token),
@@ -155,7 +167,7 @@ class ProgressRepository {
       await _writeCache(userId, payload);
     } catch (_) {
       // 오프라인/서버 오류는 조용히 무시하고 캐시값을 반환한다.
-      // 메서드가 실패해도 앱이 죽지 않고 기존 캐시값을 보여주는 원칙 통일 
+      // 메서드가 실패해도 앱이 죽지 않고 기존 캐시값을 보여주는 원칙 통일
     }
 
     return loadCached();
@@ -177,6 +189,7 @@ class ProgressRepository {
         Uri.parse('$_apiBaseUrl/v1/progress/quests/$questId/complete'),
         headers: _headers(token),
       );
+
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return loadCached();
       }

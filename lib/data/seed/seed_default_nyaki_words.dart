@@ -23,6 +23,7 @@ Future<void> seedDefaultNyakiWords(VocabRepository repository) async {
           pronunciation: seed.pronunciation,
           description: seed.description,
           example: seed.example,
+          exampleMeaning: seed.exampleMeaning,
           imagePath: seed.imagePath,
         ),
       );
@@ -49,6 +50,7 @@ class SeedWord {
     this.pronunciation,
     this.description,
     this.example,
+    this.exampleMeaning,
     this.imagePath,
   });
 
@@ -57,6 +59,7 @@ class SeedWord {
   final String? pronunciation;
   final String? description;
   final String? example;
+  final String? exampleMeaning;
   final String? imagePath;
 }
 
@@ -74,7 +77,9 @@ const defaultNyakiSeedWords = <SeedWord>[
     term: 'nap',
     meaning: '낮잠',
     pronunciation: '/næp/',
+    // 예문/예문 뜻 가려짐 순서 테스트용 데이터(2026-08-31).
     example: 'The cat took a nap.',
+    exampleMeaning: '그 고양이는 낮잠을 잤다.',
   ),
   SeedWord(
     term: 'purr',

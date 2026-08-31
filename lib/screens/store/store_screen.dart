@@ -13,12 +13,6 @@ class StoreScreen extends StatelessWidget {
   // ===== v1 카탈로그 후보 (가격은 자리표시자, 아직 확정 아님) ===== //
   static const _sampleItems = [
     (
-      name: '고양이 색상 변경권',
-      price: 50,
-      icon: Icons.palette_outlined,
-      locked: false,
-    ),
-    (
       name: '단어장 색상 변경권',
       price: 20,
       icon: Icons.menu_book_outlined,

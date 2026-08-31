@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
@@ -102,6 +103,35 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
 
   int get _completedCount => _total - _queue.length;
 
+  // 스와이프 채점 방법 안내 오버레이. "다시 보지 않기"를 누르기 전까진
+  // 세션 시작 때마다 다시 보여준다(그냥 X로 닫으면 이번 세션에서만 숨김).
+  static const _tutorialDismissedKey = 'test_swipe_tutorial_dismissed';
+  bool _showTutorial = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTutorialVisibility();
+  }
+
+  Future<void> _loadTutorialVisibility() async {
+    final prefs = await SharedPreferences.getInstance();
+    final dismissed = prefs.getBool(_tutorialDismissedKey) ?? false;
+    if (!mounted || dismissed) return;
+    setState(() => _showTutorial = true);
+  }
+
+  void _closeTutorial() {
+    setState(() => _showTutorial = false);
+  }
+
+  Future<void> _dismissTutorialForever() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_tutorialDismissedKey, true);
+    if (!mounted) return;
+    setState(() => _showTutorial = false);
+  }
+
   void _toggleReveal(String wordId) {
     setState(() {
       if (!_revealed.add(wordId)) {
@@ -163,7 +193,15 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
       enableDrag: true,
       backgroundColor: Colors.transparent,
       barrierColor: NyakiColors.ink.withValues(alpha: 0.28),
-      builder: (_) => _DescriptionSheet(word: word),
+      builder: (_) => _DescriptionSheet(
+        word: word,
+        onSaved: (updated) {
+          setState(() {
+            final index = _queue.indexWhere((w) => w.id == updated.id);
+            if (index != -1) _queue[index] = updated;
+          });
+        },
+      ),
     );
   }
 
@@ -174,37 +212,48 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
     return Scaffold(
       backgroundColor: NyakiColors.cream,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                    iconSize: 22,
-                    color: NyakiColors.ink,
-                    tooltip: '닫기',
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                        iconSize: 22,
+                        color: NyakiColors.ink,
+                        tooltip: '닫기',
+                      ),
+                      const Spacer(),
+                      Text(
+                        done
+                            ? '$_total / $_total'
+                            : '${_completedCount + 1} / $_total',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: NyakiColors.umber.withValues(alpha: 0.55),
+                        ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(width: 48),
+                    ],
                   ),
-                  const Spacer(),
-                  Text(
-                    done ? '$_total / $_total' : '${_completedCount + 1} / $_total',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: NyakiColors.umber.withValues(alpha: 0.55),
-                    ),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 48),
-                ],
+                ),
+                Expanded(
+                  child: done ? const _SessionCompleteView() : _buildCardStack(),
+                ),
+              ],
+            ),
+            if (_showTutorial)
+              _SwipeTutorialOverlay(
+                onClose: _closeTutorial,
+                onDismissForever: _dismissTutorialForever,
               ),
-            ),
-            Expanded(
-              child: done ? const _SessionCompleteView() : _buildCardStack(),
-            ),
           ],
         ),
       ),
@@ -241,6 +290,143 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
                 onOpenComments: () => _openDescriptionSheet(word),
               );
             },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 세션 진입 시 뜨는 스와이프 채점법 안내 오버레이 — 반투명 검정 배경 위에
+/// 바로 냐키 이미지+안내 문구, 우측 상단 닫기(X), 하단 "다시 보지 않기".
+class _SwipeTutorialOverlay extends StatelessWidget {
+  const _SwipeTutorialOverlay({
+    required this.onClose,
+    required this.onDismissForever,
+  });
+
+  final VoidCallback onClose;
+  final VoidCallback onDismissForever;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.72),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton(
+                onPressed: onClose,
+                icon: const Icon(Icons.close_rounded),
+                iconSize: 22,
+                color: Colors.white,
+                tooltip: '닫기',
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/nyaki_grooming.png',
+                    width: 110,
+                    height: 110,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '슥 밀면 채점 끝이다냥!',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    '다음 복습 시간은 냐키가 알아서 챙겨준다냥',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _TutorialHint(
+                        icon: Icons.arrow_back_rounded,
+                        label: '모름',
+                      ),
+                      Container(
+                        width: 1,
+                        height: 44,
+                        margin: const EdgeInsets.symmetric(horizontal: 32),
+                        color: Colors.white24,
+                      ),
+                      _TutorialHint(
+                        icon: Icons.arrow_forward_rounded,
+                        label: '외움',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 28,
+              child: Center(
+                child: TextButton(
+                  onPressed: onDismissForever,
+                  child: const Text(
+                    '다시 보지 않기',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.white70,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TutorialHint extends StatelessWidget {
+  const _TutorialHint({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 30, color: Colors.white),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
         ),
       ],
@@ -599,19 +785,34 @@ class _ExampleBlock extends StatelessWidget {
                     color: NyakiColors.ink.withValues(alpha: 0.85),
                   ),
                 ),
-                if (hasMeaning && meaningVisible)
+                if (hasMeaning)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      exampleMeaning,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        height: 1.4,
-                        color: NyakiColors.ink.withValues(alpha: 0.5),
-                      ),
-                    ),
+                    // 발음·단어 뜻처럼 가려졌을 땐 힌트 문구를 보여준다 —
+                    // 예전엔 여기가 통째로 안 그려져서, 예문(위)과 예문 뜻
+                    // 자리(여기) 사이에 아무 표시가 없어 순서가 헷갈렸음
+                    // (2026-08-31).
+                    child: meaningVisible
+                        ? Text(
+                            exampleMeaning,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              height: 1.4,
+                              color: NyakiColors.ink.withValues(alpha: 0.5),
+                            ),
+                          )
+                        : Text(
+                            '탭하여 예문 뜻 보기',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: NyakiColors.taupe,
+                            ),
+                          ),
                   ),
               ],
             ),
@@ -693,30 +894,66 @@ class _ReelAction extends StatelessWidget {
   }
 }
 
-class _DescriptionSheet extends StatelessWidget {
-  const _DescriptionSheet({required this.word});
+/// 메모(설명) 보기·작성 시트. [word_tile.dart]처럼 배지·타임스탬프 없이
+/// 텍스트만 깔끔하게 보여주고, 바로 그 자리에서 수정해서 저장할 수 있다.
+/// (2026-08-30) 기존엔 읽기 전용 "댓글" 스타일이었는데, 시트 안에서 바로
+/// 쓰고 저장하도록 바꿈 — 예문은 카드에 직접 보이므로(`_ExampleBlock`)
+/// 여기는 "설명" 필드 전용.
+class _DescriptionSheet extends StatefulWidget {
+  const _DescriptionSheet({required this.word, required this.onSaved});
 
   final Word word;
+  final ValueChanged<Word> onSaved;
 
-  static String _formatCreatedAt(DateTime date) {
-    final local = date.toLocal();
-    final y = local.year.toString().padLeft(4, '0');
-    final m = local.month.toString().padLeft(2, '0');
-    final d = local.day.toString().padLeft(2, '0');
-    return '$y.$m.$d';
+  @override
+  State<_DescriptionSheet> createState() => _DescriptionSheetState();
+}
+
+class _DescriptionSheetState extends State<_DescriptionSheet> {
+  final _controller = TextEditingController();
+  // 저장된 메모(카드로 표시). 입력창(_controller)이랑 분리해서, 저장하기
+  // 전까진 위 카드가 그대로 유지되게 한다(2026-08-30, 댓글 스레드 느낌).
+  late String _savedDescription = widget.word.description ?? '';
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final updated = await NyakiScope.of(context).updateWord(
+        wordBookId: widget.word.wordBookId,
+        wordId: widget.word.id,
+        input: UpdateWordInput(description: text),
+      );
+      if (!mounted) return;
+      widget.onSaved(updated);
+      setState(() {
+        _savedDescription = text;
+        _controller.clear();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = '저장에 실패했어요.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final description = word.description?.trim() ?? '';
-    final createdLabel = _formatCreatedAt(word.createdAt);
-    // 예문은 카드에 직접 보여주므로(_ExampleBlock) 메모 시트엔 안 넣는다 —
-    // 여기는 "설명"(메모) 전용.
-    final entries = <_MemoEntry>[
-      if (description.isNotEmpty)
-        (label: '설명', body: description, subBody: null),
-    ];
-    final sheetHeight = MediaQuery.sizeOf(context).height * 0.5;
+    final sheetHeight = MediaQuery.sizeOf(context).height * (2 / 3);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -738,58 +975,147 @@ class _DescriptionSheet extends StatelessWidget {
                 child: SafeArea(
                   top: false,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 10),
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: NyakiColors.taupe.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(2),
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: NyakiColors.taupe.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 14),
-                      const Text(
-                        '메모',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: NyakiColors.ink,
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          '메모',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: NyakiColors.ink,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Divider(height: 1, color: NyakiColors.softDune),
+                      const SizedBox(height: 14),
+                      // 저장된 메모 — 댓글처럼 흰 카드로 구분해서 보여준다.
                       Expanded(
-                        child: entries.isEmpty
+                        child: _savedDescription.isEmpty
                             ? Center(
                                 child: Text(
                                   '아직 메모가 없어요',
                                   style: TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 14,
-                                    color: NyakiColors.umber.withValues(
-                                      alpha: 0.45,
+                                    color: NyakiColors.ink.withValues(
+                                      alpha: 0.35,
                                     ),
                                   ),
                                 ),
                               )
-                            : ListView.separated(
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 18, 20, 28),
-                                itemCount: entries.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 18),
-                                itemBuilder: (context, index) {
-                                  final entry = entries[index];
-                                  return _InstagramCommentRow(
-                                    createdLabel: createdLabel,
-                                    label: entry.label,
-                                    body: entry.body,
-                                    subBody: entry.subBody,
-                                  );
-                                },
+                            : SingleChildScrollView(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 15,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: NyakiColors.cardBg,
+                                    borderRadius: BorderRadius.circular(22),
+                                  ),
+                                  child: Text(
+                                    _savedDescription,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                      height: 1.5,
+                                      color: NyakiColors.ink,
+                                    ),
+                                  ),
+                                ),
                               ),
+                      ),
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: Colors.redAccent,
+                            ),
+                          ),
+                        ),
+                      // 댓글 쓰는 란 — 항상 맨 아래 고정.
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: NyakiColors.cardBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: TextField(
+                                  controller: _controller,
+                                  maxLines: 4,
+                                  minLines: 1,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    height: 1.4,
+                                    color: NyakiColors.ink,
+                                  ),
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    isCollapsed: true,
+                                    hintText: '메모를 남겨보세요',
+                                    hintStyle: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                      color: NyakiColors.ink.withValues(
+                                        alpha: 0.35,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: _saving ? null : _save,
+                              icon: _saving
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.arrow_upward_rounded),
+                              style: IconButton.styleFrom(
+                                backgroundColor: NyakiColors.ink,
+                                foregroundColor: NyakiColors.cardBg,
+                                shape: const CircleBorder(),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -799,85 +1125,6 @@ class _DescriptionSheet extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// 메모 시트 한 행에 대응하는 항목. [label]로 어떤 필드(설명/예문)인지
-/// 구분하고, [subBody]는 [body]에 딸린 보조 텍스트(예문의 뜻)다.
-typedef _MemoEntry = ({String label, String body, String? subBody});
-
-class _InstagramCommentRow extends StatelessWidget {
-  const _InstagramCommentRow({
-    required this.createdLabel,
-    required this.label,
-    required this.body,
-    this.subBody,
-  });
-
-  final String createdLabel;
-  final String label;
-  final String body;
-  final String? subBody;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: NyakiColors.softDune,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: NyakiColors.umber,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              createdLabel,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: NyakiColors.ink,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          body,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            height: 1.45,
-            color: NyakiColors.ink.withValues(alpha: 0.92),
-          ),
-        ),
-        if (subBody != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            subBody!,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 13,
-              height: 1.4,
-              color: NyakiColors.ink.withValues(alpha: 0.5),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

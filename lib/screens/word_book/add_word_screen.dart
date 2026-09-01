@@ -11,7 +11,15 @@ import '../../models/word_book.dart';
 import 'widgets/word_form_field.dart';
 
 class AddWordScreen extends StatefulWidget {
-  const AddWordScreen({super.key, this.embedded = false});
+  const AddWordScreen({
+    super.key,
+    this.embedded = false,
+    this.initialWordBookId,
+  });
+
+  /// 단어장 상세에서 넘어온 경우 그 단어장을 기본 선택값으로 쓴다.
+  /// (null이면 기존처럼 목록의 첫 단어장)
+  final String? initialWordBookId;
 
   /// true면 AppShell 탭 안에 들어가 있는 상태 — 바깥 Scaffold/SafeArea를 그대로 쓴다.
   /// false면 단독 화면으로 push된 상태라 자기 Scaffold와 뒤로가기 버튼을 직접 갖는다.
@@ -35,6 +43,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
   bool _showMeaningError = false;
   bool _isSubmitting = false;
   bool _isBookmarked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedWordBookId = widget.initialWordBookId;
+  }
 
   @override
   void dispose() {

@@ -1,10 +1,14 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
+import '../../data/repositories/vocab_repository.dart';
 import '../../models/word.dart';
 import '../../models/word_book.dart';
+import '../../widgets/outline_add_card.dart';
 import '../../widgets/word_tile.dart';
 import 'add_word_screen.dart';
 import 'edit_word_screen.dart';
@@ -78,6 +82,32 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
         builder: (_) => EditWordScreen(word: word),
       ),
     );
+  }
+
+  // [method] _openAddWord
+  // - 리스트 끝 '단어 추가' 카드에서 호출. 지금 보고 있는 단어장을
+  //   AddWordScreen의 기본 선택값으로 넘겨서 다시 고르지 않게 한다.
+  void _openAddWord(String wordBookId) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AddWordScreen(initialWordBookId: wordBookId),
+      ),
+    );
+  }
+
+  // [method] _toggleBookmark
+  // - 리스트 오른쪽 끝 북마크 아이콘. isBookmarked만 뒤집어 저장한다.
+  Future<void> _toggleBookmark(Word word) async {
+    try {
+      await NyakiScope.of(context).updateWord(
+        wordBookId: word.wordBookId,
+        wordId: word.id,
+        input: UpdateWordInput(isBookmarked: !word.isBookmarked),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      showErrorSnackBar(context, message: '북마크에 실패했어요.', error: error);
+    }
   }
 
   // [method] _renameWordBook
@@ -254,183 +284,59 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
             }
 
             final words = _applyFilter(wordBook.activeWords);
-            final dividerColor = NyakiColors.softDune;
+            final isAllTab = _tab == WordBookTab.all;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _DetailHeader(
+                  wordBook: wordBook,
+                  onBack: () => Navigator.of(context).pop(),
+                  onRename: () => _renameWordBook(wordBook),
+                  onDelete: () => _deleteWordBook(wordBook),
+                ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.fromLTRB(28, 12, 24, 0),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                            iconSize: 18,
-                            color: NyakiColors.ink.withValues(alpha: 0.5),
-                            tooltip: '뒤로',
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
-                            ),
-                          ),
-                          const Spacer(),
-
-                          // 버튼 -> 누르면 메뉴 펼침 
-                          PopupMenuButton<_WordBookMenuAction>(
-                            icon: Icon(
-                              Icons.more_horiz_rounded,
-                              color: NyakiColors.ink.withValues(alpha: 0.5),
-                            ),
-                            tooltip: '단어장 관리',
-                            color: NyakiColors.cream,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
-                            ),
-                            onSelected: (action) {
-                              switch (action) {
-                                case _WordBookMenuAction.rename:
-                                  _renameWordBook(wordBook);
-                                  break;
-                                case _WordBookMenuAction.delete:
-                                  _deleteWordBook(wordBook);
-                                  break;
-                              }
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: _WordBookMenuAction.rename,
-                                child: Text('이름 수정'),
-                              ),
-                              PopupMenuItem(
-                                value: _WordBookMenuAction.delete,
-                                child: Text('삭제'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 8),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push<void>(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const AddWordScreen(),
-                                ),
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: NyakiColors.cream,
-                              backgroundColor: NyakiColors.ink,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              '단어 추가',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        wordBook.title,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.3,
-                          color: NyakiColors.ink,
+                      Expanded(
+                        child: _FilterTabs(
+                          current: _tab,
+                          onChanged: (tab) => setState(() => _tab = tab),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        wordBook.description ?? wordBook.metaLabel,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: NyakiColors.ink.withValues(alpha: 0.45),
-                        ),
+                      _AddWordAction(
+                        onTap: () => _openAddWord(wordBook.id),
                       ),
                     ],
                   ),
                 ),
                 Expanded(
                   child: _tab == WordBookTab.info
-                      ? const _WordBookInfoView()
+                      ? _WordBookInfoView(words: wordBook.activeWords)
                       : words.isEmpty
-                          ? Center(
-                              child: Text(
-                                _tab == WordBookTab.all
-                                    ? '단어가 없습니다.'
-                                    : '북마크한 단어가 없어요.',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 14,
-                                  color: NyakiColors.ink.withValues(alpha: 0.4),
-                                ),
-                              ),
+                          ? _EmptyWordList(
+                              isAllTab: isAllTab,
+                              onAddWord: () => _openAddWord(wordBook.id),
                             )
                           : ListView.separated(
                               padding:
-                                  const EdgeInsets.fromLTRB(28, 12, 28, 12),
+                                  const EdgeInsets.fromLTRB(28, 8, 28, 28),
                               itemCount: words.length,
-                              separatorBuilder: (_, __) => Divider(
-                                height: 1,
-                                thickness: 1,
-                                color: dividerColor,
-                              ),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 6),
                               itemBuilder: (context, index) {
                                 final entry = words[index];
                                 return WordTile(
                                   word: entry.term,
                                   meaning: entry.meaning,
+                                  pronunciation: entry.pronunciation,
+                                  isBookmarked: entry.isBookmarked,
                                   onTap: () => _openEditWord(entry),
+                                  onBookmarkTap: () => _toggleBookmark(entry),
                                 );
                               },
                             ),
-                ),
-                Container(
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: NyakiColors.muted)),
-                  ),
-                  padding: const EdgeInsets.only(top: 12, bottom: 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _FilterTab(
-                        label: '단어장 정보',
-                        selected: _tab == WordBookTab.info,
-                        onTap: () => setState(() => _tab = WordBookTab.info),
-                      ),
-                      _FilterTab(
-                        label: '전체',
-                        selected: _tab == WordBookTab.all,
-                        onTap: () => setState(() => _tab = WordBookTab.all),
-                      ),
-                      _FilterTab(
-                        label: '북마크',
-                        selected: _tab == WordBookTab.bookmarked,
-                        onTap: () =>
-                            setState(() => _tab = WordBookTab.bookmarked),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             );
@@ -441,31 +347,207 @@ class _WordBookDetailScreenState extends State<WordBookDetailScreen> {
   }
 }
 
-// ✨ WordBookInfoView ✨
-// - "단어장 정보" 탭의 내용. 어떤 항목을 넣을지는 아직 정하지 않았다.
-class _WordBookInfoView extends StatelessWidget {
-  const _WordBookInfoView();
+// ✨ DetailHeader ✨
+// 뒤로가기 / ⋯ 메뉴만 남긴 얇은 상단 바 + 타이틀.
+// 타이틀 20pt w600 / 부제 12pt — 한 번 27pt까지 키웠다가 되돌린 값.
+class _DetailHeader extends StatelessWidget {
+  const _DetailHeader({
+    required this.wordBook,
+    required this.onBack,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  final WordBook wordBook;
+  final VoidCallback onBack;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        '단어장 정보는 준비 중이에요.',
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 14,
-          color: NyakiColors.ink.withValues(alpha: 0.4),
+    final description = wordBook.description?.trim();
+    final subtitle = (description == null || description.isEmpty)
+        ? wordBook.metaLabel
+        : description;
+
+    return Padding(
+      // 좌우 20 + 안쪽 텍스트 8 = 본문 기준선 28에 맞춘다.
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _IconAction(
+                icon: Icons.arrow_back_ios_new_rounded,
+                tooltip: '뒤로',
+                onTap: onBack,
+              ),
+              const Spacer(),
+              PopupMenuButton<_WordBookMenuAction>(
+                icon: Icon(
+                  Icons.more_horiz_rounded,
+                  size: 18,
+                  color: NyakiColors.ink.withValues(alpha: 0.4),
+                ),
+                tooltip: '단어장 관리',
+                color: NyakiColors.cardBg,
+                elevation: 2,
+                shadowColor: NyakiColors.ink.withValues(alpha: 0.08),
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: NyakiColors.taupe),
+                ),
+                padding: const EdgeInsets.all(9),
+                constraints: const BoxConstraints(
+                  minWidth: 34,
+                  minHeight: 34,
+                ),
+                onSelected: (action) {
+                  switch (action) {
+                    case _WordBookMenuAction.rename:
+                      onRename();
+                      break;
+                    case _WordBookMenuAction.delete:
+                      onDelete();
+                      break;
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: _WordBookMenuAction.rename,
+                    height: 40,
+                    child: Text(
+                      '이름 수정',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: NyakiColors.ink,
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: _WordBookMenuAction.delete,
+                    height: 40,
+                    child: Text(
+                      '삭제',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: NyakiColors.ink,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  wordBook.title,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.4,
+                    height: 1.2,
+                    color: NyakiColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.1,
+                    color: NyakiColors.ink.withValues(alpha: 0.38),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 헤더의 아이콘 하나짜리 액션. 터치 영역은 34x34로 확보하고
+/// 시각적으로는 아이콘만 남긴다.
+class _IconAction extends StatelessWidget {
+  const _IconAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 20,
+        containedInkWell: false,
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Icon(
+            icon,
+            size: 16,
+            color: NyakiColors.ink.withValues(alpha: 0.4),
+          ),
         ),
       ),
     );
   }
 }
 
-// ✨ FilterTab ✨
-// Parameter
-// - label : 단어장 정보, 전체, 북마크 (하단 탭 이름)
-// - selected : 현재 데이터 선택 여부
-// - onTap : 단어 컴포넌트 클릭 시 실행 함수 리스너
+// ✨ FilterTabs ✨
+// 하단 탭바를 대체하는 상단 필터. 배경 트랙 없이 텍스트만 두고
+// 선택된 것만 Obsidian w600, 나머지는 28%로 죽인다.
+// (알약 칩 시안도 만들어 봤지만 기존 텍스트 탭이 낫다고 판단, 2026-08-31)
+class _FilterTabs extends StatelessWidget {
+  const _FilterTabs({required this.current, required this.onChanged});
+
+  final WordBookTab current;
+  final ValueChanged<WordBookTab> onChanged;
+
+  static const Map<WordBookTab, String> _labels = {
+    WordBookTab.all: '전체',
+    WordBookTab.bookmarked: '북마크',
+    WordBookTab.info: '정보',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final entry in _labels.entries)
+          Padding(
+            padding: const EdgeInsets.only(right: 18),
+            child: _FilterTab(
+              label: entry.value,
+              selected: current == entry.key,
+              onTap: () => onChanged(entry.key),
+            ),
+          ),
+      ],
+    );
+  }
+}
 
 class _FilterTab extends StatelessWidget {
   const _FilterTab({
@@ -480,36 +562,366 @@ class _FilterTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = TextStyle(
-      fontSize: 11,
-      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-      color: NyakiColors.ink.withValues(alpha: selected ? 1 : 0.3),
-    );
-
-    return InkWell(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12.5,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            letterSpacing: -0.1,
+            color: selected
+                ? NyakiColors.ink
+                : NyakiColors.ink.withValues(alpha: 0.28),
+          ),
+          child: Text(label),
+        ),
+      ),
+    );
+  }
+}
+
+// ✨ AddWordAction ✨
+// 필터 탭과 같은 줄, 맨 오른쪽에 붙는 단어 추가 액션.
+// 2026-08-31: 리스트 끝 카드는 단어가 많아지면 스크롤해야 닿아서
+// 항상 보이는 이 자리로 옮겼다. (빈 화면에서는 여전히 카드로도 보여준다)
+class _AddWordAction extends StatelessWidget {
+  const _AddWordAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkResponse(
+      onTap: onTap,
+      radius: 24,
+      containedInkWell: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (selected) ...[
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: NyakiColors.ink,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+            Icon(
+              Icons.add_rounded,
+              size: 14,
+              color: NyakiColors.ink.withValues(alpha: 0.55),
+            ),
+            const SizedBox(width: 3),
+            Text(
+              '단어 추가',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.1,
+                color: NyakiColors.ink.withValues(alpha: 0.55),
               ),
-              const SizedBox(height: 4),
-            ] else
-              const SizedBox(height: 8),
-            Text(label, style: style),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+// ✨ EmptyWordList ✨
+// 단어가 하나도 없을 때. '전체' 탭에서는 추가 카드까지 함께 보여준다.
+class _EmptyWordList extends StatelessWidget {
+  const _EmptyWordList({required this.isAllTab, required this.onAddWord});
+
+  final bool isAllTab;
+  final VoidCallback onAddWord;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 0, 28, 72),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            isAllTab ? '아직 단어가 없어요' : '북마크한 단어가 없어요',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: NyakiColors.ink.withValues(alpha: 0.38),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            isAllTab ? '첫 단어를 추가해 볼까요?' : '카드 오른쪽 북마크를 눌러 모아 보세요',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: NyakiColors.ink.withValues(alpha: 0.26),
+            ),
+          ),
+          if (isAllTab) ...[
+            const SizedBox(height: 18),
+            OutlineAddCard(
+              label: '단어 추가',
+              dense: true,
+              onTap: onAddWord,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ✨ WordBookInfoView ✨
+// "정보" 탭 — 단어장 암기율 하나와 분포 곡선.
+//
+// 2026-08-31 점수 모델:
+//  - 단어 1개 점수 = log(1 + srsIntervalDays) / log(1 + 30) × 100.
+//    SM-2 간격이 1 → 3 → 8 → 20 → 50일로 지수적으로 늘어나므로 로그로 환산해야
+//    단계가 20 / 40 / 64 / 89 / 100으로 고르게 벌어진다. (선형이면 첫 성공 3점)
+//  - 단어장 암기율 = 그 점수들의 평균. 이름이 "단어장"이므로 분모는 단어 전체,
+//    즉 아직 학습 안 한 단어는 0점으로 포함된다.
+//  - 캡션(기준 설명·학습 커버리지)은 넣지 않는다. 숫자 하나와 곡선만 남긴다.
+class _WordBookInfoView extends StatelessWidget {
+  const _WordBookInfoView({required this.words});
+
+  final List<Word> words;
+
+  /// 이 간격(일)에 도달하면 만점.
+  static const _masteryDays = 30;
+
+  /// 단어 1개의 점수(0~100).
+  static int _score(Word word) {
+    if (word.srsIntervalDays <= 0) return 0;
+    final ratio =
+        math.log(1 + word.srsIntervalDays) / math.log(1 + _masteryDays);
+    return (ratio.clamp(0, 1) * 100).round();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (words.isEmpty) {
+      return const _InfoMessage('단어를 추가하면 암기율이 표시돼요.');
+    }
+
+    final scores = words.map(_score).toList()..sort();
+    final rate = (scores.reduce((a, b) => a + b) / scores.length).round();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '단어장 암기율',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+              color: NyakiColors.ink.withValues(alpha: 0.35),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$rate',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -1,
+                  height: 1.1,
+                  color: NyakiColors.ink,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Text(
+                '%',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: NyakiColors.ink.withValues(alpha: 0.4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 26),
+          SizedBox(
+            height: 132,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _ScoreCurvePainter(scores: scores),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 정보 탭에서 점수를 못 그리는 상황의 안내 문구.
+class _InfoMessage extends StatelessWidget {
+  const _InfoMessage(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 0, 28, 72),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12.5,
+            height: 1.5,
+            color: NyakiColors.ink.withValues(alpha: 0.38),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 낮은 점수부터 정렬한 단어 점수(0~100)를 부드러운 곡선으로 그린다.
+///
+/// 2026-08-31: 격자선·축 라벨·평균 점선을 모두 걷어냈다. 남긴 것은
+/// 바닥 헤어라인 하나, 곡선, 그 아래 옅은 그라데이션 면뿐이다.
+/// 점이 적을 때(<=12)만 각 단어 위치에 작은 점을 찍어 개수를 읽게 한다.
+class _ScoreCurvePainter extends CustomPainter {
+  _ScoreCurvePainter({required this.scores});
+
+  /// 오름차순 정렬된 0~100 점수.
+  final List<int> scores;
+
+  /// 점을 찍어 줄 최대 개수. 이보다 많으면 곡선만 남긴다.
+  static const _dotLimit = 12;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (scores.isEmpty) return;
+
+    // 곡선이 위아래로 잘리지 않게 상하 여백을 둔다.
+    const topPad = 10.0;
+    const bottomPad = 6.0;
+    final chart = Rect.fromLTWH(
+      2,
+      topPad,
+      size.width - 4,
+      size.height - topPad - bottomPad,
+    );
+
+    // 바닥 헤어라인 — 0점 기준선 역할만 한다.
+    canvas.drawLine(
+      Offset(0, chart.bottom),
+      Offset(size.width, chart.bottom),
+      Paint()
+        ..color = NyakiColors.taupe
+        ..strokeWidth = 1,
+    );
+
+    double yFor(int score) => chart.bottom - (score / 100) * chart.height;
+
+    final points = <Offset>[
+      for (var i = 0; i < scores.length; i++)
+        Offset(
+          scores.length == 1
+              ? chart.center.dx
+              : chart.left + chart.width * (i / (scores.length - 1)),
+          yFor(scores[i]),
+        ),
+    ];
+
+    final linePath = scores.length == 1
+        ? (Path()
+          ..moveTo(chart.left, points.first.dy)
+          ..lineTo(chart.right, points.first.dy))
+        : _smoothPath(points, chart.top, chart.bottom);
+
+    // 곡선 아래 면 — Obsidian 10% → 0% 그라데이션.
+    final fillPath = Path.from(linePath)
+      ..lineTo(scores.length == 1 ? chart.right : points.last.dx, chart.bottom)
+      ..lineTo(scores.length == 1 ? chart.left : points.first.dx, chart.bottom)
+      ..close();
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            NyakiColors.ink.withValues(alpha: 0.10),
+            NyakiColors.ink.withValues(alpha: 0),
+          ],
+        ).createShader(chart),
+    );
+
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = NyakiColors.ink
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    if (scores.length <= _dotLimit) {
+      final dot = Paint()..color = NyakiColors.ink;
+      for (final point in points) {
+        canvas.drawCircle(point, 2.5, dot);
+      }
+    }
+  }
+
+  /// Catmull-Rom 스플라인을 3차 베지어로 옮긴다. 제어점의 y는 차트
+  /// 위아래로 튀지 않게 잘라낸다. (점수 0/100 근처에서 곡선이 넘치는 것 방지)
+  Path _smoothPath(List<Offset> pts, double top, double bottom) {
+    final path = Path()..moveTo(pts.first.dx, pts.first.dy);
+    for (var i = 0; i < pts.length - 1; i++) {
+      final p0 = i == 0 ? pts[i] : pts[i - 1];
+      final p1 = pts[i];
+      final p2 = pts[i + 1];
+      final p3 = i + 2 < pts.length ? pts[i + 2] : p2;
+
+      final c1 = Offset(
+        p1.dx + (p2.dx - p0.dx) / 6,
+        // num.clamp는 num을 돌려주므로 Offset에 넣기 전 toDouble()이 필요하다.
+        (p1.dy + (p2.dy - p0.dy) / 6).clamp(top, bottom).toDouble(),
+      );
+      final c2 = Offset(
+        p2.dx - (p3.dx - p1.dx) / 6,
+        (p2.dy - (p3.dy - p1.dy) / 6).clamp(top, bottom).toDouble(),
+      );
+      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
+    }
+    return path;
+  }
+
+  // listEquals는 foundation.dart 소속이라 material.dart만으로는 안 잡힌다.
+  // import를 늘리는 대신 직접 비교한다.
+  @override
+  bool shouldRepaint(covariant _ScoreCurvePainter oldDelegate) {
+    final old = oldDelegate.scores;
+    if (old.length != scores.length) return true;
+    for (var i = 0; i < scores.length; i++) {
+      if (old[i] != scores[i]) return true;
+    }
+    return false;
   }
 }

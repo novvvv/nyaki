@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/nyaki_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
+import '../../widgets/outline_add_card.dart';
 import '../../widgets/word_book_tile.dart';
 import 'add_word_book_screen.dart';
 import 'word_book_detail_screen.dart';
@@ -35,7 +36,8 @@ class WordBookListScreen extends StatelessWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   if (index == books.length) {
-                    return _AddWordBookCard(
+                    return OutlineAddCard(
+                      label: '새 단어장 추가',
                       onTap: () => _openAddWordBook(context),
                     );
                   }
@@ -60,47 +62,6 @@ class WordBookListScreen extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _AddWordBookCard extends StatelessWidget {
-  const _AddWordBookCard({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: NyakiColors.taupe, width: 1.2),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add,
-              size: 16,
-              color: NyakiColors.ink.withValues(alpha: 0.6),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '새 단어장 추가',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: NyakiColors.ink.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

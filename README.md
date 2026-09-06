@@ -18,7 +18,7 @@ nyaki/
 ├── lib/     Flutter 앱
 ├── web/     Next.js 웹
 ├── api/     Sync Hub (FastAPI + Postgres)
-├── docs/    공개 명세 (API · 도메인)
+├── docs/    문서 3종 (아키텍처 · 할 일 · 기획)
 └── notes/   개인 메모 (git 제외)
 ```
 
@@ -57,7 +57,10 @@ models.py    word_books · words · sync_changes
 
 ## 문서
 
-- **앱 로컬 ERD (Drift)**: [docs/app_erd.md](docs/app_erd.md)
-- 도메인: [docs/DOMAIN.md](docs/DOMAIN.md)
-- API: [docs/API.md](docs/API.md)
-- 실행 · 배포: [api/README.md](api/README.md)
+| 문서 | 내용 |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 도메인 모델 · ERD(앱/Hub) · API · 동기화 · SRS(SM-2) · 디자인 토큰 · 보안 |
+| [docs/TASKS.md](docs/TASKS.md) | 할 일 목록 · 출시 전 필수(P0) · 기술부채 |
+| [docs/PLANS.md](docs/PLANS.md) | 착수 전 기획 — 게이미피케이션 · 책장 · 사진 첨부 · J-POP 유입 |
+
+실행 · 배포는 [api/README.md](api/README.md).

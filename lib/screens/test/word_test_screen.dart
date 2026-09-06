@@ -535,7 +535,7 @@ class _OptionToggleRow extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: NyakiColors.cream,
+          activeThumbColor: NyakiColors.cream,
           activeTrackColor: NyakiColors.umber,
           inactiveThumbColor: NyakiColors.taupe,
           inactiveTrackColor: NyakiColors.softDune,

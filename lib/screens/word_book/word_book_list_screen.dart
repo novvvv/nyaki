@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/nyaki_scope.dart';
-import '../../core/theme/nyaki_colors.dart';
 import '../../widgets/outline_add_card.dart';
 import '../../widgets/word_book_tile.dart';
 import 'add_word_book_screen.dart';

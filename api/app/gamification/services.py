@@ -63,11 +63,14 @@ def _completed_today(session: Session, user_id: str) -> list[str]:
 
 # ====================== [method] _grant ====================== #
 # - feat : 퀘스트 보상 지급 메서드 
+
 # - logic -> 열빙어 1개 -> _grant(progress, CAPELIN, 1)
+
 # - parameter
 #     progress : 이 유저의 잔액 행. 잔액 칸이 츄르/열빙어 두 개라 골라야 한다
 #     currency : 어느 재화인지 — CHURU("churu") / CAPELIN("capelin")
 #     amount   : 지급 수량
+
 # - return : 없음. 여기서 DB에 쓰지 않고 progress 객체의 숫자만 올린다.
 #            SQLAlchemy가 그 변경을 기억했다가 호출한 쪽의 flush/commit 때
 #            UPDATE로 내보낸다.

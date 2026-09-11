@@ -1898,6 +1898,14 @@ class $UserProgressTable extends UserProgress
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _capelinBalanceMeta =
+      const VerificationMeta('capelinBalance');
+  @override
+  late final GeneratedColumn<int> capelinBalance = GeneratedColumn<int>(
+      'capelin_balance', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _streakCountMeta =
       const VerificationMeta('streakCount');
   @override
@@ -1938,6 +1946,7 @@ class $UserProgressTable extends UserProgress
   List<GeneratedColumn> get $columns => [
         userId,
         churuBalance,
+        capelinBalance,
         streakCount,
         lastActiveDate,
         dailyReviewGoal,
@@ -1965,6 +1974,12 @@ class $UserProgressTable extends UserProgress
           _churuBalanceMeta,
           churuBalance.isAcceptableOrUnknown(
               data['churu_balance']!, _churuBalanceMeta));
+    }
+    if (data.containsKey('capelin_balance')) {
+      context.handle(
+          _capelinBalanceMeta,
+          capelinBalance.isAcceptableOrUnknown(
+              data['capelin_balance']!, _capelinBalanceMeta));
     }
     if (data.containsKey('streak_count')) {
       context.handle(
@@ -2009,6 +2024,8 @@ class $UserProgressTable extends UserProgress
           .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
       churuBalance: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}churu_balance'])!,
+      capelinBalance: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}capelin_balance'])!,
       streakCount: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}streak_count'])!,
       lastActiveDate: attachedDatabase.typeMapping.read(
@@ -2031,6 +2048,7 @@ class $UserProgressTable extends UserProgress
 class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
   final String userId;
   final int churuBalance;
+  final int capelinBalance;
   final int streakCount;
   final DateTime? lastActiveDate;
   final int? dailyReviewGoal;
@@ -2039,6 +2057,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
   const UserProgressRow(
       {required this.userId,
       required this.churuBalance,
+      required this.capelinBalance,
       required this.streakCount,
       this.lastActiveDate,
       this.dailyReviewGoal,
@@ -2049,6 +2068,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
     final map = <String, Expression>{};
     map['user_id'] = Variable<String>(userId);
     map['churu_balance'] = Variable<int>(churuBalance);
+    map['capelin_balance'] = Variable<int>(capelinBalance);
     map['streak_count'] = Variable<int>(streakCount);
     if (!nullToAbsent || lastActiveDate != null) {
       map['last_active_date'] = Variable<DateTime>(lastActiveDate);
@@ -2065,6 +2085,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
     return UserProgressCompanion(
       userId: Value(userId),
       churuBalance: Value(churuBalance),
+      capelinBalance: Value(capelinBalance),
       streakCount: Value(streakCount),
       lastActiveDate: lastActiveDate == null && nullToAbsent
           ? const Value.absent()
@@ -2083,6 +2104,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
     return UserProgressRow(
       userId: serializer.fromJson<String>(json['userId']),
       churuBalance: serializer.fromJson<int>(json['churuBalance']),
+      capelinBalance: serializer.fromJson<int>(json['capelinBalance']),
       streakCount: serializer.fromJson<int>(json['streakCount']),
       lastActiveDate: serializer.fromJson<DateTime?>(json['lastActiveDate']),
       dailyReviewGoal: serializer.fromJson<int?>(json['dailyReviewGoal']),
@@ -2096,6 +2118,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
     return <String, dynamic>{
       'userId': serializer.toJson<String>(userId),
       'churuBalance': serializer.toJson<int>(churuBalance),
+      'capelinBalance': serializer.toJson<int>(capelinBalance),
       'streakCount': serializer.toJson<int>(streakCount),
       'lastActiveDate': serializer.toJson<DateTime?>(lastActiveDate),
       'dailyReviewGoal': serializer.toJson<int?>(dailyReviewGoal),
@@ -2107,6 +2130,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
   UserProgressRow copyWith(
           {String? userId,
           int? churuBalance,
+          int? capelinBalance,
           int? streakCount,
           Value<DateTime?> lastActiveDate = const Value.absent(),
           Value<int?> dailyReviewGoal = const Value.absent(),
@@ -2115,6 +2139,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       UserProgressRow(
         userId: userId ?? this.userId,
         churuBalance: churuBalance ?? this.churuBalance,
+        capelinBalance: capelinBalance ?? this.capelinBalance,
         streakCount: streakCount ?? this.streakCount,
         lastActiveDate:
             lastActiveDate.present ? lastActiveDate.value : this.lastActiveDate,
@@ -2130,6 +2155,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       churuBalance: data.churuBalance.present
           ? data.churuBalance.value
           : this.churuBalance,
+      capelinBalance: data.capelinBalance.present
+          ? data.capelinBalance.value
+          : this.capelinBalance,
       streakCount:
           data.streakCount.present ? data.streakCount.value : this.streakCount,
       lastActiveDate: data.lastActiveDate.present
@@ -2152,6 +2180,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
     return (StringBuffer('UserProgressRow(')
           ..write('userId: $userId, ')
           ..write('churuBalance: $churuBalance, ')
+          ..write('capelinBalance: $capelinBalance, ')
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDate: $lastActiveDate, ')
           ..write('dailyReviewGoal: $dailyReviewGoal, ')
@@ -2162,14 +2191,22 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
   }
 
   @override
-  int get hashCode => Object.hash(userId, churuBalance, streakCount,
-      lastActiveDate, dailyReviewGoal, morningReviewCount, eveningReviewCount);
+  int get hashCode => Object.hash(
+      userId,
+      churuBalance,
+      capelinBalance,
+      streakCount,
+      lastActiveDate,
+      dailyReviewGoal,
+      morningReviewCount,
+      eveningReviewCount);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserProgressRow &&
           other.userId == this.userId &&
           other.churuBalance == this.churuBalance &&
+          other.capelinBalance == this.capelinBalance &&
           other.streakCount == this.streakCount &&
           other.lastActiveDate == this.lastActiveDate &&
           other.dailyReviewGoal == this.dailyReviewGoal &&
@@ -2180,6 +2217,7 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
 class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
   final Value<String> userId;
   final Value<int> churuBalance;
+  final Value<int> capelinBalance;
   final Value<int> streakCount;
   final Value<DateTime?> lastActiveDate;
   final Value<int?> dailyReviewGoal;
@@ -2189,6 +2227,7 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
   const UserProgressCompanion({
     this.userId = const Value.absent(),
     this.churuBalance = const Value.absent(),
+    this.capelinBalance = const Value.absent(),
     this.streakCount = const Value.absent(),
     this.lastActiveDate = const Value.absent(),
     this.dailyReviewGoal = const Value.absent(),
@@ -2199,6 +2238,7 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
   UserProgressCompanion.insert({
     required String userId,
     this.churuBalance = const Value.absent(),
+    this.capelinBalance = const Value.absent(),
     this.streakCount = const Value.absent(),
     this.lastActiveDate = const Value.absent(),
     this.dailyReviewGoal = const Value.absent(),
@@ -2209,6 +2249,7 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
   static Insertable<UserProgressRow> custom({
     Expression<String>? userId,
     Expression<int>? churuBalance,
+    Expression<int>? capelinBalance,
     Expression<int>? streakCount,
     Expression<DateTime>? lastActiveDate,
     Expression<int>? dailyReviewGoal,
@@ -2219,6 +2260,7 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     return RawValuesInsertable({
       if (userId != null) 'user_id': userId,
       if (churuBalance != null) 'churu_balance': churuBalance,
+      if (capelinBalance != null) 'capelin_balance': capelinBalance,
       if (streakCount != null) 'streak_count': streakCount,
       if (lastActiveDate != null) 'last_active_date': lastActiveDate,
       if (dailyReviewGoal != null) 'daily_review_goal': dailyReviewGoal,
@@ -2233,6 +2275,7 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
   UserProgressCompanion copyWith(
       {Value<String>? userId,
       Value<int>? churuBalance,
+      Value<int>? capelinBalance,
       Value<int>? streakCount,
       Value<DateTime?>? lastActiveDate,
       Value<int?>? dailyReviewGoal,
@@ -2242,6 +2285,7 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     return UserProgressCompanion(
       userId: userId ?? this.userId,
       churuBalance: churuBalance ?? this.churuBalance,
+      capelinBalance: capelinBalance ?? this.capelinBalance,
       streakCount: streakCount ?? this.streakCount,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       dailyReviewGoal: dailyReviewGoal ?? this.dailyReviewGoal,
@@ -2259,6 +2303,9 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     }
     if (churuBalance.present) {
       map['churu_balance'] = Variable<int>(churuBalance.value);
+    }
+    if (capelinBalance.present) {
+      map['capelin_balance'] = Variable<int>(capelinBalance.value);
     }
     if (streakCount.present) {
       map['streak_count'] = Variable<int>(streakCount.value);
@@ -2286,6 +2333,7 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     return (StringBuffer('UserProgressCompanion(')
           ..write('userId: $userId, ')
           ..write('churuBalance: $churuBalance, ')
+          ..write('capelinBalance: $capelinBalance, ')
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDate: $lastActiveDate, ')
           ..write('dailyReviewGoal: $dailyReviewGoal, ')
@@ -3671,6 +3719,7 @@ typedef $$UserProgressTableCreateCompanionBuilder = UserProgressCompanion
     Function({
   required String userId,
   Value<int> churuBalance,
+  Value<int> capelinBalance,
   Value<int> streakCount,
   Value<DateTime?> lastActiveDate,
   Value<int?> dailyReviewGoal,
@@ -3682,6 +3731,7 @@ typedef $$UserProgressTableUpdateCompanionBuilder = UserProgressCompanion
     Function({
   Value<String> userId,
   Value<int> churuBalance,
+  Value<int> capelinBalance,
   Value<int> streakCount,
   Value<DateTime?> lastActiveDate,
   Value<int?> dailyReviewGoal,
@@ -3704,6 +3754,10 @@ class $$UserProgressTableFilterComposer
 
   ColumnFilters<int> get churuBalance => $composableBuilder(
       column: $table.churuBalance, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get capelinBalance => $composableBuilder(
+      column: $table.capelinBalance,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get streakCount => $composableBuilder(
       column: $table.streakCount, builder: (column) => ColumnFilters(column));
@@ -3741,6 +3795,10 @@ class $$UserProgressTableOrderingComposer
       column: $table.churuBalance,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get capelinBalance => $composableBuilder(
+      column: $table.capelinBalance,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get streakCount => $composableBuilder(
       column: $table.streakCount, builder: (column) => ColumnOrderings(column));
 
@@ -3775,6 +3833,9 @@ class $$UserProgressTableAnnotationComposer
 
   GeneratedColumn<int> get churuBalance => $composableBuilder(
       column: $table.churuBalance, builder: (column) => column);
+
+  GeneratedColumn<int> get capelinBalance => $composableBuilder(
+      column: $table.capelinBalance, builder: (column) => column);
 
   GeneratedColumn<int> get streakCount => $composableBuilder(
       column: $table.streakCount, builder: (column) => column);
@@ -3820,6 +3881,7 @@ class $$UserProgressTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> userId = const Value.absent(),
             Value<int> churuBalance = const Value.absent(),
+            Value<int> capelinBalance = const Value.absent(),
             Value<int> streakCount = const Value.absent(),
             Value<DateTime?> lastActiveDate = const Value.absent(),
             Value<int?> dailyReviewGoal = const Value.absent(),
@@ -3830,6 +3892,7 @@ class $$UserProgressTableTableManager extends RootTableManager<
               UserProgressCompanion(
             userId: userId,
             churuBalance: churuBalance,
+            capelinBalance: capelinBalance,
             streakCount: streakCount,
             lastActiveDate: lastActiveDate,
             dailyReviewGoal: dailyReviewGoal,
@@ -3840,6 +3903,7 @@ class $$UserProgressTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             required String userId,
             Value<int> churuBalance = const Value.absent(),
+            Value<int> capelinBalance = const Value.absent(),
             Value<int> streakCount = const Value.absent(),
             Value<DateTime?> lastActiveDate = const Value.absent(),
             Value<int?> dailyReviewGoal = const Value.absent(),
@@ -3850,6 +3914,7 @@ class $$UserProgressTableTableManager extends RootTableManager<
               UserProgressCompanion.insert(
             userId: userId,
             churuBalance: churuBalance,
+            capelinBalance: capelinBalance,
             streakCount: streakCount,
             lastActiveDate: lastActiveDate,
             dailyReviewGoal: dailyReviewGoal,

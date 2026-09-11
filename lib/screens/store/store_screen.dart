@@ -31,10 +31,9 @@ class StoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final churuBalance = ProgressScope.of(context).snapshot.churuBalance;
-    // TODO: 열빙어 잔액은 아직 ProgressSnapshot에 없음(백엔드 미구현) —
-    // 레이아웃 확인용 자리표시자로 0 고정.
-    const capelinBalance = 0;
+    final progress = ProgressScope.of(context).snapshot;
+    final churuBalance = progress.churuBalance;
+    final capelinBalance = progress.capelinBalance;
 
     return ColoredBox(
       color: NyakiColors.cream,

@@ -27,7 +27,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +66,11 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await migrator.addColumn(wordEntries, wordEntries.exampleMeaning);
+          }
+          if (from < 7) {
+            // 열빙어 잔액 캐시. Hub의 user_progress.capelin_balance 대응
+            // (alembic 0008). 기본값 0이라 기존 row는 자동으로 채워진다.
+            await migrator.addColumn(userProgress, userProgress.capelinBalance);
           }
         },
       );

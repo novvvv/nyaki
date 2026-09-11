@@ -109,6 +109,7 @@ class WordEntries extends Table {
 // (api/app/models/gamification.py UserProgressModel 대응)
 //  userId(PK) - 유저 식별자
 //  churuBalance - 츄르 잔액
+//  capelinBalance - 열빙어 잔액 (아침/저녁 복습 퀘스트 보상)
 //  streakCount - 연속 학습일 수 (이번 라운드 미사용, 컬럼만)
 //  lastActiveDate - 마지막 활동일 (이번 라운드 미사용)
 //  dailyReviewGoal - 하루 복습 목표 개수 (이번 라운드 미사용)
@@ -119,6 +120,7 @@ class WordEntries extends Table {
 class UserProgress extends Table {
   TextColumn get userId => text()();
   IntColumn get churuBalance => integer().withDefault(const Constant(0))();
+  IntColumn get capelinBalance => integer().withDefault(const Constant(0))();
   IntColumn get streakCount => integer().withDefault(const Constant(0))();
   DateTimeColumn get lastActiveDate => dateTime().nullable()();
   IntColumn get dailyReviewGoal => integer().nullable()();

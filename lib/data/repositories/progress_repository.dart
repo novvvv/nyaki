@@ -14,17 +14,23 @@ class ProgressSnapshot {
   // Constructor 
   const ProgressSnapshot({
     required this.churuBalance,
+    required this.capelinBalance,
     required this.completedQuestIds,
   });
 
   // Default State Value 
   static const empty = ProgressSnapshot(
     churuBalance: 0,
+    capelinBalance: 0,
     completedQuestIds: {},
   );
 
   // field
   final int churuBalance;
+
+  /// 열빙어 잔액. 아침/저녁 복습 퀘스트로만 얻는다(PLANS.md 1-4).
+  final int capelinBalance;
+
   final Set<String> completedQuestIds;
 
 }
@@ -65,10 +71,18 @@ class ProgressRepository {
       };
 
   // [Helper Method] _writeCache
+  // - 서버의 응답을 Local Database에 저장합니다. 
+  // - 서버가 준 Json Data를 Drift Table 2개에 기록하는 작업 
+  // refresh() -> _writeCache :: 서버에서 최신 상태를 받아올 때 호출 
+  // completeQuest() -> writeCache :: 퀘스트 완료 알림  
+
   Future<void> _writeCache(String userId, Map<String, dynamic> payload) async {
 
     // feat : ProgressResponse DTO {churu_balance, completed_today}를 Dart Map에서 캐스팅한다. 
     final churuBalance = payload['churu_balance'] as int;
+
+    // 구버전 Hub는 이 필드를 안 내려준다 — 없으면 0으로 본다.
+    final capelinBalance = (payload['capelin_balance'] as int?) ?? 0;
     final completedQuestIds =
         (payload['completed_today'] as List<dynamic>).cast<String>();
     final today = _todayLocal();
@@ -81,16 +95,10 @@ class ProgressRepository {
             UserProgressCompanion.insert(
               userId: userId,
               churuBalance: Value(churuBalance),
+              capelinBalance: Value(capelinBalance),
             ),
           );
 
-      // 이 유저의 완료 기록을 전부 지우고 서버가 방금 내려준 목록으로만
-      // 다시 채운다 — 서버 응답이 "오늘의 완전한 진실"이라는 전제.
-      // (2026-08-28 개정) 예전엔 "오늘보다 이전 날짜" row만 지웠는데, 그건
-      // "오늘 날짜로 남아있지만 서버는 더 이상 완료로 안 치는" row는 못
-      // 잡아냈다 — 실기기 로그로 실제 재현됨(로컬엔 오늘 날짜로
-      // add_word가 남아있는데 서버 응답엔 없는 상황). 부분 upsert 대신
-      // 통째로 교체해서 이런 드리프트 자체가 안 생기게 한다.
       await (_db.delete(_db.questState)
             ..where((row) => row.userId.equals(userId)))
           .go();
@@ -136,6 +144,7 @@ class ProgressRepository {
     // Snapshot 형태로 잔액과, 완료 목록을 반환
     return ProgressSnapshot(
       churuBalance: progress?.churuBalance ?? 0,
+      capelinBalance: progress?.capelinBalance ?? 0,
       completedQuestIds: completedRows.map((row) => row.questId).toSet(),
     );
   }

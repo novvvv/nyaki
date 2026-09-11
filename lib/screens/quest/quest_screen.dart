@@ -6,17 +6,32 @@ import '../../core/theme/nyaki_colors.dart';
 import '../../data/auth/auth_controller.dart';
 import '../auth/sign_in_screen.dart';
 
-/// 일일 퀘스트 카드뷰 화면. (진행 로직은 이후)
-class QuestScreen extends StatelessWidget {
+/// 일일 퀘스트 카드뷰 화면.
+class QuestScreen extends StatefulWidget {
   const QuestScreen({super.key});
 
-  // GAMIFICATION-PLAN.md 퀘스트 목록. questId가 있는 항목만 Hub에 실제로
-  // 구현되어 있음(현재는 pet_cat뿐) — 나머지는 진행 로직 없는 정적 표시.
-  //
-  // currency: 'churu' | 'capelin' — 아침/저녁 복습(기간제 퀘스트)은
-  // GAMIFICATION-PLAN.md "열빙어 — 2번째 재화"에 따라 보상 재화만 열빙어로
-  // 표시해둔다(디자인 미리보기). 실제 지급 로직(questId 연결, Hub 반영)은
-  // 아직 구현 전 — 나중에 붙인다.
+  @override
+  State<QuestScreen> createState() => _QuestScreenState();
+}
+
+class _QuestScreenState extends State<QuestScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 화면에 들어올 때마다 서버에 완료 상태를 다시 묻는다.
+    //
+    // 없으면 앱을 껐다 켜기 전까지 갱신이 안 된다 — 서버 조회가 앱 시작과
+    // 로그인 변화 때만 일어나기 때문이다. 다른 기기에서 깬 퀘스트나 자정이
+    // 지나 리셋된 상태가 화면에 반영되지 않는다.
+    //
+    // addPostFrameCallback으로 미루는 이유: initState 시점에는 아직
+    // ProgressScope를 찾을 수 없다(InheritedWidget 조회는 첫 빌드 이후에 안전).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ProgressScope.of(context).refresh();
+    });
+  }
+
   static const _quests = [
     (
       title: '냐키 쓰다듬기',
@@ -35,32 +50,28 @@ class QuestScreen extends StatelessWidget {
       questId: 'add_word',
     ),
     (
-      title: '아침 복습 완료',
-      meta: '06:00–14:00',
+      title: '아침 복습',
+      meta: '06:00–14:00 · 복습 한 판 끝내기',
       icon: Icons.schedule_outlined,
       reward: 1,
       currency: 'capelin',
-      questId: null,
+      questId: 'morning_review',
     ),
     (
-      title: '저녁 복습 완료',
-      meta: '18:00–24:00',
+      title: '저녁 복습',
+      meta: '18:00–24:00 · 복습 한 판 끝내기',
       icon: Icons.schedule_outlined,
       reward: 1,
       currency: 'capelin',
-      questId: null,
+      questId: 'evening_review',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    // 구현된(questId != null) 퀘스트만 분모/분자로 카운트한다.
-    final implementedIds = _quests
-        .where((quest) => quest.questId != null)
-        .map((quest) => quest.questId!)
-        .toSet();
+    final allQuestIds = _quests.map((quest) => quest.questId).toSet();
     final completedIds = ProgressScope.of(context).snapshot.completedQuestIds;
-    final completedCount = completedIds.intersection(implementedIds).length;
+    final completedCount = completedIds.intersection(allQuestIds).length;
     final isLoggedIn = AuthScope.of(context).status == AuthStatus.signedIn;
     final canPop = Navigator.canPop(context);
 
@@ -91,7 +102,7 @@ class QuestScreen extends StatelessWidget {
                       if (canPop)
                         _BackButton(onTap: () => Navigator.of(context).pop()),
                       _CounterPill(
-                        label: '$completedCount / ${implementedIds.length}',
+                        label: '$completedCount / ${allQuestIds.length}',
                       ),
                     ],
                   ),
@@ -103,15 +114,13 @@ class QuestScreen extends StatelessWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final quest = _quests[index];
-                      final isCompleted = quest.questId != null &&
-                          completedIds.contains(quest.questId);
+                      final isCompleted = completedIds.contains(quest.questId);
                       return _QuestCard(
                         title: quest.title,
                         meta: quest.meta,
                         icon: quest.icon,
                         reward: quest.reward,
                         currency: quest.currency,
-                        isImplemented: quest.questId != null,
                         isCompleted: isCompleted,
                       );
                     },
@@ -224,7 +233,6 @@ class _QuestCard extends StatelessWidget {
     required this.icon,
     required this.reward,
     required this.currency,
-    required this.isImplemented,
     required this.isCompleted,
   });
 
@@ -235,111 +243,84 @@ class _QuestCard extends StatelessWidget {
 
   /// 'churu' | 'capelin' — 보상 재화. GAMIFICATION-PLAN.md "열빙어" 참고.
   final String currency;
-  final bool isImplemented;
   final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: isImplemented ? 1 : 0.55,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        decoration: BoxDecoration(
-          color: NyakiColors.cardBg,
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _CheckCircle(done: isCompleted),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                      color: isCompleted
-                          ? NyakiColors.ink.withValues(alpha: 0.6)
-                          : NyakiColors.ink,
-                      decoration:
-                          isCompleted ? TextDecoration.lineThrough : null,
-                      decorationColor: NyakiColors.taupe,
-                    ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      decoration: BoxDecoration(
+        color: NyakiColors.cardBg,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _CheckCircle(done: isCompleted),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: isCompleted
+                        ? NyakiColors.ink.withValues(alpha: 0.6)
+                        : NyakiColors.ink,
+                    decoration: isCompleted ? TextDecoration.lineThrough : null,
+                    decorationColor: NyakiColors.taupe,
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        icon,
-                        size: 13,
-                        color: NyakiColors.ink.withValues(alpha: 0.45),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        meta,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          color: NyakiColors.ink.withValues(alpha: 0.45),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // 열빙어(capelin) 퀘스트는 아직 미구현이어도 보상 재화 미리보기를
-            // 보여준다 — 나머지(구현 전 츄르 퀘스트)는 기존대로 '준비중'.
-            (isImplemented || currency == 'capelin')
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(
-                        currency == 'capelin'
-                            ? 'assets/images/fish_item.png'
-                            : 'assets/images/churu.png',
-                        width: 13,
-                        height: 13,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        currency == 'capelin' ? '열빙어 $reward개' : '츄르 $reward개',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: NyakiColors.ink.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  )
-                : Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      icon,
+                      size: 13,
+                      color: NyakiColors.ink.withValues(alpha: 0.45),
                     ),
-                    decoration: BoxDecoration(
-                      color: NyakiColors.softDune,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '준비중',
+                    const SizedBox(width: 6),
+                    Text(
+                      meta,
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
                         color: NyakiColors.ink.withValues(alpha: 0.45),
                       ),
                     ),
-                  ),
-          ],
-        ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                currency == 'capelin'
+                    ? 'assets/images/fish_item.png'
+                    : 'assets/images/churu.png',
+                width: 13,
+                height: 13,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                currency == 'capelin' ? '열빙어 $reward개' : '츄르 $reward개',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: NyakiColors.ink.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

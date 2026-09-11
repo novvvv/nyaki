@@ -3,9 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/auth_scope.dart';
 import '../../core/error_snackbar.dart';
 import '../../core/nyaki_scope.dart';
+import '../../core/progress_scope.dart';
 import '../../core/theme/nyaki_colors.dart';
+import '../../data/auth/auth_controller.dart';
 import '../../data/repositories/vocab_repository.dart';
 import '../../models/word.dart';
 import '../../models/word_book.dart';
@@ -150,6 +153,36 @@ class _WordTestSessionScreenState extends State<WordTestSessionScreen> {
       _revealed.remove(word.id);
     });
     _persistGrade(word, grade);
+
+    // 마지막 카드를 넘겨 세션이 끝나는 순간이 곧 복습 퀘스트 완료다.
+    // 종료 화면(_SessionCompleteView) 쪽이 아니라 여기서 부르는 이유는
+    // build()가 리빌드마다 다시 불리기 때문 — 여기는 카드를 넘긴 순간 1회다.
+    if (_queue.isEmpty) {
+      _completeReviewQuest();
+    }
+  }
+
+ 
+  // [Method] 복습 세션을 끝냈을 때 완료 여부를 서버에 알리는 메서드 
+  void _completeReviewQuest() {
+
+    // 로그인하지 않은 경우엔는 API Call 자체를 하지 않는다. - 서버 부하 최소화 
+    if (AuthScope.of(context).status != AuthStatus.signedIn) return;
+
+    // ✨ 시간대 판별 로직 ✨
+    // 기기 시간대 기준으로 현재 시각을 파싱한다. 
+    final hour = DateTime.now().hour;
+    final String questId;
+    if (hour >= 6 && hour < 14) {
+      questId = 'morning_review'; // 아침 퀘스트
+    } else if (hour >= 18) {
+      questId = 'evening_review'; // 저녁 퀘스트
+    } else {
+      return; // 호출 x
+    }
+
+    ProgressScope.of(context).completeQuest(questId);
+
   }
 
   Future<void> _persistGrade(Word word, ReviewGrade grade) async {

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
@@ -6,7 +6,12 @@ from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user_id
 from app.core.database import Base, engine
-from app.gamification.services import CAPELIN, QUEST_REWARDS, _today
+from app.gamification.services import (
+    CAPELIN,
+    QUEST_REWARDS,
+    _assert_in_time_window,
+    _today,
+)
 from app.main import app
 
 
@@ -104,3 +109,79 @@ def test_unknown_currency_raises() -> None:
     progress = UserProgressModel(user_id="x")
     with pytest.raises(ValueError):
         _grant(progress, "gold", 10)
+
+
+# ==================== 시간대 퀘스트 (아침/저녁 복습) ==================== #
+# 복습을 몇 개 했는지는 앱이 로컬에서 세고 판정한다 — 서버는 검증할 방법이 없다.
+# 서버가 확인할 수 있는 유일한 조건이 "지금이 그 시간대인가"라서 여기를 테스트한다.
+
+_KST_TZ = timezone(timedelta(hours=9))
+
+
+def _kst(hour: int, minute: int = 0) -> datetime:
+    """2026-09-11 KST의 특정 시각."""
+    return datetime(2026, 9, 11, hour, minute, tzinfo=_KST_TZ)
+
+
+def test_time_quest_window_boundaries() -> None:
+    """경계 시각 — 시작은 포함, 끝은 미포함(6 <= hour < 14)."""
+    cases = [
+        ("morning_review", 5, False),   # 창 직전
+        ("morning_review", 6, True),    # 시작 정각 — 포함
+        ("morning_review", 13, True),   # 창 끝 직전
+        ("morning_review", 14, False),  # 끝 정각 — 미포함
+        ("evening_review", 17, False),
+        ("evening_review", 18, True),
+        ("evening_review", 23, True),   # 하루 마지막 시각
+    ]
+    for quest_id, hour, should_pass in cases:
+        with patch("app.gamification.services._now_kst", return_value=_kst(hour)):
+            if should_pass:
+                _assert_in_time_window(quest_id)  # 예외가 안 나면 통과
+            else:
+                with pytest.raises(ValueError):
+                    _assert_in_time_window(quest_id)
+
+
+def test_flag_quests_ignore_time_window() -> None:
+    """pet_cat·add_word는 시간 제약이 없다 — 새벽 3시에도 통과해야 한다."""
+    with patch("app.gamification.services._now_kst", return_value=_kst(3)):
+        _assert_in_time_window("pet_cat")
+        _assert_in_time_window("add_word")
+
+
+def test_time_quest_outside_window_returns_400() -> None:
+    """창 밖 호출은 400. 새벽에 아침 퀘스트를 받아가는 것을 막는다."""
+    Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[get_current_user_id] = lambda: "firebase-user-window"
+    client = TestClient(app)
+
+    with patch("app.gamification.services._now_kst", return_value=_kst(3)):
+        response = client.post("/v1/progress/quests/morning_review/complete")
+    assert response.status_code == 400
+
+    # 잔액이 오르지 않았는지 확인 — 거절이 '조용한 성공'이 아니어야 한다
+    with patch("app.gamification.services._now_kst", return_value=_kst(3)):
+        assert client.get("/v1/progress").json()["capelin_balance"] == 0
+
+
+def test_time_quest_grants_capelin_once_per_day() -> None:
+    """창 안에서는 열빙어 1개. 같은 날 재호출해도 안 늘어난다(멱등)."""
+    Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[get_current_user_id] = lambda: "firebase-user-timequest"
+    client = TestClient(app)
+
+    with patch("app.gamification.services._now_kst", return_value=_kst(9)):
+        first = client.post("/v1/progress/quests/morning_review/complete")
+        assert first.status_code == 200
+        assert first.json()["capelin_balance"] == 1
+        assert first.json()["churu_balance"] == 0
+        assert "morning_review" in first.json()["completed_today"]
+
+        second = client.post("/v1/progress/quests/morning_review/complete")
+        assert second.json()["capelin_balance"] == 1
+
+    # 같은 날 저녁 퀘스트는 별개로 하나 더 — 하루 상한 열빙어 2가 여기서 나온다
+    with patch("app.gamification.services._now_kst", return_value=_kst(20)):
+        evening = client.post("/v1/progress/quests/evening_review/complete")
+        assert evening.json()["capelin_balance"] == 2

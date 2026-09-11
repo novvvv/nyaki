@@ -8,26 +8,44 @@ from .schemas import ProgressResponse
 CHURU = "churu"
 CAPELIN = "capelin"
 
-# 퀘스트별 보상 — (재화, 수량).
-#
-# 아침/저녁 복습(morning_review · evening_review)은 여기 없다. 넣으면 이 API를
-# 호출하는 것만으로 복습 없이 열빙어를 받아갈 수 있다 — 두 퀘스트는 서버가
-# 복습 횟수를 확인한 뒤에만 지급해야 하므로 복습 보고 경로에서 따로 처리한다.
+# 퀘스트별 리워드 테이블 
 QUEST_REWARDS: dict[str, tuple[str, int]] = {
     "pet_cat": (CHURU, 5),
     "add_word": (CHURU, 5),
+    "morning_review": (CAPELIN, 1),
+    "evening_review": (CAPELIN, 1),
+}
+
+# 시간대 퀘스트가 열려 있는 창 — (시작 시, 끝 시) KST, 끝은 미포함.
+#
+# 몇 개를 복습했는지는 앱이 로컬에서 세고 판정한다(서버는 검증할 방법이 없다).
+# 대신 서버는 "지금이 그 시간대인가"를 본다 — 이게 없으면 새벽 3시에
+# 아침 퀘스트를 받아갈 수 있다. 기기 시계가 아니라 서버 수신 시각으로 판정하므로
+# 앱에서 시간을 조작해도 통하지 않는다.
+TIME_QUEST_WINDOWS: dict[str, tuple[int, int]] = {
+    "morning_review": (6, 14),
+    "evening_review": (18, 24),
 }
 
 # 한국 표준시(KST, UTC+9) 고정 오프셋 — DST 없는 시간대라 zoneinfo/tzdata
 # 의존성 없이 고정 오프셋으로 충분함(python:3.13-slim 이미지엔 tzdata가 없음).
 _KST = timezone(timedelta(hours=9))
 
-# ====================== ✨ today util method ✨ ====================== #
-# - 오늘 날짜(KST) 기준으로 오늘이 며칠인지 계산 — 클라이언트(로컬시간)와
-#   기준을 맞춰서 자정(00:00 KST)에 딱 맞게 리셋되게 한다(2026-08-28 변경,
-#   기존엔 UTC라 오전 9시에야 날짜가 바뀌었음).
+# ====================== [util] KST 시각 ====================== #
+# - _now_kst() : 지금 시각(KST). 시간대 퀘스트 창 판정에 쓴다
+# - _today()   : 오늘 날짜(KST). 퀘스트 "오늘 했나" 판정에 쓴다
+#
+# UTC가 아니라 KST인 이유 — 클라이언트(로컬시간)와 기준을 맞춰 자정(00:00 KST)에
+# 딱 맞게 리셋되게 한다. 2026-08-28 변경, 기존엔 UTC라 한국 오전 9시에야
+# 날짜가 바뀌었다.
+def _now_kst() -> datetime:
+    return datetime.now(_KST)
+
+
+# 시각은 제외하고 날짜만 반환 
+# 퀘스트를 오늘 이미 완료했는지 판정하기 위해서 사용 
 def _today() -> date:
-    return datetime.now(_KST).date()
+    return _now_kst().date()
 # ===================================================================== #
 
 # ====================== ✨ [method] get_or_create_progress ✨ ====================== #
@@ -105,10 +123,27 @@ def _response(
     )
 
 
+# ====================== [method] _assert_in_time_window ====================== #
+# - feat : 시간대 퀘스트가 지금 열려 있는지 확인한다. 시간대 퀘스트가 아니면 통과.
+# - 서버 수신 시각(KST) 기준이라 기기 시계 조작이 통하지 않는다.
+def _assert_in_time_window(quest_id: str) -> None:
+    window = TIME_QUEST_WINDOWS.get(quest_id)
+    if window is None:
+        return
+
+    start_hour, end_hour = window
+    hour = _now_kst().hour
+    if not (start_hour <= hour < end_hour):
+        raise ValueError(
+            f"지금은 {quest_id} 시간이 아니다 ({start_hour}시~{end_hour}시)"
+        )
+
+
 def complete_quest(session: Session, user_id: str, quest_id: str) -> ProgressResponse:
     """퀘스트 완료 처리. idempotent — 오늘 이미 완료했으면 보상 없이 현재 상태만 반환."""
     if quest_id not in QUEST_REWARDS:
         raise ValueError(f"알 수 없는 퀘스트: {quest_id}")
+    _assert_in_time_window(quest_id)
 
     today = _today()
     state = session.get(QuestStateModel, {"user_id": user_id, "quest_id": quest_id})

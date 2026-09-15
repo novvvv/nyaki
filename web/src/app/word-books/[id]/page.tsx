@@ -40,7 +40,7 @@ export default function WordBookDetailPage() {
 
   if (!book) {
     return (
-      <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
+      <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
         <PageHeader
           title="단어장을 찾을 수 없습니다"
           description="목록에서 다른 단어장을 선택해 주세요."
@@ -83,7 +83,7 @@ export default function WordBookDetailPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
+    <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
       <PageHeader
         title={book.title}
         description={book.description}

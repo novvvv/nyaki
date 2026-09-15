@@ -45,27 +45,24 @@ function CatIcon({ className = "" }: { className?: string }) {
 function tierStyles(tier: Plan["tier"]) {
   if (tier === "free") {
     return {
-      card: "border-taupe/45 bg-card/50 hover:border-taupe/80 hover:shadow-[0_6px_28px_rgba(68,58,53,0.06)]",
+      card: "border-taupe/50 hover:border-taupe/80",
       accent: "text-umber/45 group-hover:text-umber/65",
       badge: "bg-subtle text-umber/55",
-      glow: "from-umber/[0.03] to-transparent",
       dot: "bg-taupe",
     };
   }
   if (tier === "pro") {
     return {
-      card: "border-taupe/50 bg-card/50 hover:border-ink/20 hover:shadow-[0_10px_40px_rgba(37,37,37,0.08)]",
+      card: "border-taupe/60 hover:border-ink/25",
       accent: "text-umber/70",
       badge: "bg-ink text-cream",
-      glow: "from-ink/[0.03] to-transparent",
       dot: "bg-ink/25",
     };
   }
   return {
-    card: "border-umber/15 bg-[linear-gradient(180deg,#f8f4ee_0%,#f3eee6_100%)] hover:border-umber/30 hover:shadow-[0_12px_44px_rgba(68,58,53,0.12)]",
-    accent: "text-umber/80 plan-shimmer",
+    card: "border-ink/20 hover:border-ink/35",
+    accent: "text-umber/80",
     badge: "bg-umber text-cream",
-    glow: "from-umber/[0.06] to-transparent",
     dot: "bg-umber/35",
   };
 }
@@ -77,13 +74,9 @@ export function PlanCard({ plan }: { plan: Plan }) {
   return (
     <Card
       className={`group relative flex h-full min-h-[400px] flex-col px-5 py-6 transition duration-300 ${styles.card} ${
-        plan.highlight ? "border-taupe/70 shadow-[0_1px_0_rgba(68,58,53,0.04)]" : ""
+        plan.highlight ? "border-taupe/70" : ""
       }`}
     >
-      <div
-        className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b ${styles.glow} opacity-0 transition duration-300 group-hover:opacity-100`}
-      />
-
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">

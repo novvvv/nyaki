@@ -29,7 +29,7 @@ export default function OverviewPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
+    <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
       <PageHeader title="전체 통계" description="모든 단어장을 합친 추이예요." />
 
       {error ? <p className="mb-6 text-sm text-red-700">{error}</p> : null}

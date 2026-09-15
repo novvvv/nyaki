@@ -5,7 +5,7 @@ export function PricingSection() {
   return (
     <section
       id="plans"
-      className="scroll-mt-14 border-t border-taupe/40 bg-subtle/25 px-6 py-20"
+      className="scroll-mt-14 border-t border-taupe/40 px-6 py-20"
     >
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-xl text-center">

@@ -48,7 +48,7 @@ export function WordForm({ mode }: WordFormProps) {
 
   if (!book) {
     return (
-      <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
+      <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
         <PageHeader title="단어장을 찾을 수 없습니다" />
       </main>
     );
@@ -56,7 +56,7 @@ export function WordForm({ mode }: WordFormProps) {
 
   if (mode === "edit" && !existing) {
     return (
-      <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
+      <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
         <PageHeader title="단어를 찾을 수 없습니다" />
       </main>
     );
@@ -119,7 +119,7 @@ export function WordForm({ mode }: WordFormProps) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
+    <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
       <div className="mb-7 text-xs text-umber/40">
         <Link href="/word-books" className="transition-colors hover:text-ink">
           단어장

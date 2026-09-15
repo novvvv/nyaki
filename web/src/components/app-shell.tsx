@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useAuth } from "@/components/auth-provider";
-import { GhostButton } from "@/components/ui";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
 
 function SidebarItem({
@@ -35,69 +33,42 @@ function SidebarItem({
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { signOutUser } = useAuth();
   const { wordBooks, loading } = useVocab();
+  const showSidebar = pathname !== "/word-books/overview";
 
   return (
-    <div className="flex min-h-full">
-      <aside className="fixed inset-y-0 left-0 flex w-56 flex-col border-r border-taupe/30 bg-cream px-3 py-4">
-        <Link
-          href="/"
-          className="mb-4 px-2.5 text-sm font-semibold tracking-tight text-ink"
-        >
-          Nyaki
-        </Link>
+    <div className="mx-auto flex min-h-[calc(100vh-8.5rem)] w-full max-w-7xl">
+      {showSidebar ? (
+        <aside className="hidden w-52 shrink-0 border-r border-taupe/30 py-14 pl-6 pr-3 lg:block">
+          <p className="mb-2 px-2.5 text-[11px] font-medium uppercase tracking-wider text-ink/35">
+            단어장
+          </p>
 
-        <nav className="mb-3">
-          <SidebarItem
-            href="/word-books"
-            label="전체 단어장"
-            active={pathname === "/word-books"}
-          />
-          <SidebarItem
-            href="/word-books/overview"
-            label="전체 통계"
-            active={pathname === "/word-books/overview"}
-          />
-        </nav>
+          <nav className="space-y-0.5">
+            {loading ? (
+              <p className="px-2.5 py-1.5 text-xs text-ink/35">불러오는 중…</p>
+            ) : wordBooks.length === 0 ? (
+              <p className="px-2.5 py-1.5 text-xs text-ink/35">비어 있음</p>
+            ) : (
+              wordBooks.map((book) => {
+                const href = `/word-books/${book.id}`;
+                const meta = bookMeta(book);
+                return (
+                  <SidebarItem
+                    key={book.id}
+                    href={href}
+                    label={book.title}
+                    meta={`${meta.count}`}
+                    active={pathname === href || pathname.startsWith(`${href}/`)}
+                  />
+                );
+              })
+            )}
+          </nav>
+        </aside>
+      ) : null}
 
-        <p className="mb-2 px-2.5 text-[11px] font-medium uppercase tracking-wider text-ink/35">
-          단어장
-        </p>
-
-        <nav className="flex-1 space-y-0.5 overflow-y-auto">
-          {loading ? (
-            <p className="px-2.5 py-1.5 text-xs text-ink/35">불러오는 중…</p>
-          ) : wordBooks.length === 0 ? (
-            <p className="px-2.5 py-1.5 text-xs text-ink/35">비어 있음</p>
-          ) : (
-            wordBooks.map((book) => {
-              const href = `/word-books/${book.id}`;
-              const meta = bookMeta(book);
-              return (
-                <SidebarItem
-                  key={book.id}
-                  href={href}
-                  label={book.title}
-                  meta={`${meta.count}`}
-                  active={pathname === href || pathname.startsWith(`${href}/`)}
-                />
-              );
-            })
-          )}
-        </nav>
-
-        <div className="mt-3 border-t border-taupe/30 pt-3">
-          <GhostButton
-            className="w-full justify-start px-2.5 text-ink/40"
-            onClick={() => void signOutUser()}
-          >
-            로그아웃
-          </GhostButton>
-        </div>
-      </aside>
-
-      <div className="ml-56 min-h-full flex-1">{children}</div>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import Link from "next/link";
+
+import { cn } from "@/lib/utils";
 import type { ButtonHTMLAttributes, InputHTMLAttributes } from "react";
 
 export function Card({
@@ -11,7 +13,10 @@ export function Card({
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`rounded-lg border border-taupe/50 bg-card/60 px-4 py-3.5 ${className}`}
+      className={cn(
+        "rounded-lg border border-taupe/60 px-4 py-3.5",
+        className,
+      )}
       {...props}
     >
       {children}
@@ -27,7 +32,10 @@ export function PrimaryButton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-umber disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={cn(
+        "inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-umber disabled:cursor-not-allowed disabled:opacity-45",
+        className,
+      )}
       {...props}
     >
       {children}
@@ -47,7 +55,10 @@ export function PrimaryLink({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-umber ${className}`}
+      className={cn(
+        "inline-flex items-center justify-center rounded-lg bg-ink px-3.5 py-2 text-sm font-medium text-cream transition hover:bg-umber",
+        className,
+      )}
     >
       {children}
     </Link>
@@ -62,7 +73,10 @@ export function GhostButton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-umber/70 transition hover:bg-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={cn(
+        "inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-umber/70 transition hover:bg-subtle hover:text-ink disabled:cursor-not-allowed disabled:opacity-45",
+        className,
+      )}
       {...props}
     >
       {children}
@@ -78,7 +92,10 @@ export function SubtleButton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-lg border border-taupe/40 bg-transparent px-3 py-2 text-sm text-umber/65 transition hover:border-taupe/70 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={cn(
+        "inline-flex items-center justify-center rounded-lg border border-taupe/40 bg-transparent px-3 py-2 text-sm text-umber/65 transition hover:border-taupe/70 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40",
+        className,
+      )}
       {...props}
     >
       {children}
@@ -100,7 +117,10 @@ export function TextInput({
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full rounded-lg border border-taupe/45 bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/25 focus:ring-2 focus:ring-taupe/35 ${className}`}
+      className={cn(
+        "w-full rounded-lg border border-taupe/45 bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/25 focus:ring-2 focus:ring-taupe/35",
+        className,
+      )}
       {...props}
     />
   );
@@ -114,7 +134,10 @@ export function TextArea({
   return (
     <textarea
       rows={rows}
-      className={`w-full resize-y rounded-lg border border-taupe/45 bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/25 focus:ring-2 focus:ring-taupe/35 ${className}`}
+      className={cn(
+        "w-full resize-y rounded-lg border border-taupe/45 bg-cream px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/30 focus:border-ink/25 focus:ring-2 focus:ring-taupe/35",
+        className,
+      )}
       {...props}
     />
   );
@@ -162,7 +185,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-taupe/45 px-6 py-16 text-center">
+    <div className="py-16 text-center">
       <p className="text-sm font-medium text-ink/65">{title}</p>
       {description ? (
         <p className="mt-1.5 text-sm text-umber/45">{description}</p>

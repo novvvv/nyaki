@@ -1,76 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 
-import {
-  EmptyState,
-  GhostButton,
-  PageHeader,
-  SubtleButton,
-  TextInput,
-} from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
 
-export default function WordBooksPage() {
-  const { wordBooks, loading, error, createWordBook } = useVocab();
-  const [creating, setCreating] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-
-  async function handleCreate() {
-    const title = newTitle.trim();
-    if (!title) return;
-    try {
-      await createWordBook({ title });
-      setNewTitle("");
-      setCreating(false);
-    } catch (reason) {
-      window.alert(
-        reason instanceof Error ? reason.message : "단어장을 만들지 못했어요.",
-      );
-    }
-  }
-
-  const createActions = creating ? (
-    <div className="flex items-center gap-1.5">
-      <TextInput
-        className="w-44 py-1.5"
-        value={newTitle}
-        onChange={(e) => setNewTitle(e.target.value)}
-        placeholder="단어장 이름"
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === "Enter") void handleCreate();
-          if (e.key === "Escape") setCreating(false);
-        }}
-      />
-      <SubtleButton
-        className="py-1.5"
-        disabled={!newTitle.trim()}
-        onClick={() => void handleCreate()}
-      >
-        만들기
-      </SubtleButton>
-      <GhostButton
-        className="px-2 py-1.5 text-umber/40"
-        onClick={() => setCreating(false)}
-      >
-        취소
-      </GhostButton>
-    </div>
-  ) : (
-    <SubtleButton className="py-1.5" onClick={() => setCreating(true)}>
+function NewBookLink() {
+  return (
+    <Link
+      href="/word-books/new"
+      className="inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-taupe/40 px-3 py-1.5 text-sm text-umber/65 transition hover:border-taupe/70 hover:text-ink"
+    >
       새 단어장
-    </SubtleButton>
+    </Link>
   );
+}
+
+export default function WordBooksPage() {
+  const { wordBooks, loading, error } = useVocab();
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
-      <PageHeader title="단어장" actions={createActions} />
+    <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
+      <PageHeader title="단어장" actions={<NewBookLink />} />
 
-      {error ? (
-        <p className="mb-6 text-sm text-red-700">{error}</p>
-      ) : null}
+      {error ? <p className="mb-6 text-sm text-red-700">{error}</p> : null}
 
       {loading ? (
         <p className="text-sm text-umber/40">불러오는 중…</p>
@@ -78,13 +31,7 @@ export default function WordBooksPage() {
         <EmptyState
           title="단어장이 없습니다"
           description="오른쪽 위에서 첫 단어장을 만들어 보세요."
-          action={
-            creating ? undefined : (
-              <SubtleButton onClick={() => setCreating(true)}>
-                새 단어장
-              </SubtleButton>
-            )
-          }
+          action={<NewBookLink />}
         />
       ) : (
         <ul className="divide-y divide-taupe/25 border-t border-taupe/25">

@@ -1,66 +1,159 @@
-# Nyaki
+# Nyaki (ニャキ)
 
-모바일과 웹에서 같은 단어장을 이어서 학습하는 미니멀 단어장.
+**日本語** · [한국어](README.ko.md)
 
-Flutter 앱, Next.js 웹, FastAPI Sync Hub 세 클라이언트가 한 계정의 데이터를 공유하는 모노레포다.
+> ウェブと iOS で同じ単語帳がつながる、ミニマルな単語帳アプリ。
 
-## 동작 방식
+外国語の勉強が好きで、単語アプリをいくつも使ってきました。机ではウェブ、外ではスマホで使うのですが、
+同じ単語帳がウェブとアプリの間でつながらないことがずっと不満でした。
+そこで、ウェブと iOS で同じ単語帳をリアルタイムに同期し、街で見かけた単語を OCR でその場で保存できる、
+自分専用の単語帳を作ることにしました。
 
-- **앱**: 오프라인 우선. 로컬 DB(Drift)에 먼저 쓰고, 로그인 시 Hub와 동기화(push/pull).
-- **웹**: Hub를 직접 CRUD. 서버가 원본.
-- **인증**: Firebase 토큰으로 요청 → 서버가 사용자별로 데이터 격리.
-- **동기화**: soft delete, 충돌 시 `updated_at` 최신 우선.
+地下鉄のように通信が不安定な場所でも学習が途切れないよう、モバイルは**オフラインファースト**で設計し、
+接続が戻ったら**差分だけ**を送ります。単語の登録から復習まで、自分が毎日使うことを前提に作っている進行中のプロジェクトです。
 
-## 구조
+---
+
+## 画面
+
+### Web — 机の上で
+
+<img src="docs/screenshots/web-review.png" alt="ウェブ復習セッション" width="100%" />
+
+<sub>復習セッション。採点は「わからない / 覚えた」の二択だけ。単語帳の編集・全体統計・単語パックのダウンロードもウェブから。</sub>
+
+### App (iOS) — 外で
+
+<table>
+  <tr>
+    <td width="25%"><img src="docs/screenshots/app-home.png" alt="ホーム" /></td>
+    <td width="25%"><img src="docs/screenshots/app-quests.png" alt="クエスト" /></td>
+    <td width="25%"><img src="docs/screenshots/app-word.png" alt="単語カード" /></td>
+    <td width="25%"><img src="docs/screenshots/app-mypage.png" alt="マイページ" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>ホーム — ニャキ</sub></td>
+    <td align="center"><sub>クエストと通貨</sub></td>
+    <td align="center"><sub>単語カード</sub></td>
+    <td align="center"><sub>マイページ</sub></td>
+  </tr>
+</table>
+
+---
+
+## Tech Stack & Skills
+
+### Mobile (Flutter)
+- **Stack:** Flutter, Dart, Drift (SQLite), Firebase Auth
+- **Skills:**
+  - Drift によるオフラインファーストのローカル DB 設計と状態管理
+  - スワイプ一つで採点と次へ送りを兼ねる操作の実装
+
+### Web (Frontend)
+- **Stack:** Next.js 16, React 19, TypeScript, Tailwind 4
+- **Skills:**
+  - ローカルストレージに依存せず、サーバー (Hub) を原本として直接通信するビューア／エディタの実装
+
+### Backend (Sync Hub)
+- **Stack:** FastAPI, Python, PostgreSQL, SQLAlchemy 2, Alembic
+- **Skills:**
+  - ローカルとサーバー間の cursor ベース増分同期 (Incremental Sync) API の設計
+  - `(id, user_id)` 複合主キーによるユーザー分離と、Firebase Auth 連携のトークン検証
+
+### インフラ・デプロイ (DevOps)
+- **Stack:** AWS Lightsail, Docker Compose, Caddy, GitHub Actions
+- **Skills:**
+  - GitHub Actions と rsync による自動デプロイパイプラインの構築
+  - コードの push 時に API コンテナだけを独立して再ビルドする最適化
+
+---
+
+## アーキテクチャ
+
+```mermaid
+flowchart LR
+  App["Flutter アプリ<br/>Drift · オフラインファースト"]
+  Web["Next.js ウェブ<br/>サーバーが原本"]
+  Hub["Sync Hub<br/>FastAPI"]
+  DB[("Postgres")]
+  FB["Firebase Auth<br/>認証のみ"]
+
+  App -- "POST /v1/sync/push<br/>GET /v1/sync/pull" --> Hub
+  Web -- "REST /v1" --> Hub
+  Hub --> DB
+  App -. "ID token" .-> FB
+  Web -. "ID token" .-> FB
+  Hub -. "トークン検証" .-> FB
+```
+
+---
+
+## ✨ 設計上の判断とトラブルシューティング
+
+* **通信量を抑える増分同期の設計:**
+  毎回すべてを送受信する代わりに、ローカルの変更を `SyncOutbox` に貯めて 100 件単位で push し、
+  最後の cursor 以降の差分だけを pull する同期パイプラインを構築しました。
+
+* **データの性質に応じた競合解決:**
+  オフライン端末どうしの同期で、通貨やクエストのような**累積値**が「更新時刻 (updated_at) が新しい方が勝つ」規則によって
+  消えてしまう問題を特定しました。通貨の計算とクエストの完了判定はサーバーだけが冪等 (idempotent) に行い、
+  アプリは結果を受け取るだけ、と役割を分けて解決しました。
+
+* **マルチプラットフォームでのアルゴリズム (SM-2) の一致:**
+  アプリ (Dart) とサーバー (Python) の両方で復習アルゴリズムを計算する際、言語標準の `round()` の丸め方の違いで
+  次回復習日がずれる問題を発見しました。丸め規則を統一し、同一のテストベクタを両者で共有することで差異をなくしました。
+
+* **可用性を優先した意図的なトレードオフ:**
+  同期トランザクション中に FK 違反が起きると cursor までロールバックされ、同じバッチを永久に再試行する膠着状態に陥ります。
+  これを避けるため FK を無効にし、アプリ側で整合性を保証する方針とその根拠を文書に残しました。
+
+---
+
+## 主な機能
+
+- **単語帳:** 単語の CRUD、タグ、ブックマーク、画像添付、例文・発音・メモ
+- **間隔反復学習 (SM-2):** アルゴリズムによる復習スケジューリングと、スワイプによる採点
+- **ゲーミフィケーション:** KST の深夜 0 時で切り替わる「ニャキを撫でる」「朝／夜の復習」クエスト
+- **ウェブ専用:** 単語パックのダウンロードと、PC 向けに最適化した単語帳編集
+- **OCR での単語保存:** 設計中 ([docs/DRIVE-PLAN.md](docs/DRIVE-PLAN.md))
+
+---
+
+## 構成
 
 ```
 nyaki/
-├── lib/     Flutter 앱
-├── web/     Next.js 웹
+├── lib/     Flutter アプリ
+├── web/     Next.js ウェブ
 ├── api/     Sync Hub (FastAPI + Postgres)
-├── docs/    문서 3종 (아키텍처 · 할 일 · 기획)
-└── notes/   개인 메모 (git 제외)
+└── docs/    アーキテクチャ · タスク · 企画
 ```
 
-### lib/ — 앱
+## 実行
 
-```
-main.dart      진입 · 초기화
-core/          상태 주입 · 테마
-models/        WordBook, Word
-data/          local(Drift) · repositories · auth · sync
-screens/       홈 · 퀘스트 · 단어장 · 추가 · 테스트 · 설정
-widgets/       공통 UI
-```
+```bash
+# サーバー — 環境変数の詳細は api/README.md
+cd api && docker compose up --build     # http://localhost:8000/docs
 
-화면 → `VocabController` → Drift. 변경은 outbox에 쌓이고 `SyncCoordinator`가 Hub와 맞춘다.
+# ウェブ
+cd web && npm install && npm run dev    # http://localhost:3000
 
-### web/ — 웹
-
-```
-app/         페이지 (목록 · 상세 · 단어 CRUD)
-components/  로그인 게이트 · 셸
-lib/         api-client · 상태 · firebase
+# アプリ
+flutter pub get && flutter run
 ```
 
-### api/ — Sync Hub
+## テスト
 
-```
-main.py      앱 · /health
-auth.py      Firebase 토큰 → user id
-routes.py    /v1 CRUD + /v1/sync/*
-services.py  upsert · soft delete · 변경 로그
-models.py    word_books · words · sync_changes
+```bash
+cd api && pytest      # 同期 · SRS · ゲーミフィケーション · コンテンツ
+flutter test          # SM-2 の計算 · 進捗リポジトリ
 ```
 
-웹용 REST CRUD와 앱용 `sync/push`·`sync/pull` 제공. 변경마다 커서를 늘리고, 앱은 마지막 커서 이후만 받아간다.
+## ドキュメント
 
-## 문서
-
-| 문서 | 내용 |
+| ドキュメント | 内容 |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 도메인 모델 · ERD(앱/Hub) · API · 동기화 · SRS(SM-2) · 디자인 토큰 · 보안 |
-| [docs/TASKS.md](docs/TASKS.md) | 할 일 목록 · 출시 전 필수(P0) · 기술부채 |
-| [docs/PLANS.md](docs/PLANS.md) | 착수 전 기획 — 게이미피케이션 · 책장 · 사진 첨부 · J-POP 유입 |
-
-실행 · 배포는 [api/README.md](api/README.md).
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | ドメインモデル · ERD · API · 同期の欠陥分析 · SRS 仕様 · デザイントークン · セキュリティ点検 |
+| [docs/TASKS.md](docs/TASKS.md) | タスク · リリース前の必須項目 · 技術的負債 |
+| [docs/PLANS.md](docs/PLANS.md) | 着手前の企画 |
+| [api/README.md](api/README.md) | ローカル実行 · 環境変数 · デプロイ手順 |

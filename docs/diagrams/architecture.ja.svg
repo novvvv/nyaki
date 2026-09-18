@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="460" viewBox="0 0 900 460" role="img" aria-label="Nyaki architecture">
   <defs>
     <style>
-      .c-bg    { fill: #F3F0E9; }
+      .c-bg    { fill: #FFFFFF; }
       .c-card  { fill: #FDFCF8; stroke: #E3DBCC; stroke-width: 1.5; }
       .c-ink   { fill: #101010; }
       .t       { font-family: system-ui, -apple-system, "Hiragino Sans", "Apple SD Gothic Neo", "Noto Sans JP", sans-serif; fill: #101010; }

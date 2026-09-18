@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="460" viewBox="0 0 900 460" role="img" aria-label="Nyaki architecture">
+  <defs>
+    <style>
+      .c-bg    { fill: #F3F0E9; }
+      .c-card  { fill: #FDFCF8; stroke: #E3DBCC; stroke-width: 1.5; }
+      .c-ink   { fill: #101010; }
+      .t       { font-family: system-ui, -apple-system, "Hiragino Sans", "Apple SD Gothic Neo", "Noto Sans JP", sans-serif; fill: #101010; }
+      .t-title { font-size: 17px; font-weight: 600; }
+      .t-sub   { font-size: 12.5px; fill: #101010; opacity: .55; }
+      .t-onink       { fill: #FDFCF8; }
+      .t-onink-sub   { fill: #FDFCF8; opacity: .6; }
+      .t-label { font-size: 12.5px; opacity: .72; }
+      .t-mono  { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; opacity: .72; }
+      .t-group { font-size: 11.5px; letter-spacing: .08em; opacity: .42; }
+      .edge    { fill: none; stroke: #101010; stroke-width: 1.4; }
+      .edge-d  { fill: none; stroke: #101010; stroke-width: 1.2; stroke-dasharray: 3 4; opacity: .45; }
+      .group   { fill: none; stroke: #E3DBCC; stroke-width: 1.5; stroke-dasharray: 5 5; }
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#101010"/>
+    </marker>
+    <marker id="ad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#101010" opacity=".45"/>
+    </marker>
+  </defs>
+
+  <rect class="c-bg" width="900" height="460" rx="14"/>
+
+  <!-- クライアント group -->
+  <rect class="group" x="32" y="52" width="288" height="268" rx="14"/>
+  <text class="t t-group" x="50" y="76">CLIENTS</text>
+
+  <rect class="c-card" x="56" y="90" width="240" height="80" rx="12"/>
+  <text class="t t-title" x="176" y="122" text-anchor="middle">Flutter アプリ</text>
+  <text class="t t-sub"   x="176" y="145" text-anchor="middle">Drift · オフラインファースト</text>
+
+  <rect class="c-card" x="56" y="210" width="240" height="80" rx="12"/>
+  <text class="t t-title" x="176" y="242" text-anchor="middle">Next.js ウェブ</text>
+  <text class="t t-sub"   x="176" y="265" text-anchor="middle">サーバーが原本</text>
+
+  <!-- Sync Hub -->
+  <rect class="c-ink" x="420" y="140" width="200" height="88" rx="12"/>
+  <text class="t t-title t-onink"   x="520" y="177" text-anchor="middle">Sync Hub</text>
+  <text class="t t-sub t-onink-sub" x="520" y="200" text-anchor="middle">FastAPI</text>
+
+  <!-- Postgres -->
+  <g>
+    <path class="c-card" d="M722,164 v40 a38,13 0 0 0 76,0 v-40 z"/>
+    <ellipse class="c-card" cx="760" cy="164" rx="38" ry="13"/>
+    <text class="t t-sub" x="760" y="196" text-anchor="middle" style="font-size:13px;opacity:.85">Postgres</text>
+  </g>
+
+  <!-- Firebase -->
+  <rect class="c-card" x="410" y="356" width="220" height="80" rx="12"/>
+  <text class="t t-title" x="520" y="388" text-anchor="middle">Firebase Auth</text>
+  <text class="t t-sub"   x="520" y="411" text-anchor="middle">認証のみ</text>
+
+  <!-- edges -->
+  <path class="edge" d="M296,130 H368 V166 H412" marker-end="url(#a)"/>
+  <text class="t t-mono" x="378" y="104">POST /v1/sync/push</text>
+  <text class="t t-mono" x="378" y="122">GET  /v1/sync/pull</text>
+
+  <path class="edge" d="M296,250 H368 V206 H412" marker-end="url(#a)"/>
+  <text class="t t-mono" x="378" y="258">REST /v1</text>
+
+  <path class="edge" d="M620,184 H714" marker-end="url(#a)"/>
+
+  <path class="edge-d" d="M176,320 V396 H402" marker-end="url(#ad)"/>
+  <text class="t t-label" x="196" y="386">ID token</text>
+
+  <path class="edge-d" d="M520,228 V350" marker-end="url(#ad)"/>
+  <text class="t t-label" x="532" y="296">トークン検証</text>
+</svg>

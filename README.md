@@ -70,21 +70,10 @@
 
 ## アーキテクチャ
 
-```mermaid
-flowchart LR
-  App["Flutter アプリ<br/>Drift · オフラインファースト"]
-  Web["Next.js ウェブ<br/>サーバーが原本"]
-  Hub["Sync Hub<br/>FastAPI"]
-  DB[("Postgres")]
-  FB["Firebase Auth<br/>認証のみ"]
+<img src="docs/diagrams/architecture.ja.svg" alt="アーキテクチャ" width="100%" />
 
-  App -- "POST /v1/sync/push<br/>GET /v1/sync/pull" --> Hub
-  Web -- "REST /v1" --> Hub
-  Hub --> DB
-  App -. "ID token" .-> FB
-  Web -. "ID token" .-> FB
-  Hub -. "トークン検証" .-> FB
-```
+<sub>アプリはローカル DB に書いてから差分を push / pull し、ウェブはサーバーを原本として直接 CRUD する。
+Firebase は認証だけを担い、データはすべて自前の Hub に置く。</sub>
 
 ---
 

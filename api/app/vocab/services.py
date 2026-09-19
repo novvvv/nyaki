@@ -38,7 +38,9 @@ def upsert_word_book(
         entity = WordBookModel(user_id=user_id, **payload.model_dump())
         session.add(entity)
     else:
-        for field, value in payload.model_dump().items():
+        # 보낸 필드만 덮어쓴다. model_dump()는 안 보낸 필드까지 기본값으로 뱉어서,
+        # 일부 필드만 아는 클라이언트가 나머지를 지워버린다 (ARCHITECTURE.md §4.6).
+        for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(entity, field, value)
 
     session.flush()
@@ -56,7 +58,10 @@ def upsert_word(
         entity = WordModel(user_id=user_id, **payload.model_dump())
         session.add(entity)
     else:
-        for field, value in payload.model_dump().items():
+        # 보낸 필드만 덮어쓴다 (ARCHITECTURE.md §4.6).
+        # 웹은 단어를 저장할 때 srs_*를 보내지 않는다 — 전체 덮어쓰기였을 때는
+        # 뜻 한 글자만 고쳐도 그 단어의 복습 기록이 통째로 초기화됐다.
+        for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(entity, field, value)
 
     session.flush()

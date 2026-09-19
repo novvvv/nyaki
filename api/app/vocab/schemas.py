@@ -41,6 +41,11 @@ class WordPayload(BaseModel):
         # 구버전 클라이언트가 srs_due_at 없이 보내면 즉시 due로 취급 (SRS-PLAN.md 마이그레이션 규칙과 동일)
         if self.srs_due_at is None:
             self.srs_due_at = self.created_at
+            # 여기서 채운 값은 "클라이언트가 보낸 값"이 아니다. 대입만으로 set 취급되면
+            # upsert의 exclude_unset이 이 값을 덮어써서, 단어를 수정할 때마다
+            # 다음 복습일이 오늘로 당겨진다. 새로 만들 때는 model_dump() 전체를 쓰므로
+            # 이 기본값이 그대로 들어간다.
+            self.__pydantic_fields_set__.discard("srs_due_at")
         return self
 
 

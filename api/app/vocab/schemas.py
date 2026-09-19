@@ -82,3 +82,26 @@ class SyncPullResponse(BaseModel):
 
 class ReviewDueResponse(BaseModel):
     words: list[WordResponse]
+
+
+class ReviewGradeItem(BaseModel):
+    # 클라이언트가 만든 고유 id. 재전송을 걸러내는 열쇠라 필수다.
+    id: str = Field(min_length=1, max_length=80)
+    word_id: str = Field(min_length=1, max_length=80)
+    grade: Literal["again", "good"]
+    # 채점했다고 클라이언트가 주장하는 시각. 기록만 하고 계산에는 쓰지 않는다 —
+    # 기기 시계를 미래로 돌려 복습 간격을 늘리는 걸 막기 위해 서버 수신 시각을 쓴다.
+    reviewed_at: datetime
+
+
+class ReviewGradesRequest(BaseModel):
+    # sync/push와 같은 상한. 한 세션이 이보다 길 일은 없다.
+    grades: list[ReviewGradeItem] = Field(max_length=100)
+
+
+class ReviewGradesResponse(BaseModel):
+    applied: int
+    # 이미 처리한 id라서 건너뛴 개수. 재전송이 정상 동작했다는 신호다.
+    skipped: int
+    # 단어를 못 찾아 버린 개수 (삭제됐거나 남의 단어).
+    missing: int

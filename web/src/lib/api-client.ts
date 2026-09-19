@@ -205,3 +205,71 @@ export async function completeQuest(
     method: "POST",
   });
 }
+
+// ==================== 복습 ====================
+
+export type ReviewGrade = "again" | "good";
+
+export interface ReviewGradeItem {
+  /** 클라이언트가 만든 고유 id. 재전송해도 서버가 한 번만 반영하게 하는 열쇠다. */
+  id: string;
+  wordId: string;
+  grade: ReviewGrade;
+  reviewedAt: string;
+}
+
+export async function fetchDueWords(
+  token: string,
+  limit: number,
+): Promise<Word[]> {
+  const body = await request<{ words: ApiWord[] }>(
+    `/v1/review/due?limit=${limit}`,
+    token,
+  );
+  return body.words.map(toWord);
+}
+
+function gradesBody(grades: ReviewGradeItem[]) {
+  return JSON.stringify({
+    grades: grades.map((g) => ({
+      id: g.id,
+      word_id: g.wordId,
+      grade: g.grade,
+      reviewed_at: g.reviewedAt,
+    })),
+  });
+}
+
+export async function pushGrades(
+  token: string,
+  grades: ReviewGradeItem[],
+): Promise<{ applied: number; skipped: number; missing: number }> {
+  return request("/v1/review/grades", token, {
+    method: "POST",
+    body: gradesBody(grades),
+  });
+}
+
+/**
+ * 탭이 닫히는 중에도 채점 결과를 보낸다.
+ *
+ * `navigator.sendBeacon`은 커스텀 헤더를 못 붙여서 Authorization 토큰을 실을 수
+ * 없다. `keepalive`는 헤더를 붙일 수 있고 페이지가 사라진 뒤에도 전송이 이어진다.
+ * 본문 64KB 제한이 있는데 채점 100개는 10KB도 안 된다.
+ *
+ * 응답을 기다리지 않는다 — 중복은 서버가 id로 걸러내므로 나중에 다시 보내도 안전하다.
+ */
+export function pushGradesBeacon(
+  token: string,
+  grades: ReviewGradeItem[],
+): void {
+  void fetch(`${apiBaseUrl}/v1/review/grades`, {
+    method: "POST",
+    keepalive: true,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: gradesBody(grades),
+  }).catch(() => {});
+}

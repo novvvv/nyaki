@@ -86,3 +86,38 @@ class WordModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
+# ==================== ✨ Review Log Model Entity ✨ ==================== #
+
+class ReviewLogModel(Base):
+    """채점 한 번의 기록. Anki의 revlog에 해당한다.
+
+    두 가지 일을 한다.
+
+    1. **중복 방지.** id를 클라이언트가 만들어 보내고 그걸 PK로 쓴다. 네트워크가
+       끊겨 같은 채점을 다시 보내도 INSERT가 여기서 막힌다. 애플리케이션 로직이
+       아니라 DB가 막는다는 게 중요하다 — good이 두 번 반영되면 repetitions가
+       2 올라가고 복습 간격이 실제보다 훨씬 길어진다.
+    2. **통계 원본.** 오늘 복습한 개수, 학습 단계별 분포 같은 건 단어의 현재 상태만
+       봐서는 못 만든다. 언제 무엇을 어떻게 채점했는지가 남아야 한다.
+    """
+
+    __tablename__ = "review_logs"
+    __table_args__ = (
+        Index("ix_review_logs_user_created", "user_id", "created_at"),
+        Index("ix_review_logs_user_word", "user_id", "word_id"),
+    )
+
+    # 클라이언트가 만든 id. 중복 전송이 PK 충돌로 막히는 지점이다.
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    word_id: Mapped[str] = mapped_column(String(80))
+
+    grade: Mapped[str] = mapped_column(String(16))
+
+    # reviewed_at : 클라이언트가 채점했다고 주장하는 시각. 기록용이다.
+    # created_at  : 서버가 받은 시각. **SM-2 계산은 이쪽을 쓴다** — 기기 시계를
+    #               미래로 돌려 복습 간격을 늘리는 걸 막기 위해서다.
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

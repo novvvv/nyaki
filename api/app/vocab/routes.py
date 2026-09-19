@@ -9,6 +9,8 @@ from ..core.database import get_session
 from ..models import SyncChangeModel, WordBookModel, WordModel
 from .schemas import (
     ReviewDueResponse,
+    ReviewGradesRequest,
+    ReviewGradesResponse,
     SyncChange,
     SyncMutation,
     SyncPullResponse,
@@ -20,6 +22,7 @@ from .schemas import (
     WordResponse,
 )
 from .services import (
+    apply_review_grades,
     delete_word,
     delete_word_book,
     list_due_words,
@@ -143,6 +146,21 @@ def get_review_due(
 ) -> ReviewDueResponse:
     words = list_due_words(session, user_id, limit)
     return ReviewDueResponse(words=[WordResponse.model_validate(w) for w in words])
+
+
+@router.post("/review/grades", response_model=ReviewGradesResponse)
+def post_review_grades(
+    payload: ReviewGradesRequest,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> ReviewGradesResponse:
+    """세션 하나의 채점 결과를 한 번에 받는다.
+
+    재전송해도 안전하다 — 이미 본 id는 skipped로 세고 넘어간다.
+    """
+    applied, skipped, missing = apply_review_grades(session, user_id, payload.grades)
+    session.commit()
+    return ReviewGradesResponse(applied=applied, skipped=skipped, missing=missing)
 
 
 def _apply_mutation(session: Session, user_id: str, mutation: SyncMutation) -> int | None:

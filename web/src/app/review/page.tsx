@@ -414,7 +414,7 @@ export default function ReviewPage() {
           shuffle && "border-ink bg-ink text-cream hover:text-cream",
         )}
       >
-        랜덤 섞기
+        {shuffle ? "랜덤 섞기 ON" : "랜덤 섞기"}
       </SubtleButton>
 
       {error ? <p className="mt-8 text-sm text-red-700">{error}</p> : null}

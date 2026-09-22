@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final catSize = (width * 0.68).clamp(220.0, 260.0);
+    final catSize = (width * 0.58).clamp(186.0, 220.0);
     final isLoggedIn = AuthScope.of(context).status == AuthStatus.signedIn;
     final churuBalance = ProgressScope.of(context).snapshot.churuBalance;
 

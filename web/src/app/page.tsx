@@ -11,7 +11,7 @@ export default function HomePage() {
         alt="Nyaki 고양이"
         width={500}
         height={500}
-        className="block h-auto w-[min(260px,68vw)]"
+        className="block h-auto w-[min(220px,58vw)]"
       />
 
       {/* <PricingSection /> 플랜 섹션 일단 주석처리 */}

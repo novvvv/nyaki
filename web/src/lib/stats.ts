@@ -1,5 +1,5 @@
 import { activeWords, bookMeta } from "./vocab-store";
-import type { WordBook } from "./types";
+import type { Word, WordBook } from "./types";
 
 export interface OverviewSummary {
   totalBooks: number;
@@ -117,4 +117,63 @@ export function computeBookComparison(
       };
     })
     .sort((a, b) => b.wordCount - a.wordCount);
+}
+
+/**
+ * 단어장 암기율 — 앱 '정보' 탭과 같은 계산이다.
+ * 구현 원본: lib/screens/word_book/word_book_detail_screen.dart `_WordBookInfoView`
+ *
+ * 단어 1개 점수 = log(1 + 간격일) / log(1 + 30) × 100.
+ * SM-2 간격이 1 → 3 → 8 → 20 → 50일로 지수적으로 늘어나므로 로그로 환산해야
+ * 단계가 20 / 40 / 64 / 89 / 100으로 고르게 벌어진다. 선형이면 첫 성공이 3점이다.
+ *
+ * 단어장 암기율 = 그 점수들의 평균. 이름이 "단어장"이므로 분모는 단어 전체,
+ * 즉 아직 학습 안 한 단어도 0점으로 포함된다.
+ *
+ * **앱 코드를 고치면 여기도 같이 고쳐야 한다** — 같은 단어장이 기기마다
+ * 다른 암기율로 보이면 사용자가 바로 알아챈다.
+ */
+
+/** 이 간격(일)에 도달하면 만점. */
+const MASTERY_DAYS = 30;
+
+/** 단어 1개의 점수(0~100). */
+export function wordScore(word: Word): number {
+  const days = word.srsIntervalDays ?? 0;
+  if (days <= 0) return 0;
+  const ratio = Math.log(1 + days) / Math.log(1 + MASTERY_DAYS);
+  return Math.round(Math.min(ratio, 1) * 100);
+}
+
+/** 단어장 암기율(0~100). 단어가 없으면 0. */
+export function computeMasteryRate(book: WordBook): number {
+  const words = activeWords(book);
+  if (words.length === 0) return 0;
+  const total = words.reduce((sum, word) => sum + wordScore(word), 0);
+  return Math.round(total / words.length);
+}
+
+export interface MasteryRow {
+  id: string;
+  title: string;
+  /** 0~100 */
+  rate: number;
+  wordCount: number;
+}
+
+/**
+ * 단어장별 암기율, 높은 순.
+ *
+ * 단어가 0개인 단어장은 뺀다 — 분모가 0이라 0%로 그리면 "다 잊었다"처럼 보인다.
+ */
+export function computeMasteryByBook(wordBooks: WordBook[]): MasteryRow[] {
+  return wordBooks
+    .map((book) => ({
+      id: book.id,
+      title: book.title,
+      rate: computeMasteryRate(book),
+      wordCount: activeWords(book).length,
+    }))
+    .filter((row) => row.wordCount > 0)
+    .sort((a, b) => b.rate - a.rate);
 }

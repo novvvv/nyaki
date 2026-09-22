@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 
+import { MasteryByBook } from "@/components/charts/mastery-by-book";
 import { WordAddedTrend } from "@/components/charts/word-added-trend";
 import { Card, PageHeader } from "@/components/ui";
 import {
   computeDailyWordCounts,
+  computeMasteryByBook,
   computeOverviewSummary,
   type RangePreset,
 } from "@/lib/stats";
@@ -23,6 +25,7 @@ export default function OverviewPage() {
   const [range, setRange] = useState<RangePreset>(30);
 
   const summary = useMemo(() => computeOverviewSummary(wordBooks), [wordBooks]);
+  const mastery = useMemo(() => computeMasteryByBook(wordBooks), [wordBooks]);
   const dailyCounts = useMemo(
     () => computeDailyWordCounts(wordBooks, range),
     [wordBooks, range],
@@ -66,6 +69,10 @@ export default function OverviewPage() {
               ))}
             </div>
             <WordAddedTrend data={dailyCounts} />
+          </Card>
+
+          <Card className="px-5 py-5">
+            <MasteryByBook data={mastery} />
           </Card>
         </div>
       )}

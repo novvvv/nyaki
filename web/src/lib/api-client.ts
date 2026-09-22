@@ -24,6 +24,7 @@ type ApiWord = {
   memorization_status: "unmemorized" | "memorized";
   is_bookmarked: boolean;
   tags: string[];
+  srs_interval_days: number;
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
@@ -51,6 +52,7 @@ function toWord(value: ApiWord): Word {
     example: value.example ?? undefined,
     exampleMeaning: value.example_meaning ?? undefined,
     memorizationStatus: value.memorization_status,
+    srsIntervalDays: value.srs_interval_days ?? 0,
     isBookmarked: value.is_bookmarked ?? false,
     tags: value.tags ?? [],
     createdAt: value.created_at,

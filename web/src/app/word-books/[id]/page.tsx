@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { EmptyState, GhostButton, PageHeader, PrimaryLink } from "@/components/ui";
 import { WORD_PAGE_SIZE as PAGE_SIZE } from "@/lib/constants";
+import { computeMasteryRate } from "@/lib/stats";
 import { activeWords, useVocab } from "@/lib/vocab-store";
 
 type WordFilter = "all" | "bookmarked";
@@ -54,6 +55,8 @@ export default function WordBookDetailPage() {
 
   const words = activeWords(book);
   const bookmarkedWords = words.filter((word) => word.isBookmarked);
+  // 앱 '정보' 탭과 같은 계산 — 단어별 점수(SM-2 간격 기반)의 평균이다.
+  const masteryRate = computeMasteryRate(book);
   const visibleWords = filter === "bookmarked" ? bookmarkedWords : words;
   const totalPages = Math.max(1, Math.ceil(visibleWords.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -115,6 +118,18 @@ export default function WordBookDetailPage() {
         />
       ) : (
         <>
+          <div className="mb-9">
+            <p className="text-xs font-semibold tracking-wide text-ink/35">
+              단어장 암기율
+            </p>
+            <p className="mt-1 flex items-baseline gap-0.5">
+              <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">
+                {masteryRate}
+              </span>
+              <span className="text-base font-semibold text-ink/40">%</span>
+            </p>
+          </div>
+
           <div className="mb-4 flex items-center gap-1">
             {(
               [

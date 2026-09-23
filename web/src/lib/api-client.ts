@@ -222,15 +222,34 @@ export interface ReviewGradeItem {
   reviewedAt: string;
 }
 
+export interface GradePreview {
+  againSeconds: number;
+  goodSeconds: number;
+}
+
+export interface DueWords {
+  words: Word[];
+  /** 단어 id → 버튼에 띄울 다음 간격. 서버가 SM-2로 계산한 값이다. */
+  previews: Record<string, GradePreview>;
+}
+
 export async function fetchDueWords(
   token: string,
   limit: number,
-): Promise<Word[]> {
-  const body = await request<{ words: ApiWord[] }>(
-    `/v1/review/due?limit=${limit}`,
-    token,
-  );
-  return body.words.map(toWord);
+): Promise<DueWords> {
+  const body = await request<{
+    words: ApiWord[];
+    previews: Record<string, { again_seconds: number; good_seconds: number }>;
+  }>(`/v1/review/due?limit=${limit}`, token);
+
+  const previews: Record<string, GradePreview> = {};
+  for (const [id, value] of Object.entries(body.previews ?? {})) {
+    previews[id] = {
+      againSeconds: value.again_seconds,
+      goodSeconds: value.good_seconds,
+    };
+  }
+  return { words: body.words.map(toWord), previews };
 }
 
 export interface DueCounts {

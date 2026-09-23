@@ -12,6 +12,7 @@ import {
   pushGrades,
   pushGradesBeacon,
   type DueCounts,
+  type GradePreview,
   type Progress,
   type ReviewGrade,
   type ReviewGradeItem,
@@ -26,6 +27,17 @@ const SCREEN = "min-h-[calc(100vh-8.5rem)]";
 // 서버 /v1/review/due의 상한과 같다. 실제 출제량은 하루 한도(마이페이지)와
 // 오늘 due인 단어 수가 정한다 — 이 값은 그 위에 얹힌 안전장치일 뿐이다.
 const MAX_COUNT = 9999;
+
+/** 초 → 사람이 읽는 간격. 버튼 위에 띄운다. */
+function formatDelay(seconds: number): string {
+  if (seconds <= 30) return "즉시";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}분`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}시간`;
+  return `${Math.round(seconds / 86400)}일`;
+}
+
 
 /** Fisher-Yates. 원본은 건드리지 않는다. */
 function shuffled<T>(items: T[]): T[] {
@@ -58,8 +70,11 @@ export default function ReviewPage() {
   // 복습 흐름 설정. 세션 안에서 카드를 다시 보여줄지 정하는 데만 쓴다 —
   // 실제 다음 복습 시각은 서버가 계산한다.
   const [flow, setFlow] = useState<Progress>();
-  // 이 세션 동안 각 단어가 몇 번째 단계인지. 화면을 다시 그릴 값이 아니라 ref.
-  const sessionStep = useRef<Record<string, number>>({});
+  // 단어 id → 버튼에 띄울 다음 간격. 서버가 계산해 내려준 값이다.
+  const [previews, setPreviews] = useState<Record<string, GradePreview>>({});
+  // 이 세션 동안 각 단어가 몇 번째 단계인지. 버튼의 예상 간격이 이 값을 읽으므로
+  // ref가 아니라 상태로 둔다 — 렌더 중에 ref를 읽으면 갱신이 반영되지 않는다.
+  const [sessionSteps, setSessionSteps] = useState<Record<string, number>>({});
   // 선택한 단어장. undefined면 "아직 안 정함" = 전체를 뜻한다.
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>();
 
@@ -133,10 +148,10 @@ export default function ReviewPage() {
 
       let requeued = false;
       if (steps.length > 0) {
-        const current = sessionStep.current[word.id] ?? word.srsLearningStep ?? 0;
+        const current = sessionSteps[word.id] ?? word.srsLearningStep ?? 0;
         const nextStep = value === "again" ? 0 : current + 1;
         if (nextStep < steps.length) {
-          sessionStep.current[word.id] = nextStep;
+          setSessionSteps((prev) => ({ ...prev, [word.id]: nextStep }));
           requeued = true;
         }
       }
@@ -151,7 +166,7 @@ export default function ReviewPage() {
         setIndex(next);
       }
     },
-    [flow, flush, index, queue],
+    [flow, flush, index, queue, sessionSteps],
   );
 
   useEffect(() => {
@@ -201,13 +216,15 @@ export default function ReviewPage() {
       try {
         const token = await getToken();
         if (!token) throw new Error("로그인이 필요합니다.");
-        const [words, dueCounts, progress] = await Promise.all([
+        const [due, dueCounts, progress] = await Promise.all([
           fetchDueWords(token, MAX_COUNT),
           fetchDueCounts(token),
           fetchProgress(token),
         ]);
         if (cancelled) return;
 
+        const words = due.words;
+        setPreviews(due.previews);
         setDue(words);
         setCounts(dueCounts);
         setFlow(progress);
@@ -232,6 +249,39 @@ export default function ReviewPage() {
     };
   }, [phase, getToken]);
 
+  /**
+   * 버튼에 띄울 다음 간격.
+   *
+   * 서버가 세션 시작 때 계산해준 값을 쓴다. 다만 학습 단계 때문에 이 세션에서
+   * 이미 채점한 카드는 그 값이 낡았으므로, 단계 목록으로 다시 만든다 —
+   * 분 단위 단계는 SM-2 계산이 필요 없다.
+   */
+  function delaysFor(word: Word): { again: string; good: string } {
+    const step = sessionSteps[word.id];
+    const steps =
+      (word.srsIntervalDays ?? 0) > 0
+        ? (flow?.relearningSteps ?? [])
+        : (flow?.learningSteps ?? []);
+
+    if (step !== undefined && steps.length > 0) {
+      const next = step + 1;
+      return {
+        again: `${steps[0]}분`,
+        good:
+          next < steps.length
+            ? `${steps[next]}분`
+            : `${flow?.graduatingIntervalDays ?? 1}일`,
+      };
+    }
+
+    const preview = previews[word.id];
+    if (!preview) return { again: "", good: "" };
+    return {
+      again: formatDelay(preview.againSeconds),
+      good: formatDelay(preview.goodSeconds),
+    };
+  }
+
   function toggleBook(bookId: string) {
     setSelectedBookIds((prev) => {
       const base = prev ?? wordBooks.map((book) => book.id);
@@ -248,7 +298,7 @@ export default function ReviewPage() {
 
     pending.current = [];
     sent.current = false;
-    sessionStep.current = {};
+    setSessionSteps({});
     // 무엇을 낼지는 항상 오래 밀린 순으로 고른다 — 섞는 것은 그 안의 순서뿐이다.
     const chosen = picked.slice(0, size);
     setQueue(shuffle ? shuffled(chosen) : chosen);
@@ -262,6 +312,8 @@ export default function ReviewPage() {
     setPhase("done");
     void flush();
   }
+
+  const delays = current ? delaysFor(current) : { again: "", good: "" };
 
   if (phase === "session" && current) {
     return (
@@ -322,6 +374,12 @@ export default function ReviewPage() {
             <p className="text-xs text-ink/25">눌러서 뜻 보기</p>
           )}
         </button>
+
+        {/* 안키가 버튼 위에 <1m / <10m를 띄우는 것과 같다. 계산은 서버가 한다. */}
+        <div className="mb-1.5 grid grid-cols-2 gap-2.5 text-center text-[11px] tabular-nums text-ink/35">
+          <span>{delays.again}</span>
+          <span>{delays.good}</span>
+        </div>
 
         <div className="grid grid-cols-2 gap-2.5">
           <button

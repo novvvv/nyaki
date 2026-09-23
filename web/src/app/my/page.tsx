@@ -11,6 +11,57 @@ import {
 } from "@/lib/api-client";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
 
+/** 칸 목록 → 서버가 받는 문자열. 빈 칸은 빠진다. */
+function stepsToText(steps: string[]): string {
+  return steps
+    .map((step) => step.trim())
+    .filter((step) => step.length > 0 && Number.parseInt(step, 10) > 0)
+    .join(",");
+}
+
+/**
+ * 단계 칸들. 개수가 가변이라 한 칸에 몰아 적는 대신 칸을 나눈다 —
+ * "1 10"을 한 칸에 적으면 110처럼 읽힌다.
+ *
+ * 칸을 비우고 저장하면 그 단계가 빠지고, 전부 비우면 단계를 끈다.
+ */
+function StepFields({
+  label,
+  values,
+  onChange,
+}: {
+  label: string;
+  values: string[];
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {values.map((value, index) => (
+        <TextInput
+          key={index}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={9999}
+          value={value}
+          onChange={(e) =>
+            onChange(values.map((v, i) => (i === index ? e.target.value : v)))
+          }
+          aria-label={`${label} ${index + 1}번째 단계(분)`}
+          className="w-16 px-2 text-right tabular-nums"
+        />
+      ))}
+      <SubtleButton
+        className="px-2.5 py-1.5 text-xs"
+        onClick={() => onChange([...values, ""])}
+        aria-label={`${label} 추가`}
+      >
+        +
+      </SubtleButton>
+    </div>
+  );
+}
+
 /**
  * 하루 한도 — 안키의 "새 카드/일", "최대 복습량/일"에 해당한다.
  *
@@ -23,8 +74,9 @@ function DailyLimits() {
   const [progress, setProgress] = useState<Progress>();
   const [newText, setNewText] = useState("");
   const [reviewText, setReviewText] = useState("");
-  const [learningText, setLearningText] = useState("");
-  const [relearningText, setRelearningText] = useState("");
+  // 단계는 개수가 가변이라 칸을 배열로 들고 있는다. 저장할 때만 문자열로 합친다.
+  const [learningSteps, setLearningSteps] = useState<string[]>([]);
+  const [relearningSteps, setRelearningSteps] = useState<string[]>([]);
   const [graduatingText, setGraduatingText] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -54,9 +106,8 @@ function DailyLimits() {
   function apply(value: Progress) {
     setNewText(String(value.dailyNewLimit));
     setReviewText(String(value.dailyReviewLimit));
-    // 공백만으로 구분하면 "1 10"이 "110"처럼 읽힌다. 쉼표로 보여준다.
-    setLearningText(value.learningSteps.join(", "));
-    setRelearningText(value.relearningSteps.join(", "));
+    setLearningSteps(value.learningSteps.map(String));
+    setRelearningSteps(value.relearningSteps.map(String));
     setGraduatingText(String(value.graduatingIntervalDays));
   }
 
@@ -64,8 +115,8 @@ function DailyLimits() {
     progress !== undefined &&
     (newText !== String(progress.dailyNewLimit) ||
       reviewText !== String(progress.dailyReviewLimit) ||
-      learningText !== progress.learningSteps.join(", ") ||
-      relearningText !== progress.relearningSteps.join(", ") ||
+      stepsToText(learningSteps) !== progress.learningSteps.join(",") ||
+      stepsToText(relearningSteps) !== progress.relearningSteps.join(",") ||
       graduatingText !== String(progress.graduatingIntervalDays));
 
   async function save() {
@@ -84,8 +135,8 @@ function DailyLimits() {
       const saved = await updateSettings(token, {
         dailyNewLimit: clamp(newText, progress.dailyNewLimit),
         dailyReviewLimit: clamp(reviewText, progress.dailyReviewLimit),
-        learningSteps: learningText,
-        relearningSteps: relearningText,
+        learningSteps: stepsToText(learningSteps),
+        relearningSteps: stepsToText(relearningSteps),
         graduatingIntervalDays: Math.max(
           1,
           clamp(graduatingText, progress.graduatingIntervalDays),
@@ -148,28 +199,24 @@ function DailyLimits() {
       </p>
       <div className="divide-y divide-taupe/25">
         <Row
-          label="학습 단계"
-          value="새 단어를 이 간격으로 다시 보여줍니다. 분 단위로 쉼표 구분 — 1, 10이면 1분 뒤와 10분 뒤. 비워서 저장하면 바로 다음 날로"
+          label="학습 단계 (분)"
+          value="새 단어를 이 간격으로 다시 보여줍니다. 1 · 10이면 1분 뒤와 10분 뒤"
           action={
-            <TextInput
-              value={learningText}
-              onChange={(e) => setLearningText(e.target.value)}
-              placeholder="1, 10"
-              aria-label="학습 단계(분)"
-              className="w-28 text-right"
+            <StepFields
+              label="학습 단계"
+              values={learningSteps}
+              onChange={setLearningSteps}
             />
           }
         />
         <Row
-          label="재학습 단계"
-          value="외웠던 단어를 틀렸을 때의 간격(분). 비워서 저장하면 즉시 다시"
+          label="재학습 단계 (분)"
+          value="외웠던 단어를 틀렸을 때의 간격. 칸을 비우고 저장하면 그 단계가 빠집니다"
           action={
-            <TextInput
-              value={relearningText}
-              onChange={(e) => setRelearningText(e.target.value)}
-              placeholder="10"
-              aria-label="재학습 단계(분)"
-              className="w-28 text-right"
+            <StepFields
+              label="재학습 단계"
+              values={relearningSteps}
+              onChange={setRelearningSteps}
             />
           }
         />

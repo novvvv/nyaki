@@ -174,7 +174,7 @@ describe("복습 세션", () => {
     expect(screen.getByText("cat")).toBeInTheDocument();
   });
 
-  it("빈칸 카드는 서버가 가린 문장을 그대로 보여준다", async () => {
+  it("빈칸 카드는 그 자리에서 답으로 바뀐다", async () => {
     fetchDueWords.mockResolvedValue({
       cards: [
         {
@@ -183,8 +183,11 @@ describe("복습 세션", () => {
           sourceType: "cloze" as const,
           cloze: {
             noteId: "n1",
-            front: "TCP는 [ … ] 프로토콜이다",
-            back: "TCP는 연결 지향 프로토콜이다",
+            segments: [
+              { text: "TCP는 ", blank: false },
+              { text: "연결 지향", blank: true },
+              { text: " 프로토콜이다", blank: false },
+            ],
           },
           preview: { againSeconds: 60, goodSeconds: 600 },
         },
@@ -194,11 +197,16 @@ describe("복습 세션", () => {
     const user = userEvent.setup();
     await startSession(user);
 
-    expect(screen.getByText("TCP는 [ … ] 프로토콜이다")).toBeInTheDocument();
+    // 뒤집기 전에는 답이 없다.
+    expect(screen.getByText("TCP는")).toBeInTheDocument();
+    expect(screen.queryByText("연결 지향")).not.toBeInTheDocument();
     expect(screen.getByText("빈칸")).toBeInTheDocument();
 
-    await user.click(screen.getByText("TCP는 [ … ] 프로토콜이다"));
-    expect(screen.getByText("TCP는 연결 지향 프로토콜이다")).toBeInTheDocument();
+    await user.click(screen.getByText("TCP는"));
+
+    // 답이 문장 안에 들어간다 — 아래에 문장을 또 쓰지 않는다.
+    expect(screen.getByText("연결 지향")).toBeInTheDocument();
+    expect(screen.getAllByText("TCP는")).toHaveLength(1);
   });
 
   it("복습할 단어가 없으면 시작 자체가 막힌다", async () => {

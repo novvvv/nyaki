@@ -10,6 +10,7 @@ import {
   fetchDueWords,
   pushGrades,
   pushGradesBeacon,
+  type ClozeSegment,
   type DueCard,
   type DueCounts,
   type ReviewGrade,
@@ -28,24 +29,52 @@ const SCREEN = "min-h-[calc(100vh-8.5rem)]";
 const MAX_COUNT = 9999;
 
 /**
- * 카드 앞면 — 무엇을 보고 떠올릴지는 종류가 정한다.
- *
- * 빈칸 카드는 서버가 이미 가려서 내려준다. 웹이 `{{cN::}}`을 다시 파싱하면
- * 앱과 렌더가 갈린다.
+ * 단어 카드의 앞면. 무엇을 보고 떠올릴지는 종류가 정한다.
+ * 빈칸 카드는 문장 자체를 그려야 해서 ClozeText가 따로 맡는다.
  */
 function front(card: DueCard): string {
-  if (card.cloze) return card.cloze.front;
   const word = card.word;
   if (!word) return "";
   return card.kind === "recall" ? word.meaning : word.term;
 }
 
-/** 카드 뒷면 — 앞면이 물은 것의 답. */
+/** 단어 카드의 뒷면 — 앞면이 물은 것의 답. */
 function back(card: DueCard): string {
-  if (card.cloze) return card.cloze.back;
   const word = card.word;
   if (!word) return "";
   return card.kind === "recall" ? word.term : word.meaning;
+}
+
+/**
+ * 빈칸 문장. 뒤집기 전에는 묻는 자리를 가리고, 뒤집으면 **그 자리에** 답을 넣는다.
+ * 문장을 두 벌 늘어놓지 않는 이유는 그게 사용자가 보려는 것이기 때문이다.
+ */
+function ClozeText({
+  segments,
+  revealed,
+}: {
+  segments: ClozeSegment[];
+  revealed: boolean;
+}) {
+  return (
+    <span>
+      {segments.map((segment, index) =>
+        segment.blank ? (
+          <span
+            key={index}
+            className={cn(
+              "underline decoration-taupe underline-offset-[6px]",
+              revealed ? "font-semibold text-ink" : "text-ink/25",
+            )}
+          >
+            {revealed ? segment.text : segment.hint ? ` ${segment.hint} ` : "　　　"}
+          </span>
+        ) : (
+          <span key={index}>{segment.text}</span>
+        ),
+      )}
+    </span>
+  );
 }
 
 /** 진행 줄에 붙는 종류 표시. 기본 카드에는 붙이지 않는다. */
@@ -326,15 +355,17 @@ export default function ReviewPage() {
             className={cn(
               "font-semibold tracking-tight text-ink",
               // 빈칸은 문장 한 덩이라 단어와 같은 크기로 두면 넘친다.
-              current.sourceType === "cloze"
-                ? "text-2xl leading-relaxed"
-                : "text-4xl",
+              current.cloze ? "text-2xl leading-relaxed" : "text-4xl",
             )}
           >
-            {front(current)}
+            {current.cloze ? (
+              <ClozeText segments={current.cloze.segments} revealed={flipped} />
+            ) : (
+              front(current)
+            )}
           </p>
 
-          {flipped ? (
+          {flipped && !current.cloze ? (
             <div className="space-y-3">
               {current.word?.pronunciation ? (
                 <p className="text-base text-ink/45">
@@ -353,9 +384,9 @@ export default function ReviewPage() {
                 </p>
               ) : null}
             </div>
-          ) : (
+          ) : flipped ? null : (
             <p className="text-xs text-ink/25">
-              {current.sourceType === "cloze"
+              {current.cloze
                 ? "눌러서 답 보기"
                 : current.kind === "recall"
                   ? "눌러서 단어 보기"

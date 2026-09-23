@@ -356,11 +356,20 @@ export interface GradePreview {
   goodSeconds: number;
 }
 
+export interface ClozeSegment {
+  text: string;
+  /** 지금 묻는 빈칸 자리 */
+  blank: boolean;
+  hint?: string;
+}
+
 export interface ClozeFace {
   noteId: string;
-  /** 서버가 이미 가려서 내려준 앞면. 파싱을 웹이 다시 하지 않는다. */
-  front: string;
-  back: string;
+  /**
+   * 문장 조각. 빈칸 자리를 **그 자리에서** 답으로 바꾸려면 위치를 알아야 한다.
+   * 파싱은 서버가 한 번만 한다 — 웹·앱이 각자 하면 렌더가 갈린다.
+   */
+  segments: ClozeSegment[];
 }
 
 export interface DueCard {
@@ -391,7 +400,10 @@ export async function fetchDueWords(
       kind: string;
       source_type: "word" | "cloze";
       word: ApiWord | null;
-      cloze: { note_id: string; front: string; back: string } | null;
+      cloze: {
+        note_id: string;
+        segments: { text: string; blank: boolean; hint: string | null }[];
+      } | null;
       preview: { again_seconds: number; good_seconds: number };
     }[];
   }>(`/v1/review/due?limit=${limit}`, token);
@@ -405,8 +417,11 @@ export async function fetchDueWords(
       cloze: card.cloze
         ? {
             noteId: card.cloze.note_id,
-            front: card.cloze.front,
-            back: card.cloze.back,
+            segments: (card.cloze.segments ?? []).map((segment) => ({
+              text: segment.text,
+              blank: segment.blank,
+              hint: segment.hint ?? undefined,
+            })),
           }
         : undefined,
       preview: {

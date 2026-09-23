@@ -57,6 +57,9 @@ jobs:
             cd /opt/nyaki/api
             docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --build api
             docker compose -f docker-compose.yml -f docker-compose.production.yml ps
+            # 기동 로그 — 마이그레이션 실패는 여기에만 남는다.
+            sleep 8
+            docker compose -f docker-compose.yml -f docker-compose.production.yml logs --tail=60 api
 
       - name: Health check
         env:

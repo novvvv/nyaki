@@ -33,6 +33,7 @@ from .schemas import (
     SyncPushResponse,
     WordBookPayload,
     WordBookResponse,
+    WordBookSummaryResponse,
     WordPayload,
     WordResponse,
 )
@@ -41,6 +42,7 @@ from .services import (
     apply_review_grades,
     delete_word,
     delete_word_book,
+    book_summaries,
     count_due_cards,
     delete_card,
     delete_cloze_note,
@@ -161,6 +163,22 @@ def remove_word(
     delete_word(session, user_id, word_id)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/word-books/summaries", response_model=list[WordBookSummaryResponse])
+def get_word_book_summaries(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[WordBookSummaryResponse]:
+    """단어장별 항목 수·카드 수·암기율.
+
+    클라이언트가 각자 세면 숫자가 갈린다 — 웹은 단어만 세어 빈칸 노트가 빠졌고,
+    암기율은 단어의 srs_*를 읽어 빈칸 카드를 무시했다.
+    """
+    return [
+        WordBookSummaryResponse(word_book_id=book_id, **summary)
+        for book_id, summary in book_summaries(session, user_id).items()
+    ]
 
 
 @router.get(

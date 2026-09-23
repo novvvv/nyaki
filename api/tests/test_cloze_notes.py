@@ -255,3 +255,70 @@ def test_different_notes_are_not_siblings() -> None:
     assert sorted(card["id"] for card in _due(client)) == ["n1:c1", "n2:c1"]
 
     app.dependency_overrides.clear()
+
+
+# ==================== 집계 ====================
+
+
+def test_summary_counts_words_and_notes_together() -> None:
+    """사용자에게는 단어도 빈칸 노트도 "외울 거리 하나"다."""
+    client = _client("firebase-user-summary")
+    _put_note(client, "n1", TEXT)
+
+    created = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    client.put(
+        f"/v1/word-books/{BOOK}/words/w1",
+        json={
+            "id": "w1",
+            "word_book_id": BOOK,
+            "term": "w1",
+            "meaning": "뜻",
+            "created_at": created,
+            "updated_at": created,
+            "is_deleted": False,
+        },
+    )
+
+    summary = next(
+        s
+        for s in client.get("/v1/word-books/summaries").json()
+        if s["word_book_id"] == BOOK
+    )
+
+    assert summary["item_count"] == 2  # 단어 1 + 노트 1
+    assert summary["card_count"] == 3  # recognition 1 + c1 · c2
+    assert summary["mastery_rate"] == 0  # 아직 아무것도 안 했다
+
+    app.dependency_overrides.clear()
+
+
+def test_summary_mastery_counts_cloze_cards() -> None:
+    """빈칸만 외워도 암기율이 오른다 — 예전엔 단어의 srs_*만 봐서 0%였다."""
+    client = _client("firebase-user-summary-mastery")
+    _put_note(client, "n1", "{{c1::하나}}")
+
+    client.post(
+        "/v1/review/grades",
+        json={
+            "grades": [
+                {
+                    "id": "log-1",
+                    "word_id": "n1",
+                    "card_id": "n1:c1",
+                    "grade": "good",
+                    "reviewed_at": datetime.now(timezone.utc).isoformat(),
+                }
+            ]
+        },
+    )
+
+    summary = next(
+        s
+        for s in client.get("/v1/word-books/summaries").json()
+        if s["word_book_id"] == BOOK
+    )
+
+    # 간격 1일 → 20점, 카드가 하나뿐이라 그대로 암기율이 된다.
+    assert summary["mastery_rate"] == 20
+
+    app.dependency_overrides.clear()

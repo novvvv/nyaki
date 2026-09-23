@@ -61,6 +61,19 @@ class WordResponse(WordPayload):
     model_config = ConfigDict(from_attributes=True)
 
 
+class WordBookSummaryResponse(BaseModel):
+    """단어장 한 개의 집계. 화면에 뜨는 숫자는 서버가 센다.
+
+    항목(item)은 단어와 빈칸 노트를 합친 수다 — 사용자에게는 둘 다 "외울 거리
+    하나"이고, 어디에 저장되는지는 알 바가 아니다.
+    """
+
+    word_book_id: str
+    item_count: int
+    card_count: int
+    mastery_rate: int
+
+
 class ClozeNotePayload(BaseModel):
     """빈칸 노트. 텍스트 한 덩이에 `{{cN::답}}`으로 빈칸을 찍는다."""
 

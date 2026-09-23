@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import datetime, time, timedelta, timezone
 
@@ -296,6 +297,78 @@ def sync_cards_for_word(session: Session, user_id: str, word: WordModel) -> None
     # 단어 단위로만 보게 된다.
     for card_id in touched:
         _new_change(session, user_id, "card", card_id)
+
+
+# ==================== 단어장 집계 ====================
+#
+# 개수와 암기율을 서버가 센다. 클라이언트가 각자 세면 "무엇을 한 개로 볼지"가
+# 갈린다 — 실제로 웹은 단어만 세어 빈칸 노트가 빠졌고, 암기율은 words.srs_*를
+# 읽어 빈칸 카드를 아예 무시했다.
+
+MASTERY_DAYS = 30
+
+
+def _card_score(interval_days: int) -> float:
+    """카드 1장의 암기 점수(0~100).
+
+    SM-2 간격이 1 → 3 → 8 → 20일로 지수적으로 늘어나므로 로그로 환산해야
+    단계가 20 / 40 / 64 / 89로 고르게 벌어진다. 선형이면 첫 성공이 3점이다.
+    """
+    if interval_days <= 0:
+        return 0.0
+    ratio = math.log(1 + interval_days) / math.log(1 + MASTERY_DAYS)
+    return min(ratio, 1.0) * 100
+
+
+def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
+    """단어장별 항목 수와 암기율.
+
+    항목 = 단어 + 빈칸 노트. 사용자에게는 둘 다 "외울 거리 하나"다.
+    암기율 = 그 단어장에 속한 **카드** 점수의 평균 — 아직 안 한 카드는 0점으로
+    분모에 들어간다.
+    """
+    summaries: dict[str, dict[str, int]] = {}
+
+    def bucket(book_id: str) -> dict[str, int]:
+        return summaries.setdefault(
+            book_id, {"item_count": 0, "card_count": 0, "mastery_rate": 0}
+        )
+
+    word_book_of: dict[str, str] = {}
+    for word_id, book_id in session.execute(
+        select(WordModel.id, WordModel.word_book_id).where(
+            WordModel.user_id == user_id, WordModel.is_deleted.is_(False)
+        )
+    ):
+        word_book_of[word_id] = book_id
+        bucket(book_id)["item_count"] += 1
+
+    note_book_of: dict[str, str] = {}
+    for note_id, book_id in session.execute(
+        select(ClozeNoteModel.id, ClozeNoteModel.word_book_id).where(
+            ClozeNoteModel.user_id == user_id, ClozeNoteModel.is_deleted.is_(False)
+        )
+    ):
+        note_book_of[note_id] = book_id
+        bucket(book_id)["item_count"] += 1
+
+    totals: dict[str, float] = {}
+    for word_id, note_id, interval in session.execute(
+        select(
+            CardModel.word_id, CardModel.note_id, CardModel.srs_interval_days
+        ).where(CardModel.user_id == user_id, CardModel.is_deleted.is_(False))
+    ):
+        book_id = word_book_of.get(word_id or "") or note_book_of.get(note_id or "")
+        if book_id is None:
+            continue
+        bucket(book_id)["card_count"] += 1
+        totals[book_id] = totals.get(book_id, 0.0) + _card_score(interval)
+
+    for book_id, summary in summaries.items():
+        if summary["card_count"] > 0:
+            summary["mastery_rate"] = round(totals.get(book_id, 0.0) / summary["card_count"])
+
+    return summaries
 
 
 def upsert_card(

@@ -304,7 +304,7 @@ Base `/v1` · `Authorization: Bearer <Firebase ID token>` · ISO 8601 · OpenAPI
 | GET | `/v1/word-books/{id}/words` | 목록 |
 | PUT | `/v1/word-books/{id}/words/{wordId}` | upsert |
 | DELETE | `/v1/word-books/{id}/words/{wordId}` | soft delete |
-| GET | `/v1/review/due?limit=50` | `srs_due_at <= now` 오름차순 (max 200) |
+| GET | `/v1/review/due?limit=50` | 오늘 낼 수 있는 단어 (하루 한도 적용, max 9999) |
 | POST | `/v1/progress/quests/{quest_id}/complete` | idempotent 퀘스트 완료 |
 | GET | `/v1/progress` | 잔액 + 오늘 완료 퀘스트 |
 | GET/PUT/DELETE | `/v1/content/...` | 웹 콘텐츠 (쓰기는 `require_admin_id`) |

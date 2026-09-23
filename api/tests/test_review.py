@@ -264,11 +264,11 @@ def test_due_count_groups_by_book_and_excludes_not_due_and_deleted() -> None:
     app.dependency_overrides.clear()
 
 
-def test_due_count_is_not_capped_at_200() -> None:
-    """/review/due는 최대 200개라 개수 세기에 쓸 수 없다. count는 상한이 없다.
+def test_due_accepts_large_limit_and_count_matches() -> None:
+    """출제 개수는 사용자가 정한다 — API 상한(9999)이 먼저 막지 않는다.
 
     하루 한도(기본 신규 10개)와는 다른 이야기다. 한도를 넉넉히 올려두고
-    200이라는 API 상한만 확인한다.
+    limit 파라미터가 큰 값을 받는지 확인한다.
     """
     Base.metadata.create_all(bind=engine)
     app.dependency_overrides[get_current_user_id] = lambda: "firebase-user-count-big"
@@ -293,8 +293,11 @@ def test_due_count_is_not_capped_at_200() -> None:
             == 200
         )
 
-    assert len(client.get("/v1/review/due?limit=200").json()["words"]) == 200
+    # 예전에는 limit 상한이 200이라 205개를 요청해도 200개만 왔다.
+    assert len(client.get("/v1/review/due?limit=9999").json()["words"]) == 205
     assert client.get("/v1/review/due/count").json()["total"] == 205
+    # 상한을 넘으면 422 — 무제한은 아니다.
+    assert client.get("/v1/review/due?limit=10000").status_code == 422
 
     app.dependency_overrides.clear()
 

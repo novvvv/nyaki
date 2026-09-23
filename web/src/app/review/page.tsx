@@ -21,8 +21,9 @@ import { useVocab } from "@/lib/vocab-store";
 type Phase = "setup" | "session" | "done";
 
 const SCREEN = "min-h-[calc(100vh-8.5rem)]";
-// 서버 /v1/review/due의 상한과 같다.
-const MAX_COUNT = 200;
+// 서버 /v1/review/due의 상한과 같다. 실제 출제량은 하루 한도(마이페이지)와
+// 오늘 due인 단어 수가 정한다 — 이 값은 그 위에 얹힌 안전장치일 뿐이다.
+const MAX_COUNT = 9999;
 
 /** Fisher-Yates. 원본은 건드리지 않는다. */
 function shuffled<T>(items: T[]): T[] {

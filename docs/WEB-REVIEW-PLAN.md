@@ -133,7 +133,7 @@ Anki가 스케줄러를 클라이언트에 둔 것도 같은 이유다.
 [routes.py:138](../api/app/vocab/routes.py#L138). 그대로 쓴다.
 
 ```
-GET /v1/review/due?limit=30      기본 50, 최대 200
+GET /v1/review/due?limit=30      기본 50, 최대 9999 (하루 한도가 먼저 적용된다)
 ```
 
 ### 6-2. 채점 — 새로 만든다

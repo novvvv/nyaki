@@ -142,7 +142,7 @@ def remove_word(
 
 @router.get("/review/due", response_model=ReviewDueResponse)
 def get_review_due(
-    limit: int = Query(default=50, ge=1, le=200),
+    limit: int = Query(default=50, ge=1, le=9999),
     session: Session = Depends(get_session),
     user_id: str = Depends(get_current_user_id),
 ) -> ReviewDueResponse:

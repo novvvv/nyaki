@@ -1,9 +1,15 @@
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..models import ReviewLogModel, SyncChangeModel, WordBookModel, WordModel
+from ..models import (
+    ReviewLogModel,
+    SyncChangeModel,
+    UserProgressModel,
+    WordBookModel,
+    WordModel,
+)
 from .schemas import ReviewGradeItem, WordBookPayload, WordPayload
 from .srs import Sm2State, grade
 
@@ -127,6 +133,125 @@ def list_words(session: Session, user_id: str, word_book_id: str) -> list[WordMo
     )
 
 
+# ==================== 하루 한도 ====================
+#
+# 단어를 만들면 srs_due_at = created_at이라 그 순간 전부 복습 대상이 된다.
+# 팩으로 300개를 받으면 300개가 오늘 due로 잡히고, 사용자는 "300개 밀렸다"는
+# 압박만 받는다. 안키는 이걸 신규 카드 한도로 막는다 — 하루 20개씩 꺼내 쓴다.
+#
+# 신규/복습을 가르는 기준은 srs_last_reviewed_at이다. null이면 한 번도 채점하지
+# 않은 "새 카드"다. 컬럼을 새로 만들 필요가 없다.
+
+KST = timezone(timedelta(hours=9))
+
+DEFAULT_NEW_LIMIT = 10
+# 복습은 한도를 두지 않는 것이 기본이다 — 밀린 복습을 안 하면 간격 반복이
+# 성립하지 않는다. 한도는 "복습이 폭발했을 때 숨 쉴 구멍"으로만 쓴다.
+DEFAULT_REVIEW_LIMIT = 9999
+
+
+def _today_start_utc() -> datetime:
+    """오늘(KST) 자정을 UTC 절대시각으로. 퀘스트와 같은 날짜 경계를 쓴다."""
+    now_kst = datetime.now(KST)
+    return datetime.combine(now_kst.date(), time.min, tzinfo=KST).astimezone(timezone.utc)
+
+
+def _daily_limits(session: Session, user_id: str) -> tuple[int, int]:
+    progress = session.get(UserProgressModel, user_id)
+    if progress is None:
+        return DEFAULT_NEW_LIMIT, DEFAULT_REVIEW_LIMIT
+    return (
+        progress.daily_new_limit
+        if progress.daily_new_limit is not None
+        else DEFAULT_NEW_LIMIT,
+        progress.daily_review_limit
+        if progress.daily_review_limit is not None
+        else DEFAULT_REVIEW_LIMIT,
+    )
+
+
+def _consumed_today(session: Session, user_id: str) -> tuple[int, int]:
+    """오늘 쓴 몫 (신규, 복습).
+
+    신규는 "오늘 처음 채점된 단어 수"다 — review_logs에서 단어별 첫 기록이
+    오늘인 것을 센다. 복습은 오늘 전체 채점 수에서 그만큼을 뺀 값이다.
+    """
+    start = _today_start_utc()
+
+    first_seen = (
+        select(
+            ReviewLogModel.word_id,
+            func.min(ReviewLogModel.created_at).label("first_at"),
+        )
+        .where(ReviewLogModel.user_id == user_id)
+        .group_by(ReviewLogModel.word_id)
+        .subquery()
+    )
+    new_used = session.scalar(
+        select(func.count())
+        .select_from(first_seen)
+        .where(first_seen.c.first_at >= start)
+    ) or 0
+
+    total_today = session.scalar(
+        select(func.count()).where(
+            ReviewLogModel.user_id == user_id,
+            ReviewLogModel.created_at >= start,
+        )
+    ) or 0
+
+    return new_used, max(0, total_today - new_used)
+
+
+def _due_base(user_id: str):
+    return (
+        WordModel.user_id == user_id,
+        WordModel.is_deleted.is_(False),
+        WordModel.srs_due_at <= utc_now(),
+    )
+
+
+def select_due_words(session: Session, user_id: str, limit: int | None = None) -> list[WordModel]:
+    """오늘 낼 수 있는 단어. 하루 한도를 적용한다.
+
+    복습 카드를 먼저(오래 밀린 순), 남은 자리에 새 카드를 채운다.
+
+    새 카드는 due(= created_at) 순이라 결과적으로 추가한 순서가 된다. 안키의
+    Insertion order 기본값이 Sequential인 것과 같은 이유다 — 팩을 받으면 앞
+    단원부터 나가야 한다.
+    """
+    new_limit, review_limit = _daily_limits(session, user_id)
+    new_used, review_used = _consumed_today(session, user_id)
+
+    review_quota = max(0, review_limit - review_used)
+    new_quota = max(0, new_limit - new_used)
+
+    reviews: list[WordModel] = []
+    if review_quota > 0:
+        reviews = list(
+            session.scalars(
+                select(WordModel)
+                .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_not(None))
+                .order_by(WordModel.srs_due_at.asc())
+                .limit(review_quota)
+            )
+        )
+
+    news: list[WordModel] = []
+    if new_quota > 0:
+        news = list(
+            session.scalars(
+                select(WordModel)
+                .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_(None))
+                .order_by(WordModel.srs_due_at.asc(), WordModel.created_at.asc())
+                .limit(new_quota)
+            )
+        )
+
+    words = reviews + news
+    return words[:limit] if limit is not None else words
+
+
 def list_due_words(session: Session, user_id: str, limit: int) -> list[WordModel]:
     return list(
         session.scalars(
@@ -143,22 +268,41 @@ def list_due_words(session: Session, user_id: str, limit: int) -> list[WordModel
 
 
 def count_due_words(session: Session, user_id: str) -> dict[str, int]:
-    """복습 주기가 돌아온 단어 수를 단어장별로 센다.
+    """오늘 낼 수 있는 단어 수를 단어장별로 센다.
 
-    list_due_words와 달리 상한이 없다. 단어 본문을 실어 나르지 않고 COUNT만
-    하기 때문이다 — 개수를 알려고 단어 200개를 받아오던 것을 대체한다.
-    due가 0인 단어장은 결과에 없다(GROUP BY라 행 자체가 안 생긴다).
+    select_due_words와 **같은 규칙**(하루 한도 적용)으로 세야 한다. 화면의 숫자와
+    실제 출제량이 다르면 사용자는 어느 쪽도 믿지 않는다.
+
+    단어 본문은 읽지 않고 (id, word_book_id) 두 칼럼만 읽는다.
     """
-    rows = session.execute(
-        select(WordModel.word_book_id, func.count())
-        .where(
-            WordModel.user_id == user_id,
-            WordModel.is_deleted.is_(False),
-            WordModel.srs_due_at <= utc_now(),
+    new_limit, review_limit = _daily_limits(session, user_id)
+    new_used, review_used = _consumed_today(session, user_id)
+
+    counts: dict[str, int] = {}
+
+    review_quota = max(0, review_limit - review_used)
+    if review_quota > 0:
+        rows = session.execute(
+            select(WordModel.word_book_id)
+            .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_not(None))
+            .order_by(WordModel.srs_due_at.asc())
+            .limit(review_quota)
         )
-        .group_by(WordModel.word_book_id)
-    )
-    return {word_book_id: count for word_book_id, count in rows}
+        for (book_id,) in rows:
+            counts[book_id] = counts.get(book_id, 0) + 1
+
+    new_quota = max(0, new_limit - new_used)
+    if new_quota > 0:
+        rows = session.execute(
+            select(WordModel.word_book_id)
+            .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_(None))
+            .order_by(WordModel.srs_due_at.asc(), WordModel.created_at.asc())
+            .limit(new_quota)
+        )
+        for (book_id,) in rows:
+            counts[book_id] = counts.get(book_id, 0) + 1
+
+    return counts
 
 
 def apply_review_grades(

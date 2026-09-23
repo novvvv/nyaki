@@ -265,10 +265,22 @@ def test_due_count_groups_by_book_and_excludes_not_due_and_deleted() -> None:
 
 
 def test_due_count_is_not_capped_at_200() -> None:
-    """/review/due는 최대 200개라 개수 세기에 쓸 수 없다. count는 상한이 없다."""
+    """/review/due는 최대 200개라 개수 세기에 쓸 수 없다. count는 상한이 없다.
+
+    하루 한도(기본 신규 10개)와는 다른 이야기다. 한도를 넉넉히 올려두고
+    200이라는 API 상한만 확인한다.
+    """
     Base.metadata.create_all(bind=engine)
     app.dependency_overrides[get_current_user_id] = lambda: "firebase-user-count-big"
     client = TestClient(app)
+
+    assert (
+        client.put(
+            "/v1/progress/settings",
+            json={"daily_new_limit": 9999, "daily_review_limit": 9999},
+        ).status_code
+        == 200
+    )
 
     _book(client, "count-big")
     for i in range(205):

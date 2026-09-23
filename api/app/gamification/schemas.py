@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # ProgressResponse DTO
@@ -13,3 +13,14 @@ class ProgressResponse(BaseModel):
     churu_balance: int
     capelin_balance: int
     completed_today: list[str]
+    # 하루 한도 — 안키의 "새 카드/일", "최대 복습량/일". 실제로 적용되는 값을
+    # 내려준다(저장값이 null이면 기본값이 채워져 나간다).
+    daily_new_limit: int
+    daily_review_limit: int
+
+
+class ProgressSettingsRequest(BaseModel):
+    """하루 한도 변경. 보낸 항목만 바꾼다."""
+
+    daily_new_limit: int | None = Field(default=None, ge=0, le=9999)
+    daily_review_limit: int | None = Field(default=None, ge=0, le=9999)

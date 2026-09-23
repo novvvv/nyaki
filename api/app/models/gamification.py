@@ -32,6 +32,12 @@ class UserProgressModel(Base):
     last_active_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     daily_review_goal: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
+    # 하루 한도 — 안키의 "새 카드/일", "최대 복습량/일"에 해당한다.
+    # null이면 기본값(신규 10 / 복습 무제한)을 쓴다. daily_review_goal은 퀘스트
+    # 목표치라 뜻이 다르므로 재사용하지 않는다.
+    daily_new_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    daily_review_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     morning_review_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     evening_review_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 

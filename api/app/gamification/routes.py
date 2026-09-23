@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from ..core.auth import get_current_user_id
 from ..core.database import get_session
-from .schemas import ProgressResponse
-from .services import complete_quest, get_progress
+from .schemas import ProgressResponse, ProgressSettingsRequest
+from .services import complete_quest, get_progress, update_settings
 
 # router definition
 # - 모든 라우터 경로 앞에 /v1/prgoresss 
@@ -40,3 +40,17 @@ def get_progress_route(
     user_id: str = Depends(get_current_user_id),
 ) -> ProgressResponse:
     return get_progress(session, user_id)
+
+
+# [API] 하루 한도 변경 API
+#   - method : PUT /v1/progress/settings
+#   - 안키의 "새 카드/일", "최대 복습량/일"에 해당한다. 보낸 항목만 바꾼다.
+@router.put("/settings", response_model=ProgressResponse)
+def put_progress_settings(
+    payload: ProgressSettingsRequest,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> ProgressResponse:
+    result = update_settings(session, user_id, payload)
+    session.commit()
+    return result

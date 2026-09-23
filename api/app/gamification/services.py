@@ -2,7 +2,8 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..models import QuestStateModel, UserProgressModel
-from .schemas import ProgressResponse
+from ..vocab.services import DEFAULT_NEW_LIMIT, DEFAULT_REVIEW_LIMIT
+from .schemas import ProgressResponse, ProgressSettingsRequest
 
 # 재화 식별자 — 앱 quest_screen.dart의 currency 값과 같은 문자열을 쓴다.
 CHURU = "churu"
@@ -116,10 +117,18 @@ def _grant(progress: UserProgressModel, currency: str, amount: int) -> None:
 def _response(
     session: Session, user_id: str, progress: UserProgressModel | None
 ) -> ProgressResponse:
+    new_limit = progress.daily_new_limit if progress is not None else None
+    review_limit = progress.daily_review_limit if progress is not None else None
     return ProgressResponse(
         churu_balance=progress.churu_balance if progress is not None else 0,
         capelin_balance=progress.capelin_balance if progress is not None else 0,
         completed_today=_completed_today(session, user_id),
+        # 저장값이 없으면 기본값을 채워 내려준다. 화면이 "설정 안 함"을 따로
+        # 해석하지 않아도 되고, 기본값 숫자가 서버 한 곳에만 있게 된다.
+        daily_new_limit=new_limit if new_limit is not None else DEFAULT_NEW_LIMIT,
+        daily_review_limit=review_limit
+        if review_limit is not None
+        else DEFAULT_REVIEW_LIMIT,
     )
 
 
@@ -172,4 +181,17 @@ def complete_quest(session: Session, user_id: str, quest_id: str) -> ProgressRes
 #       user_id : user token id  
 def get_progress(session: Session, user_id: str) -> ProgressResponse:
     progress = session.get(UserProgressModel, user_id)
+    return _response(session, user_id, progress)
+
+
+# ====================== [method] update_settings ====================== #
+# 하루 한도를 바꾼다. 보낸 항목만 반영한다(exclude_unset) — 한쪽만 바꾸려고
+# 다른 쪽 현재값을 클라이언트가 다시 실어 보낼 필요가 없다.
+def update_settings(
+    session: Session, user_id: str, payload: ProgressSettingsRequest
+) -> ProgressResponse:
+    progress = _get_or_create_progress(session, user_id)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(progress, field, value)
+    session.flush()
     return _response(session, user_id, progress)

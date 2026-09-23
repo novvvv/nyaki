@@ -27,7 +27,7 @@ from .services import (
     delete_word,
     delete_word_book,
     count_due_words,
-    list_due_words,
+    select_due_words,
     list_word_books,
     list_words,
     upsert_word,
@@ -146,7 +146,7 @@ def get_review_due(
     session: Session = Depends(get_session),
     user_id: str = Depends(get_current_user_id),
 ) -> ReviewDueResponse:
-    words = list_due_words(session, user_id, limit)
+    words = select_due_words(session, user_id, limit)
     return ReviewDueResponse(words=[WordResponse.model_validate(w) for w in words])
 
 

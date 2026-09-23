@@ -34,6 +34,7 @@ SM-2는 **Dart와 Python 두 곳에 구현**돼 있다. 두 구현이 어긋나�
 | 모델 파생값(due·암기율) | — | `models/` | `stats.test.ts` |
 | 열린 리디렉션 차단 | — | — | `safe-next.test.ts` |
 | 공용 UI 계약 | — | `widget_test.dart` | `ui.test.tsx` |
+| 복습 세션 흐름 | — | — | `app/review/page.test.tsx` |
 
 ## 원칙
 

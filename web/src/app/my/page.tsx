@@ -54,8 +54,9 @@ function DailyLimits() {
   function apply(value: Progress) {
     setNewText(String(value.dailyNewLimit));
     setReviewText(String(value.dailyReviewLimit));
-    setLearningText(value.learningSteps.join(" "));
-    setRelearningText(value.relearningSteps.join(" "));
+    // 공백만으로 구분하면 "1 10"이 "110"처럼 읽힌다. 쉼표로 보여준다.
+    setLearningText(value.learningSteps.join(", "));
+    setRelearningText(value.relearningSteps.join(", "));
     setGraduatingText(String(value.graduatingIntervalDays));
   }
 
@@ -63,8 +64,8 @@ function DailyLimits() {
     progress !== undefined &&
     (newText !== String(progress.dailyNewLimit) ||
       reviewText !== String(progress.dailyReviewLimit) ||
-      learningText !== progress.learningSteps.join(" ") ||
-      relearningText !== progress.relearningSteps.join(" ") ||
+      learningText !== progress.learningSteps.join(", ") ||
+      relearningText !== progress.relearningSteps.join(", ") ||
       graduatingText !== String(progress.graduatingIntervalDays));
 
   async function save() {
@@ -148,12 +149,12 @@ function DailyLimits() {
       <div className="divide-y divide-taupe/25">
         <Row
           label="학습 단계"
-          value="새 단어를 이 간격(분)으로 다시 보여줍니다. 비워서 저장하면 단계 없이 바로 다음 날로"
+          value="새 단어를 이 간격으로 다시 보여줍니다. 분 단위로 쉼표 구분 — 1, 10이면 1분 뒤와 10분 뒤. 비워서 저장하면 바로 다음 날로"
           action={
             <TextInput
               value={learningText}
               onChange={(e) => setLearningText(e.target.value)}
-              placeholder="1 10"
+              placeholder="1, 10"
               aria-label="학습 단계(분)"
               className="w-28 text-right"
             />

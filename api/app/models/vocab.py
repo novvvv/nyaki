@@ -81,6 +81,9 @@ class WordModel(Base):
     srs_last_reviewed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # 지금 몇 번째 학습 단계인지. None이면 학습 단계가 아니다(새 카드이거나 복습 카드).
+    # 안키의 learning/relearning에 해당한다 — 단계를 안 쓰면 계속 None이다.
+    srs_learning_step: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # ===================================================================================== #
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

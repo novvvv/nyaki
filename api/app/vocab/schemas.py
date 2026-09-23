@@ -32,6 +32,7 @@ class WordPayload(BaseModel):
     srs_lapses: int = 0
     srs_due_at: datetime | None = None
     srs_last_reviewed_at: datetime | None = None
+    srs_learning_step: int | None = None
     created_at: datetime
     updated_at: datetime
     is_deleted: bool = False

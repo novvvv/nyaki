@@ -17,6 +17,10 @@ class ProgressResponse(BaseModel):
     # 내려준다(저장값이 null이면 기본값이 채워져 나간다).
     daily_new_limit: int
     daily_review_limit: int
+    # 복습 흐름 — 분 단위 단계 목록. 빈 배열이면 단계를 쓰지 않는다(일 단위로 바로 간다).
+    learning_steps: list[int]
+    relearning_steps: list[int]
+    graduating_interval_days: int
 
 
 class ProgressSettingsRequest(BaseModel):
@@ -24,3 +28,7 @@ class ProgressSettingsRequest(BaseModel):
 
     daily_new_limit: int | None = Field(default=None, ge=0, le=9999)
     daily_review_limit: int | None = Field(default=None, ge=0, le=9999)
+    # "1,10" 또는 "1 10". 빈 문자열이면 단계를 끈다.
+    learning_steps: str | None = Field(default=None, max_length=120)
+    relearning_steps: str | None = Field(default=None, max_length=120)
+    graduating_interval_days: int | None = Field(default=None, ge=1, le=365)

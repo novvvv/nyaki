@@ -11,7 +11,7 @@ from ..models import (
     WordModel,
 )
 from .schemas import ReviewGradeItem, WordBookPayload, WordPayload
-from .srs import Sm2State, grade
+from .srs import DEFAULT_STEPS, Sm2State, StepConfig, grade
 
 
 def utc_now() -> datetime:
@@ -203,6 +203,36 @@ def _consumed_today(session: Session, user_id: str) -> tuple[int, int]:
     return new_used, max(0, total_today - new_used)
 
 
+def _parse_steps(raw: str | None) -> tuple[int, ...]:
+    """"1,10" → (1, 10). 공백·쉼표 아무거나 허용하고 잘못된 값은 버린다.
+
+    설정 화면에서 손으로 치는 값이라 관대하게 읽는다. 0 이하는 의미가 없어 뺀다.
+    """
+    if not raw:
+        return ()
+    out: list[int] = []
+    for chunk in raw.replace(",", " ").split():
+        try:
+            minutes = int(chunk)
+        except ValueError:
+            continue
+        if minutes > 0:
+            out.append(minutes)
+    return tuple(out)
+
+
+def load_step_config(session: Session, user_id: str) -> StepConfig:
+    """저장된 복습 흐름 설정. 없으면 단계 없음(= 기존 동작)."""
+    progress = session.get(UserProgressModel, user_id)
+    if progress is None:
+        return DEFAULT_STEPS
+    return StepConfig(
+        learning_steps=_parse_steps(progress.learning_steps),
+        relearning_steps=_parse_steps(progress.relearning_steps),
+        graduating_interval_days=progress.graduating_interval_days or 1,
+    )
+
+
 def _due_base(user_id: str):
     return (
         WordModel.user_id == user_id,
@@ -326,6 +356,7 @@ def apply_review_grades(
         return 0, 0, 0
 
     now = utc_now()
+    config = load_step_config(session, user_id)
 
     # 1. 이미 처리한 id 걸러내기
     seen = set(
@@ -362,9 +393,11 @@ def apply_review_grades(
                 lapses=word.srs_lapses,
                 due_at=word.srs_due_at,
                 last_reviewed_at=word.srs_last_reviewed_at,
+                learning_step=word.srs_learning_step,
             ),
             item.grade,
             now,
+            config,
         )
 
         # 3. 결과를 다시 컬럼으로 푼다
@@ -374,6 +407,7 @@ def apply_review_grades(
         word.srs_lapses = result.state.lapses
         word.srs_due_at = result.state.due_at
         word.srs_last_reviewed_at = result.state.last_reviewed_at
+        word.srs_learning_step = result.state.learning_step
         word.memorization_status = result.memorization_status
         word.updated_at = now
 

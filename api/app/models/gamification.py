@@ -38,6 +38,12 @@ class UserProgressModel(Base):
     daily_new_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     daily_review_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # 복습 흐름 — 안키의 Learning steps / Relearning steps / Graduating interval.
+    # 단계는 분 단위를 쉼표로 이은 문자열("1,10"). 비어 있으면 단계를 쓰지 않는다.
+    learning_steps: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    relearning_steps: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    graduating_interval_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     morning_review_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     evening_review_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 

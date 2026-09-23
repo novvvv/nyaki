@@ -235,7 +235,7 @@ export default function WordBookDetailPage() {
               고른 종류마다 카드가 따로 만들어지고 복습 일정도 따로 갑니다
             </p>
             <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              {(["recognition", "recall", "cloze"] as CardKind[]).map((kind) => {
+              {(Object.keys(CARD_KIND_LABELS) as CardKind[]).map((kind) => {
                 const on = (book.cardKinds ?? ["recognition"]).includes(kind);
                 return (
                   <SubtleButton

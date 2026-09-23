@@ -210,3 +210,89 @@ def test_grade_must_be_again_or_good() -> None:
     assert resp.status_code == 422
 
     app.dependency_overrides.clear()
+
+
+# ==================== GET /v1/review/due/count ====================
+
+
+def _book(client: TestClient, book_id: str) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    assert (
+        client.put(
+            f"/v1/word-books/{book_id}",
+            json={
+                "id": book_id,
+                "title": book_id,
+                "created_at": now,
+                "updated_at": now,
+                "is_deleted": False,
+            },
+        ).status_code
+        == 200
+    )
+
+
+def test_due_count_groups_by_book_and_excludes_not_due_and_deleted() -> None:
+    Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[get_current_user_id] = lambda: "firebase-user-count"
+    client = TestClient(app)
+
+    _book(client, "count-a")
+    _book(client, "count-b")
+
+    plan = [
+        ("count-a", "ca-1", -10, False),  # due
+        ("count-a", "ca-2", -5, False),  # due
+        ("count-a", "ca-3", -1, True),  # 삭제됨 → 제외
+        ("count-b", "cb-1", -3, False),  # due
+        ("count-b", "cb-2", 60, False),  # 아직 멀었음 → 제외
+    ]
+    for book_id, word_id, offset, deleted in plan:
+        word = _word(word_id, due_offset_minutes=offset, is_deleted=deleted)
+        word["word_book_id"] = book_id
+        assert (
+            client.put(
+                f"/v1/word-books/{book_id}/words/{word_id}", json=word
+            ).status_code
+            == 200
+        )
+
+    body = client.get("/v1/review/due/count").json()
+    assert body["by_book"] == {"count-a": 2, "count-b": 1}
+    assert body["total"] == 3
+
+    app.dependency_overrides.clear()
+
+
+def test_due_count_is_not_capped_at_200() -> None:
+    """/review/due는 최대 200개라 개수 세기에 쓸 수 없다. count는 상한이 없다."""
+    Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[get_current_user_id] = lambda: "firebase-user-count-big"
+    client = TestClient(app)
+
+    _book(client, "count-big")
+    for i in range(205):
+        word = _word(f"big-{i}", due_offset_minutes=-1)
+        word["word_book_id"] = "count-big"
+        assert (
+            client.put(
+                f"/v1/word-books/count-big/words/big-{i}", json=word
+            ).status_code
+            == 200
+        )
+
+    assert len(client.get("/v1/review/due?limit=200").json()["words"]) == 200
+    assert client.get("/v1/review/due/count").json()["total"] == 205
+
+    app.dependency_overrides.clear()
+
+
+def test_due_count_is_empty_when_nothing_is_due() -> None:
+    Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[get_current_user_id] = lambda: "firebase-user-count-empty"
+    client = TestClient(app)
+
+    body = client.get("/v1/review/due/count").json()
+    assert body == {"total": 0, "by_book": {}}
+
+    app.dependency_overrides.clear()

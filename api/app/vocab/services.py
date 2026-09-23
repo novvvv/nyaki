@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..models import ReviewLogModel, SyncChangeModel, WordBookModel, WordModel
@@ -140,6 +140,25 @@ def list_due_words(session: Session, user_id: str, limit: int) -> list[WordModel
             .limit(limit)
         )
     )
+
+
+def count_due_words(session: Session, user_id: str) -> dict[str, int]:
+    """복습 주기가 돌아온 단어 수를 단어장별로 센다.
+
+    list_due_words와 달리 상한이 없다. 단어 본문을 실어 나르지 않고 COUNT만
+    하기 때문이다 — 개수를 알려고 단어 200개를 받아오던 것을 대체한다.
+    due가 0인 단어장은 결과에 없다(GROUP BY라 행 자체가 안 생긴다).
+    """
+    rows = session.execute(
+        select(WordModel.word_book_id, func.count())
+        .where(
+            WordModel.user_id == user_id,
+            WordModel.is_deleted.is_(False),
+            WordModel.srs_due_at <= utc_now(),
+        )
+        .group_by(WordModel.word_book_id)
+    )
+    return {word_book_id: count for word_book_id, count in rows}
 
 
 def apply_review_grades(

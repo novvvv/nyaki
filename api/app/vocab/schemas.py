@@ -89,6 +89,17 @@ class ReviewDueResponse(BaseModel):
     words: list[WordResponse]
 
 
+class ReviewDueCountResponse(BaseModel):
+    """복습 대상 개수. 단어를 실어 나르지 않으므로 상한이 없다.
+
+    by_book에는 due가 1개 이상인 단어장만 들어간다. 화면에서 "0개"로 보여줄
+    단어장은 클라이언트가 가진 단어장 목록과 맞춰 채운다.
+    """
+
+    total: int
+    by_book: dict[str, int]
+
+
 class ReviewGradeItem(BaseModel):
     # 클라이언트가 만든 고유 id. 재전송을 걸러내는 열쇠라 필수다.
     id: str = Field(min_length=1, max_length=80)

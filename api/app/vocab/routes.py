@@ -8,6 +8,7 @@ from ..core.auth import get_current_user_id
 from ..core.database import get_session
 from ..models import SyncChangeModel, WordBookModel, WordModel
 from .schemas import (
+    ReviewDueCountResponse,
     ReviewDueResponse,
     ReviewGradesRequest,
     ReviewGradesResponse,
@@ -25,6 +26,7 @@ from .services import (
     apply_review_grades,
     delete_word,
     delete_word_book,
+    count_due_words,
     list_due_words,
     list_word_books,
     list_words,
@@ -146,6 +148,20 @@ def get_review_due(
 ) -> ReviewDueResponse:
     words = list_due_words(session, user_id, limit)
     return ReviewDueResponse(words=[WordResponse.model_validate(w) for w in words])
+
+
+@router.get("/review/due/count", response_model=ReviewDueCountResponse)
+def get_review_due_count(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> ReviewDueCountResponse:
+    """복습 대상 개수만 센다.
+
+    /review/due는 한 번에 최대 200개라 개수를 세는 용도로 쓰면 201개부터 틀린다.
+    이쪽은 COUNT라 상한이 필요 없다.
+    """
+    by_book = count_due_words(session, user_id)
+    return ReviewDueCountResponse(total=sum(by_book.values()), by_book=by_book)
 
 
 @router.post("/review/grades", response_model=ReviewGradesResponse)

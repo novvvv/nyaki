@@ -35,29 +35,52 @@ function StepFields({
   onChange: (next: string[]) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-col items-start gap-2">
       {values.map((value, index) => (
-        <TextInput
-          key={index}
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={9999}
-          value={value}
-          onChange={(e) =>
-            onChange(values.map((v, i) => (i === index ? e.target.value : v)))
-          }
-          aria-label={`${label} ${index + 1}번째 단계(분)`}
-          className="w-16 px-2 text-right tabular-nums"
-        />
+        <div key={index} className="flex items-center gap-2.5">
+          <span className="w-12 text-xs tabular-nums text-umber/45">
+            {index + 1}단계
+          </span>
+          <TextInput
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={9999}
+            value={value}
+            onChange={(e) =>
+              onChange(values.map((v, i) => (i === index ? e.target.value : v)))
+            }
+            aria-label={`${label} ${index + 1}번째 단계(분)`}
+            className="w-24 py-2 text-right text-base tabular-nums"
+          />
+          <span className="text-sm text-umber/45">분</span>
+        </div>
       ))}
       <SubtleButton
-        className="px-2.5 py-1.5 text-xs"
+        className="ml-[3.625rem] px-3 py-1.5 text-xs"
         onClick={() => onChange([...values, ""])}
-        aria-label={`${label} 추가`}
       >
-        +
+        단계 추가
       </SubtleButton>
+    </div>
+  );
+}
+
+/** 설정 한 덩어리 — 제목·한 줄 설명 위, 입력 아래. */
+function Field({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="py-5">
+      <p className="text-sm font-medium text-ink">{title}</p>
+      <p className="mt-0.5 text-xs text-umber/45">{hint}</p>
+      <div className="mt-3.5">{children}</div>
     </div>
   );
 }
@@ -198,32 +221,24 @@ function DailyLimits() {
         복습 흐름
       </p>
       <div className="divide-y divide-taupe/25">
-        <Row
-          label="학습 단계 (분)"
-          value="새 단어를 이 간격으로 다시 보여줍니다. 1 · 10이면 1분 뒤와 10분 뒤"
-          action={
-            <StepFields
-              label="학습 단계"
-              values={learningSteps}
-              onChange={setLearningSteps}
-            />
-          }
-        />
-        <Row
-          label="재학습 단계 (분)"
-          value="외웠던 단어를 틀렸을 때의 간격. 칸을 비우고 저장하면 그 단계가 빠집니다"
-          action={
-            <StepFields
-              label="재학습 단계"
-              values={relearningSteps}
-              onChange={setRelearningSteps}
-            />
-          }
-        />
-        <Row
-          label="졸업 간격"
-          value="마지막 단계를 통과하면 며칠 뒤에 볼지"
-          action={
+        <Field title="학습 단계" hint="새 단어를 다시 보여줄 간격">
+          <StepFields
+            label="학습 단계"
+            values={learningSteps}
+            onChange={setLearningSteps}
+          />
+        </Field>
+
+        <Field title="재학습 단계" hint="외웠던 단어를 틀렸을 때">
+          <StepFields
+            label="재학습 단계"
+            values={relearningSteps}
+            onChange={setRelearningSteps}
+          />
+        </Field>
+
+        <Field title="졸업 간격" hint="마지막 단계를 통과한 뒤">
+          <div className="flex items-center gap-2.5">
             <TextInput
               type="number"
               inputMode="numeric"
@@ -232,10 +247,33 @@ function DailyLimits() {
               value={graduatingText}
               onChange={(e) => setGraduatingText(e.target.value)}
               aria-label="졸업 간격(일)"
-              className="w-28 text-right tabular-nums"
+              className="w-24 py-2 text-right text-base tabular-nums"
             />
-          }
-        />
+            <span className="text-sm text-umber/45">일</span>
+          </div>
+        </Field>
+      </div>
+
+      <div className="mt-5 rounded-lg bg-subtle/60 px-4 py-3.5">
+        <p className="text-xs font-medium text-ink/55">추천</p>
+        <dl className="mt-2 space-y-1.5 text-xs text-umber/55">
+          <div className="flex gap-2">
+            <dt className="w-20 shrink-0 text-ink/45">안키 기본</dt>
+            <dd>1분 · 10분 — 대부분 이걸 씁니다</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-20 shrink-0 text-ink/45">빨리 넘기기</dt>
+            <dd>10분 하나 — 세션이 짧아집니다</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-20 shrink-0 text-ink/45">촘촘하게</dt>
+            <dd>1분 · 5분 · 15분 · 60분 — 잘 안 외워질 때</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="w-20 shrink-0 text-ink/45">단계 없이</dt>
+            <dd>칸을 모두 비우면 바로 다음 날로</dd>
+          </div>
+        </dl>
       </div>
 
       <div className="mt-4 flex items-center justify-end gap-3">

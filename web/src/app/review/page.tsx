@@ -36,6 +36,10 @@ export default function ReviewPage() {
   const [phase, setPhase] = useState<Phase>("setup");
   const [countText, setCountText] = useState("20");
   const [queue, setQueue] = useState<Word[]>([]);
+  // 진행 표시는 **카드 수** 기준이다. 학습 단계 때문에 한 카드가 세션 안에서
+  // 여러 번 나오는데, 그때마다 분모가 늘면 "풀수록 늘어나는" 화면이 된다.
+  const [sessionSize, setSessionSize] = useState(0);
+  const [finished, setFinished] = useState(0);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [result, setResult] = useState({ again: 0, good: 0 });
@@ -136,7 +140,12 @@ export default function ReviewPage() {
         }
       }
 
-      if (requeued) setQueue((prev) => [...prev, word]);
+      if (requeued) {
+        setQueue((prev) => [...prev, word]);
+      } else {
+        // 졸업했거나 단계를 안 쓰는 카드 — 이 세션에서 끝났다.
+        setFinished((prev) => prev + 1);
+      }
 
       const next = index + 1;
       if (next >= queue.length + (requeued ? 1 : 0)) {
@@ -282,6 +291,8 @@ export default function ReviewPage() {
     // 무엇을 낼지는 항상 오래 밀린 순으로 고른다 — 섞는 것은 그 안의 순서뿐이다.
     const chosen = picked.slice(0, size);
     setQueue(shuffle ? shuffled(chosen) : chosen);
+    setSessionSize(chosen.length);
+    setFinished(0);
     setIndex(0);
     setFlipped(false);
     setResult({ again: 0, good: 0 });
@@ -318,12 +329,14 @@ export default function ReviewPage() {
 
         <div className="flex items-center gap-4">
           <span className="shrink-0 text-xs tabular-nums text-ink/35">
-            {index + 1} / {queue.length}
+            {finished} / {sessionSize}
           </span>
           <div className="h-px flex-1 bg-taupe/50">
             <div
               className="h-px bg-ink transition-all duration-200"
-              style={{ width: `${(index / queue.length) * 100}%` }}
+              style={{
+                width: `${sessionSize === 0 ? 0 : (finished / sessionSize) * 100}%`,
+              }}
             />
           </div>
         </div>

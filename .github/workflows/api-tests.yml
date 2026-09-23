@@ -33,6 +33,9 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+psycopg://nyaki:nyaki@localhost:5432/nyaki_test
+      # 로컬은 api/.env가 채워주지만 CI에는 그 파일이 없다.
+      # 테스트는 인증을 덮어쓰므로(get_current_user_id) 값 자체는 쓰이지 않는다.
+      FIREBASE_PROJECT_ID: ci-test
       PYTHONPATH: .
 
     defaults:

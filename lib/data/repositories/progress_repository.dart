@@ -184,7 +184,8 @@ class ProgressRepository {
 
       // Http get fail -> loadCached
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        return loadCached();
+        // await 없이 반환하면 이 Future의 예외가 아래 catch를 지나쳐 버린다.
+        return await loadCached();
       }
 
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
@@ -215,7 +216,8 @@ class ProgressRepository {
       );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        return loadCached();
+        // await 없이 반환하면 이 Future의 예외가 아래 catch를 지나쳐 버린다.
+        return await loadCached();
       }
 
       final payload = jsonDecode(response.body) as Map<String, dynamic>;

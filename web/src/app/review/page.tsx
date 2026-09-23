@@ -17,6 +17,7 @@ import {
   type ReviewGrade,
   type ReviewGradeItem,
 } from "@/lib/api-client";
+import { formatDelay, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
 import type { Word } from "@/lib/types";
 import { useVocab } from "@/lib/vocab-store";
@@ -27,27 +28,6 @@ const SCREEN = "min-h-[calc(100vh-8.5rem)]";
 // 서버 /v1/review/due의 상한과 같다. 실제 출제량은 하루 한도(마이페이지)와
 // 오늘 due인 단어 수가 정한다 — 이 값은 그 위에 얹힌 안전장치일 뿐이다.
 const MAX_COUNT = 9999;
-
-/** 초 → 사람이 읽는 간격. 버튼 위에 띄운다. */
-function formatDelay(seconds: number): string {
-  if (seconds <= 30) return "즉시";
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}분`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}시간`;
-  return `${Math.round(seconds / 86400)}일`;
-}
-
-
-/** Fisher-Yates. 원본은 건드리지 않는다. */
-function shuffled<T>(items: T[]): T[] {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
 
 export default function ReviewPage() {
   const { getToken } = useAuth();

@@ -458,6 +458,7 @@ class DriftVocabRepository implements VocabRepository {
       srsLapses: row.srsLapses,
       srsDueAt: row.srsDueAt,
       srsLastReviewedAt: row.srsLastReviewedAt,
+      srsLearningStep: row.srsLearningStep,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       isDeleted: row.isDeleted,

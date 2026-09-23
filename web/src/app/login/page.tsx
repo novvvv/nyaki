@@ -4,24 +4,11 @@ import { FirebaseError } from "firebase/app";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { safeNext } from "@/lib/safe-next";
 
 // << ? 
 const SCREEN =
   "flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center px-6 py-16 text-center";
-
-/**
- * 로그인 후 돌아갈 곳.
- *
- * 우리 사이트 안의 경로만 허용한다. `https://...`나 `//evil.com`을 그대로
- * 받으면 "로그인하면 다른 사이트로 보내는 주소"를 만들 수 있다.
- */
-
-// /login?next=/review ... 로그인이 끝나면 /review로 리다이렉트? 
-function safeNext(raw: string | null): string {
-  if (!raw) return "/word-books";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/word-books";
-  return raw;
-}
 
 /* Firebase 오류 코드를 사람이 읽을 문구로. 서비스 톤에 맞춘다. */
 function messageFor(error: unknown): string {

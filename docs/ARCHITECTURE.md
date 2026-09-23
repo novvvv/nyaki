@@ -544,8 +544,11 @@ UI (word_test_session_screen.dart)
 
 ### 5.6 학습 단계 (2026-09-23 추가)
 
-안키의 **Learning steps / Relearning steps / Graduating interval**을 선택 기능으로 넣었다.
-기본값은 **단계 없음**이라 켜기 전까지 위 5.2의 동작과 정확히 같다.
+안키의 **Learning steps / Relearning steps / Graduating interval**을 넣었다.
+**기본값은 안키와 같다 — 학습 `1m 10m`, 재학습 `10m`, 졸업 1일.**
+
+`null`(설정한 적 없음)과 `""`(사용자가 일부러 비움)을 구분한다. 빈 문자열로 저장하면
+단계 없이 5.2의 동작(모름 = 즉시, 외움 = 1일)으로 돌아간다.
 
 | 설정 | 저장 | 뜻 |
 |---|---|---|

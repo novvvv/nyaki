@@ -221,14 +221,36 @@ def _parse_steps(raw: str | None) -> tuple[int, ...]:
     return tuple(out)
 
 
+# 안키 기본값과 같다. 컬럼이 null이면(= 한 번도 설정한 적 없으면) 이 값을 쓴다.
+DEFAULT_LEARNING_STEPS = (1, 10)
+DEFAULT_RELEARNING_STEPS = (10,)
+
+
+def steps_or_default(raw: str | None, default: tuple[int, ...]) -> tuple[int, ...]:
+    """null과 빈 문자열을 구분한다.
+
+    - null  = 설정한 적 없음 → 기본값
+    - ""    = 사용자가 일부러 비움 → 단계 없이 바로 일 단위로
+    """
+    if raw is None:
+        return default
+    return _parse_steps(raw)
+
+
 def load_step_config(session: Session, user_id: str) -> StepConfig:
-    """저장된 복습 흐름 설정. 없으면 단계 없음(= 기존 동작)."""
+    """저장된 복습 흐름 설정. 설정한 적 없으면 안키 기본값."""
     progress = session.get(UserProgressModel, user_id)
     if progress is None:
-        return DEFAULT_STEPS
+        return StepConfig(
+            learning_steps=DEFAULT_LEARNING_STEPS,
+            relearning_steps=DEFAULT_RELEARNING_STEPS,
+            graduating_interval_days=1,
+        )
     return StepConfig(
-        learning_steps=_parse_steps(progress.learning_steps),
-        relearning_steps=_parse_steps(progress.relearning_steps),
+        learning_steps=steps_or_default(progress.learning_steps, DEFAULT_LEARNING_STEPS),
+        relearning_steps=steps_or_default(
+            progress.relearning_steps, DEFAULT_RELEARNING_STEPS
+        ),
         graduating_interval_days=progress.graduating_interval_days or 1,
     )
 

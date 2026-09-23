@@ -36,6 +36,15 @@ def _client(user: str) -> TestClient:
         ).status_code
         == 200
     )
+    # 이 파일은 하루 한도만 본다. 학습 단계(기본 안키식)가 끼면 "모름 → 1분 뒤"가
+    # 돼서 검증하려는 것과 무관한 변수가 는다.
+    assert (
+        client.put(
+            "/v1/progress/settings",
+            json={"learning_steps": "", "relearning_steps": ""},
+        ).status_code
+        == 200
+    )
     return client
 
 

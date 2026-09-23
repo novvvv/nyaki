@@ -87,6 +87,21 @@ def test_review_due_respects_limit() -> None:
 # ==================== POST /v1/review/grades ====================
 
 
+def _disable_steps(client: TestClient) -> None:
+    """이 파일의 SM-2 테스트는 '단계 없음' 동작을 검증한다.
+
+    기본값이 안키식(1m 10m)이 되면서, 일 단위 계산을 보려면 단계를 꺼야 한다.
+    단계를 켠 동작은 test_learning_steps_api.py가 본다.
+    """
+    assert (
+        client.put(
+            "/v1/progress/settings",
+            json={"learning_steps": "", "relearning_steps": ""},
+        ).status_code
+        == 200
+    )
+
+
 def _setup(user: str, book_id: str) -> TestClient:
     Base.metadata.create_all(bind=engine)
     app.dependency_overrides[get_current_user_id] = lambda: user
@@ -100,6 +115,7 @@ def _setup(user: str, book_id: str) -> TestClient:
         "is_deleted": False,
     }
     assert client.put(f"/v1/word-books/{book_id}", json=book).status_code == 200
+    _disable_steps(client)
     return client
 
 

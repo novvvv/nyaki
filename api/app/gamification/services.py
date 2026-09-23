@@ -2,7 +2,13 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..models import QuestStateModel, UserProgressModel
-from ..vocab.services import DEFAULT_NEW_LIMIT, DEFAULT_REVIEW_LIMIT, _parse_steps
+from ..vocab.services import (
+    DEFAULT_LEARNING_STEPS,
+    DEFAULT_NEW_LIMIT,
+    DEFAULT_RELEARNING_STEPS,
+    DEFAULT_REVIEW_LIMIT,
+    steps_or_default,
+)
 from .schemas import ProgressResponse, ProgressSettingsRequest
 
 # 재화 식별자 — 앱 quest_screen.dart의 currency 값과 같은 문자열을 쓴다.
@@ -131,9 +137,16 @@ def _response(
         else DEFAULT_REVIEW_LIMIT,
         # 저장은 "1,10" 문자열이지만 내려줄 때는 숫자 배열로 푼다 — 화면과 앱이
         # 문자열 파싱을 각자 다시 구현하지 않도록.
-        learning_steps=list(_parse_steps(progress.learning_steps if progress else None)),
+        learning_steps=list(
+            steps_or_default(
+                progress.learning_steps if progress else None, DEFAULT_LEARNING_STEPS
+            )
+        ),
         relearning_steps=list(
-            _parse_steps(progress.relearning_steps if progress else None)
+            steps_or_default(
+                progress.relearning_steps if progress else None,
+                DEFAULT_RELEARNING_STEPS,
+            )
         ),
         graduating_interval_days=(
             progress.graduating_interval_days

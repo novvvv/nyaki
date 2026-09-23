@@ -99,18 +99,39 @@ def test_settings_round_trip() -> None:
     app.dependency_overrides.clear()
 
 
-def test_default_has_no_steps() -> None:
-    """설정을 건드리지 않은 사용자는 기존 동작 그대로다."""
+def test_default_is_anki_like() -> None:
+    """설정을 건드린 적 없으면 안키 기본값(1m 10m / 10m)이 적용된다."""
     client = _client("firebase-user-steps-default")
 
     body = client.get("/v1/progress").json()
-    assert body["learning_steps"] == []
-    assert body["relearning_steps"] == []
+    assert body["learning_steps"] == [1, 10]
+    assert body["relearning_steps"] == [10]
 
     _add_word(client, "default-word")
     _grade(client, "default-word", "good", "log-default-1")
 
     word = _word(client, "default-word")
+    assert word["srs_learning_step"] == 1  # 10분 단계
+    assert word["srs_interval_days"] == 0  # 아직 졸업 전
+
+    app.dependency_overrides.clear()
+
+
+def test_empty_string_turns_steps_off() -> None:
+    """일부러 비우면 단계를 끈다 — null(설정한 적 없음)과 구분한다."""
+    client = _client("firebase-user-steps-off")
+
+    body = client.put(
+        "/v1/progress/settings",
+        json={"learning_steps": "", "relearning_steps": ""},
+    ).json()
+    assert body["learning_steps"] == []
+    assert body["relearning_steps"] == []
+
+    _add_word(client, "off-word")
+    _grade(client, "off-word", "good", "log-off-1")
+
+    word = _word(client, "off-word")
     assert word["srs_interval_days"] == 1  # 바로 일 단위
     assert word["srs_learning_step"] is None
 

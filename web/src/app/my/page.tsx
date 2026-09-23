@@ -148,7 +148,7 @@ function DailyLimits() {
       <div className="divide-y divide-taupe/25">
         <Row
           label="학습 단계"
-          value="새 단어를 이 간격(분)으로 다시 보여줍니다. 비우면 바로 다음 날로 넘어갑니다"
+          value="새 단어를 이 간격(분)으로 다시 보여줍니다. 비워서 저장하면 단계 없이 바로 다음 날로"
           action={
             <TextInput
               value={learningText}
@@ -161,7 +161,7 @@ function DailyLimits() {
         />
         <Row
           label="재학습 단계"
-          value="외웠던 단어를 틀렸을 때의 간격(분)"
+          value="외웠던 단어를 틀렸을 때의 간격(분). 비워서 저장하면 즉시 다시"
           action={
             <TextInput
               value={relearningText}

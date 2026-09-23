@@ -8,9 +8,11 @@ import { PrimaryButton, SubtleButton } from "@/components/ui";
 import {
   fetchDueCounts,
   fetchDueWords,
+  fetchProgress,
   pushGrades,
   pushGradesBeacon,
   type DueCounts,
+  type Progress,
   type ReviewGrade,
   type ReviewGradeItem,
 } from "@/lib/api-client";
@@ -53,6 +55,11 @@ export default function ReviewPage() {
   // 단어장별 due 개수. /review/due(최대 200개)의 길이로 세면 201개부터 틀려서
   // 개수 전용 엔드포인트를 따로 부른다.
   const [counts, setCounts] = useState<DueCounts>();
+  // 복습 흐름 설정. 세션 안에서 카드를 다시 보여줄지 정하는 데만 쓴다 —
+  // 실제 다음 복습 시각은 서버가 계산한다.
+  const [flow, setFlow] = useState<Progress>();
+  // 이 세션 동안 각 단어가 몇 번째 단계인지. 화면을 다시 그릴 값이 아니라 ref.
+  const sessionStep = useRef<Record<string, number>>({});
   // 선택한 단어장. undefined면 "아직 안 정함" = 전체를 뜻한다.
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>();
 
@@ -112,15 +119,39 @@ export default function ReviewPage() {
       setResult((prev) => ({ ...prev, [value]: prev[value] + 1 }));
       setFlipped(false);
 
+      // 학습 단계가 설정돼 있으면, 아직 졸업하지 않은 카드는 이 세션 안에서
+      // 다시 보여준다. 몇 분 뒤인지는 서버가 정하고 여기서는 순서만 정한다 —
+      // 웹은 SM-2를 계산하지 않는다(docs/WEB-REVIEW-PLAN.md 5절).
+      //
+      // 어느 단계 목록을 탈지는 "졸업한 적 있는 카드인가"로 가른다. 서버는
+      // lapses로 판단하지만 여기서는 간격이 잡혀 있는지로 근사한다 — 틀려도
+      // 이 세션의 등장 순서만 달라지고 저장되는 값은 서버 것이 맞는다.
+      const steps =
+        (word.srsIntervalDays ?? 0) > 0
+          ? (flow?.relearningSteps ?? [])
+          : (flow?.learningSteps ?? []);
+
+      let requeued = false;
+      if (steps.length > 0) {
+        const current = sessionStep.current[word.id] ?? word.srsLearningStep ?? 0;
+        const nextStep = value === "again" ? 0 : current + 1;
+        if (nextStep < steps.length) {
+          sessionStep.current[word.id] = nextStep;
+          requeued = true;
+        }
+      }
+
+      if (requeued) setQueue((prev) => [...prev, word]);
+
       const next = index + 1;
-      if (next >= queue.length) {
+      if (next >= queue.length + (requeued ? 1 : 0)) {
         setPhase("done");
         void flush();
       } else {
         setIndex(next);
       }
     },
-    [flush, index, queue],
+    [flow, flush, index, queue],
   );
 
   useEffect(() => {
@@ -170,14 +201,16 @@ export default function ReviewPage() {
       try {
         const token = await getToken();
         if (!token) throw new Error("로그인이 필요합니다.");
-        const [words, dueCounts] = await Promise.all([
+        const [words, dueCounts, progress] = await Promise.all([
           fetchDueWords(token, MAX_COUNT),
           fetchDueCounts(token),
+          fetchProgress(token),
         ]);
         if (cancelled) return;
 
         setDue(words);
         setCounts(dueCounts);
+        setFlow(progress);
         // 기본값 20이 due 개수보다 크면 개수에 맞춘다.
         setCountText((prev) => {
           const n = Number.parseInt(prev, 10);
@@ -215,6 +248,7 @@ export default function ReviewPage() {
 
     pending.current = [];
     sent.current = false;
+    sessionStep.current = {};
     // 무엇을 낼지는 항상 오래 밀린 순으로 고른다 — 섞는 것은 그 안의 순서뿐이다.
     const chosen = picked.slice(0, size);
     setQueue(shuffle ? shuffled(chosen) : chosen);

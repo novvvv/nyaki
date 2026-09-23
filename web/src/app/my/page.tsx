@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Card, PageHeader, SubtleButton, TextInput } from "@/components/ui";
 import {
   fetchProgress,
-  updateDailyLimits,
+  updateSettings,
   type Progress,
 } from "@/lib/api-client";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
@@ -23,6 +23,9 @@ function DailyLimits() {
   const [progress, setProgress] = useState<Progress>();
   const [newText, setNewText] = useState("");
   const [reviewText, setReviewText] = useState("");
+  const [learningText, setLearningText] = useState("");
+  const [relearningText, setRelearningText] = useState("");
+  const [graduatingText, setGraduatingText] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>();
 
@@ -31,8 +34,7 @@ function DailyLimits() {
     if (!token) return;
     const value = await fetchProgress(token);
     setProgress(value);
-    setNewText(String(value.dailyNewLimit));
-    setReviewText(String(value.dailyReviewLimit));
+    apply(value);
   }, [getToken]);
 
   useEffect(() => {
@@ -49,10 +51,21 @@ function DailyLimits() {
     };
   }, [load]);
 
+  function apply(value: Progress) {
+    setNewText(String(value.dailyNewLimit));
+    setReviewText(String(value.dailyReviewLimit));
+    setLearningText(value.learningSteps.join(" "));
+    setRelearningText(value.relearningSteps.join(" "));
+    setGraduatingText(String(value.graduatingIntervalDays));
+  }
+
   const dirty =
     progress !== undefined &&
     (newText !== String(progress.dailyNewLimit) ||
-      reviewText !== String(progress.dailyReviewLimit));
+      reviewText !== String(progress.dailyReviewLimit) ||
+      learningText !== progress.learningSteps.join(" ") ||
+      relearningText !== progress.relearningSteps.join(" ") ||
+      graduatingText !== String(progress.graduatingIntervalDays));
 
   async function save() {
     if (!progress || saving) return;
@@ -67,13 +80,18 @@ function DailyLimits() {
         return Number.isNaN(n) ? fallback : Math.min(Math.max(n, 0), 9999);
       };
 
-      const saved = await updateDailyLimits(token, {
+      const saved = await updateSettings(token, {
         dailyNewLimit: clamp(newText, progress.dailyNewLimit),
         dailyReviewLimit: clamp(reviewText, progress.dailyReviewLimit),
+        learningSteps: learningText,
+        relearningSteps: relearningText,
+        graduatingIntervalDays: Math.max(
+          1,
+          clamp(graduatingText, progress.graduatingIntervalDays),
+        ),
       });
       setProgress(saved);
-      setNewText(String(saved.dailyNewLimit));
-      setReviewText(String(saved.dailyReviewLimit));
+      apply(saved);
       setMessage("저장했다냥");
     } catch (reason) {
       setMessage(
@@ -119,6 +137,54 @@ function DailyLimits() {
               onChange={(e) => setReviewText(e.target.value)}
               aria-label="하루 복습 상한"
               className="w-24 text-right tabular-nums"
+            />
+          }
+        />
+      </div>
+
+      <p className="mb-1 mt-8 text-[11px] font-medium uppercase tracking-wider text-ink/35">
+        복습 흐름
+      </p>
+      <div className="divide-y divide-taupe/25">
+        <Row
+          label="학습 단계"
+          value="새 단어를 이 간격(분)으로 다시 보여줍니다. 비우면 바로 다음 날로 넘어갑니다"
+          action={
+            <TextInput
+              value={learningText}
+              onChange={(e) => setLearningText(e.target.value)}
+              placeholder="1 10"
+              aria-label="학습 단계(분)"
+              className="w-28 text-right"
+            />
+          }
+        />
+        <Row
+          label="재학습 단계"
+          value="외웠던 단어를 틀렸을 때의 간격(분)"
+          action={
+            <TextInput
+              value={relearningText}
+              onChange={(e) => setRelearningText(e.target.value)}
+              placeholder="10"
+              aria-label="재학습 단계(분)"
+              className="w-28 text-right"
+            />
+          }
+        />
+        <Row
+          label="졸업 간격"
+          value="마지막 단계를 통과하면 며칠 뒤에 볼지"
+          action={
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={365}
+              value={graduatingText}
+              onChange={(e) => setGraduatingText(e.target.value)}
+              aria-label="졸업 간격(일)"
+              className="w-28 text-right tabular-nums"
             />
           }
         />

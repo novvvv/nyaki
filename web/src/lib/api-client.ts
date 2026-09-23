@@ -25,6 +25,7 @@ type ApiWord = {
   is_bookmarked: boolean;
   tags: string[];
   srs_interval_days: number;
+  srs_learning_step: number | null;
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
@@ -53,6 +54,7 @@ function toWord(value: ApiWord): Word {
     exampleMeaning: value.example_meaning ?? undefined,
     memorizationStatus: value.memorization_status,
     srsIntervalDays: value.srs_interval_days ?? 0,
+    srsLearningStep: value.srs_learning_step ?? null,
     isBookmarked: value.is_bookmarked ?? false,
     tags: value.tags ?? [],
     createdAt: value.created_at,
@@ -259,6 +261,12 @@ export interface Progress {
   dailyNewLimit: number;
   /** 하루 복습 상한 — 안키의 "최대 복습량/일". 9999면 사실상 무제한 */
   dailyReviewLimit: number;
+  /** 학습 단계(분). 빈 배열이면 단계 없이 바로 일 단위로 간다 */
+  learningSteps: number[];
+  /** 재학습 단계(분) — 복습 카드가 틀렸을 때 */
+  relearningSteps: number[];
+  /** 마지막 단계를 통과했을 때의 간격(일) */
+  graduatingIntervalDays: number;
 }
 
 type ApiProgress = {
@@ -267,6 +275,9 @@ type ApiProgress = {
   completed_today: string[];
   daily_new_limit: number;
   daily_review_limit: number;
+  learning_steps: number[];
+  relearning_steps: number[];
+  graduating_interval_days: number;
 };
 
 function toProgress(value: ApiProgress): Progress {
@@ -276,6 +287,9 @@ function toProgress(value: ApiProgress): Progress {
     completedToday: value.completed_today,
     dailyNewLimit: value.daily_new_limit,
     dailyReviewLimit: value.daily_review_limit,
+    learningSteps: value.learning_steps,
+    relearningSteps: value.relearning_steps,
+    graduatingIntervalDays: value.graduating_interval_days,
   };
 }
 
@@ -283,16 +297,30 @@ export async function fetchProgress(token: string): Promise<Progress> {
   return toProgress(await request<ApiProgress>("/v1/progress", token));
 }
 
-/** 하루 한도 변경. 보낸 항목만 바뀐다. */
-export async function updateDailyLimits(
+export interface SettingsInput {
+  dailyNewLimit?: number;
+  dailyReviewLimit?: number;
+  /** "1,10" 또는 "1 10". 빈 문자열이면 단계를 끈다. */
+  learningSteps?: string;
+  relearningSteps?: string;
+  graduatingIntervalDays?: number;
+}
+
+/** 학습 설정 변경. 보낸 항목만 바뀐다. */
+export async function updateSettings(
   token: string,
-  limits: { dailyNewLimit?: number; dailyReviewLimit?: number },
+  settings: SettingsInput,
 ): Promise<Progress> {
-  const body: Record<string, number> = {};
-  if (limits.dailyNewLimit !== undefined)
-    body.daily_new_limit = limits.dailyNewLimit;
-  if (limits.dailyReviewLimit !== undefined)
-    body.daily_review_limit = limits.dailyReviewLimit;
+  const body: Record<string, number | string> = {};
+  const { dailyNewLimit, dailyReviewLimit } = settings;
+  if (dailyNewLimit !== undefined) body.daily_new_limit = dailyNewLimit;
+  if (dailyReviewLimit !== undefined) body.daily_review_limit = dailyReviewLimit;
+  if (settings.learningSteps !== undefined)
+    body.learning_steps = settings.learningSteps;
+  if (settings.relearningSteps !== undefined)
+    body.relearning_steps = settings.relearningSteps;
+  if (settings.graduatingIntervalDays !== undefined)
+    body.graduating_interval_days = settings.graduatingIntervalDays;
 
   return toProgress(
     await request<ApiProgress>("/v1/progress/settings", token, {

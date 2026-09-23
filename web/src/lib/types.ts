@@ -19,6 +19,11 @@ export interface Word {
    * 없으면 0(= 아직 학습 안 함)으로 본다.
    */
   srsIntervalDays?: number;
+  /**
+   * 지금 몇 번째 학습 단계인지. null이면 학습 단계가 아니다.
+   * 세션 안에서 이 카드를 다시 보여줄지 정할 때 쓴다 — 계산은 서버가 한다.
+   */
+  srsLearningStep?: number | null;
   createdAt: string;
   updatedAt: string;
   isDeleted: boolean;

@@ -235,6 +235,7 @@ erDiagram
     int srs_lapses
     datetime srs_due_at
     datetime srs_last_reviewed_at "nullable"
+    int srs_learning_step "nullable, 학습 단계 인덱스"
     datetime created_at
     datetime updated_at
     bool is_deleted
@@ -308,6 +309,8 @@ Base `/v1` · `Authorization: Bearer <Firebase ID token>` · ISO 8601 · OpenAPI
 | POST | `/v1/progress/quests/{quest_id}/complete` | idempotent 퀘스트 완료 |
 | GET | `/v1/progress` | 잔액 + 오늘 완료 퀘스트 |
 | GET/PUT/DELETE | `/v1/content/...` | 웹 콘텐츠 (쓰기는 `require_admin_id`) |
+| GET | `/v1/review/due/count` | 오늘 낼 수 있는 개수 (단어장별, 상한 없음) |
+| PUT | `/v1/progress/settings` | 하루 한도 · 복습 흐름 설정 |
 
 ### Sync
 
@@ -539,7 +542,34 @@ UI (word_test_session_screen.dart)
 
 롤백: 추가 컬럼이 전부 nullable/default라 하위 호환. Hub 이전 버전 재배포만 하면 된다.
 
-### 5.6 v2 후보 (착수 전)
+### 5.6 학습 단계 (2026-09-23 추가)
+
+안키의 **Learning steps / Relearning steps / Graduating interval**을 선택 기능으로 넣었다.
+기본값은 **단계 없음**이라 켜기 전까지 위 5.2의 동작과 정확히 같다.
+
+| 설정 | 저장 | 뜻 |
+|---|---|---|
+| `learning_steps` | `user_progress`, `"1,10"` | 새 카드가 거치는 분 단위 단계 |
+| `relearning_steps` | 같음 | 졸업한 카드가 틀렸을 때 거치는 단계 |
+| `graduating_interval_days` | 같음 | 마지막 단계를 통과했을 때의 간격(일) |
+
+카드가 지금 몇 번째 단계인지는 `words.srs_learning_step`에 둔다(null이면 단계 밖).
+
+**lapses 정의가 바뀌었다** — 안키와 같이 **복습 카드가 틀렸을 때만** 센다.
+학습 중 실패는 세지 않는다. 이 값이 learning/relearning 판별 근거이기도 하다.
+(Dart 구현은 아직 이전 정의다 — 아래 주의 참고)
+
+**웹이 SM-2를 계산하지 않는 구조는 유지된다.** 클라이언트는 분 단위 단계 목록만 알면
+세션 안에서 다시 보여줄 순서를 정할 수 있고, 채점 이벤트는 그대로 세션 끝에 모아 보낸다.
+서버가 받은 순서대로 적용하므로 한 단어를 `again → good → good`으로 채점한 기록도
+정확히 재생된다.
+
+> **주의 — 앱은 아직 단계를 모른다.** `lib/data/srs/sm2.dart`에 단계 개념이 없고
+> Drift에 `srs_learning_step` 컬럼도 없다. 단계를 켠 상태에서 앱으로 채점하면
+> 앱은 일 단위로 계산해 올리므로 두 클라이언트의 결과가 갈린다.
+> **앱을 함께 쓰는 동안에는 단계를 켜지 않는 것이 안전하다.**
+
+### 5.7 v2 후보 (착수 전)
 
 **웹 복습 UI 보류 사유** — `upsert_word`가 필드 단위가 아니라 **row 전체**를 덮어쓴다.
 단어 수정은 저빈도라 충돌이 드물지만 채점은 하루 수십 번의 고빈도 쓰기다.

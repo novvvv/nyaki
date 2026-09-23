@@ -86,8 +86,17 @@ class SyncPullResponse(BaseModel):
     changes: list[SyncChange]
 
 
+class GradePreviewResponse(BaseModel):
+    """이 카드를 지금 채점하면 다음 복습까지 몇 초 남는지."""
+
+    again_seconds: int
+    good_seconds: int
+
+
 class ReviewDueResponse(BaseModel):
     words: list[WordResponse]
+    # 단어 id → 버튼에 띄울 예상 간격. 웹이 SM-2를 다시 구현하지 않도록 서버가 준다.
+    previews: dict[str, GradePreviewResponse] = {}
 
 
 class ReviewDueCountResponse(BaseModel):

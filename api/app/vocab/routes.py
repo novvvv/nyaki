@@ -2,12 +2,15 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
+from dataclasses import asdict
+
 from sqlalchemy.orm import Session
 
 from ..core.auth import get_current_user_id
 from ..core.database import get_session
 from ..models import SyncChangeModel, WordBookModel, WordModel
 from .schemas import (
+    GradePreviewResponse,
     ReviewDueCountResponse,
     ReviewDueResponse,
     ReviewGradesRequest,
@@ -22,12 +25,15 @@ from .schemas import (
     WordPayload,
     WordResponse,
 )
+from .srs import Sm2State, preview
 from .services import (
     apply_review_grades,
     delete_word,
     delete_word_book,
     count_due_words,
+    load_step_config,
     select_due_words,
+    utc_now,
     list_word_books,
     list_words,
     upsert_word,
@@ -147,7 +153,33 @@ def get_review_due(
     user_id: str = Depends(get_current_user_id),
 ) -> ReviewDueResponse:
     words = select_due_words(session, user_id, limit)
-    return ReviewDueResponse(words=[WordResponse.model_validate(w) for w in words])
+    config = load_step_config(session, user_id)
+    now = utc_now()
+
+    previews = {
+        word.id: GradePreviewResponse(
+            **asdict(
+                preview(
+                    Sm2State(
+                        ease_factor=word.srs_ease_factor,
+                        interval_days=word.srs_interval_days,
+                        repetitions=word.srs_repetitions,
+                        lapses=word.srs_lapses,
+                        due_at=word.srs_due_at,
+                        last_reviewed_at=word.srs_last_reviewed_at,
+                        learning_step=word.srs_learning_step,
+                    ),
+                    now,
+                    config,
+                )
+            )
+        )
+        for word in words
+    }
+
+    return ReviewDueResponse(
+        words=[WordResponse.model_validate(w) for w in words], previews=previews
+    )
 
 
 @router.get("/review/due/count", response_model=ReviewDueCountResponse)

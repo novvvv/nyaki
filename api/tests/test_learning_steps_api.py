@@ -226,3 +226,41 @@ def test_review_card_failure_uses_relearning_steps() -> None:
     assert timedelta(minutes=19) < delta < timedelta(minutes=21)
 
     app.dependency_overrides.clear()
+
+
+def test_due_response_carries_button_previews() -> None:
+    """버튼에 띄울 다음 간격을 서버가 계산해 내려준다 — 웹은 SM-2를 모른다."""
+    client = _client("firebase-user-steps-preview")
+    client.put(
+        "/v1/progress/settings",
+        json={"learning_steps": "1,10", "relearning_steps": "10"},
+    )
+    _add_word(client, "preview-word")
+
+    body = client.get("/v1/review/due?limit=10").json()
+    preview = body["previews"]["preview-word"]
+
+    # 새 카드: 모름 → 1분, 외움 → 10분
+    assert preview["again_seconds"] == 60
+    assert preview["good_seconds"] == 600
+
+    app.dependency_overrides.clear()
+
+
+def test_previews_follow_the_steps_setting() -> None:
+    client = _client("firebase-user-steps-preview-off")
+    client.put(
+        "/v1/progress/settings",
+        json={"learning_steps": "", "relearning_steps": ""},
+    )
+    _add_word(client, "preview-off-word")
+
+    preview = client.get("/v1/review/due?limit=10").json()["previews"][
+        "preview-off-word"
+    ]
+
+    # 단계를 끄면 모름 = 즉시, 외움 = 1일
+    assert preview["again_seconds"] == 0
+    assert preview["good_seconds"] == 86400
+
+    app.dependency_overrides.clear()

@@ -223,6 +223,30 @@ def grade_good(
     )
 
 
+@dataclass(frozen=True)
+class GradePreview:
+    """이 카드를 지금 채점하면 다음 복습까지 몇 초 남는지.
+
+    화면의 버튼에 "1분" / "10일"을 띄우는 데 쓴다. 웹이 직접 계산하면 SM-2가
+    세 번째로 구현되므로(Dart·Python에 이어) 서버가 미리 계산해 내려준다.
+    """
+
+    again_seconds: int
+    good_seconds: int
+
+
+def preview(
+    state: Sm2State, now: datetime, config: StepConfig = DEFAULT_STEPS
+) -> GradePreview:
+    now_utc = _as_utc(now)
+    again = grade_again(state, now_utc, config).state.due_at
+    good = grade_good(state, now_utc, config).state.due_at
+    return GradePreview(
+        again_seconds=max(0, int((again - now_utc).total_seconds())),
+        good_seconds=max(0, int((good - now_utc).total_seconds())),
+    )
+
+
 def grade(
     state: Sm2State,
     value: ReviewGrade,

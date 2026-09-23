@@ -9,7 +9,6 @@ import {
   GhostButton,
   PageHeader,
   PrimaryLink,
-  SubtleButton,
 } from "@/components/ui";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -17,8 +16,7 @@ import {
   fetchClozeNotes,
   type BookSummary,
 } from "@/lib/api-client";
-import { CARD_KIND_LABELS, type CardKind, type ClozeNote } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import type { ClozeNote } from "@/lib/types";
 import { WORD_PAGE_SIZE as PAGE_SIZE } from "@/lib/constants";
 import { activeWords, useVocab } from "@/lib/vocab-store";
 
@@ -82,9 +80,8 @@ export default function WordBookDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { getWordBook, deleteWordBook, updateWordBook } = useVocab();
+  const { getWordBook, deleteWordBook } = useVocab();
   const { getToken } = useAuth();
-  const [savingKinds, setSavingKinds] = useState(false);
   const [clozeNotes, setClozeNotes] = useState<ClozeNote[]>([]);
   const [summary, setSummary] = useState<BookSummary>();
   const [deleting, setDeleting] = useState(false);
@@ -183,32 +180,6 @@ export default function WordBookDetailPage() {
     currentPage * PAGE_SIZE,
   );
 
-  const toggleKind = async (kind: CardKind) => {
-    if (savingKinds) return;
-    const current = book.cardKinds ?? ["recognition"];
-    const next = current.includes(kind)
-      ? current.filter((value) => value !== kind)
-      : [...current, kind];
-
-    // 전부 끄면 출제할 게 없어진다 — 서버도 최소 하나는 남기므로 여기서 막는다.
-    if (next.length === 0) return;
-
-    setSavingKinds(true);
-    try {
-      await updateWordBook(book.id, {
-        title: book.title,
-        description: book.description,
-        cardKinds: next,
-      });
-    } catch (reason) {
-      window.alert(
-        reason instanceof Error ? reason.message : "카드 종류를 바꾸지 못했어요.",
-      );
-    } finally {
-      setSavingKinds(false);
-    }
-  };
-
   const handleDeleteBook = async () => {
     if (
       !window.confirm(
@@ -240,6 +211,11 @@ export default function WordBookDetailPage() {
               추가
             </PrimaryLink>
             <GhostButton
+              onClick={() => router.push(`/word-books/${book.id}/settings`)}
+            >
+              설정
+            </GhostButton>
+            <GhostButton
               className="text-umber/45 hover:bg-transparent hover:text-red-600"
               disabled={deleting}
               onClick={() => void handleDeleteBook()}
@@ -269,34 +245,6 @@ export default function WordBookDetailPage() {
         />
       ) : (
         <>
-          <div className="mb-9">
-            <p className="text-xs font-semibold tracking-wide text-ink/35">
-              카드 종류
-            </p>
-            <p className="mt-0.5 text-xs text-umber/45">
-              고른 종류마다 카드가 따로 만들어지고 복습 일정도 따로 갑니다
-            </p>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              {(Object.keys(CARD_KIND_LABELS) as CardKind[]).map((kind) => {
-                const on = (book.cardKinds ?? ["recognition"]).includes(kind);
-                return (
-                  <SubtleButton
-                    key={kind}
-                    aria-pressed={on}
-                    disabled={savingKinds}
-                    onClick={() => void toggleKind(kind)}
-                    className={cn(
-                      "px-3.5 py-1.5 text-xs",
-                      on && "border-ink bg-ink text-cream hover:text-cream",
-                    )}
-                  >
-                    {CARD_KIND_LABELS[kind]}
-                  </SubtleButton>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="mb-4 flex items-center gap-1">
             {(
               [

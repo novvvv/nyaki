@@ -180,7 +180,30 @@ export default function WordBookDetailPage() {
         }
       />
 
-      {words.length === 0 ? (
+          {clozeNotes.length > 0 ? (
+        <div className="mb-9">
+          <p className="text-xs font-semibold tracking-wide text-ink/35">
+            빈칸 노트
+          </p>
+          <ul className="mt-2 divide-y divide-taupe/25 border-t border-taupe/25">
+            {clozeNotes.map((note) => (
+              <li
+                key={note.id}
+                className="flex items-center justify-between gap-4 py-3"
+              >
+                <p className="min-w-0 truncate text-sm text-ink/80">
+                  {clozePreview(note.text)}
+                </p>
+                <span className="shrink-0 text-xs tabular-nums text-umber/45">
+                  빈칸 {clozeCount(note.text)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {words.length === 0 && clozeNotes.length === 0 ? (
         <EmptyState
           title="단어가 없습니다"
           description="첫 단어를 추가해 보세요."
@@ -190,7 +213,7 @@ export default function WordBookDetailPage() {
             </PrimaryLink>
           }
         />
-      ) : (
+      ) : words.length === 0 ? null : (
         <>
           <div className="mb-9">
             <p className="text-xs font-semibold tracking-wide text-ink/35">
@@ -231,29 +254,6 @@ export default function WordBookDetailPage() {
               })}
             </div>
           </div>
-
-          {clozeNotes.length > 0 ? (
-            <div className="mb-9">
-              <p className="text-xs font-semibold tracking-wide text-ink/35">
-                빈칸 노트
-              </p>
-              <ul className="mt-2 divide-y divide-taupe/25 border-t border-taupe/25">
-                {clozeNotes.map((note) => (
-                  <li
-                    key={note.id}
-                    className="flex items-center justify-between gap-4 py-3"
-                  >
-                    <p className="min-w-0 truncate text-sm text-ink/80">
-                      {clozePreview(note.text)}
-                    </p>
-                    <span className="shrink-0 text-xs tabular-nums text-umber/45">
-                      빈칸 {clozeCount(note.text)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
 
           <div className="mb-4 flex items-center gap-1">
             {(

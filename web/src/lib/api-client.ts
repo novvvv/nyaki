@@ -166,6 +166,40 @@ function toClozeNote(value: ApiClozeNote): ClozeNote {
   };
 }
 
+export interface BookSummary {
+  wordBookId: string;
+  /** 단어 + 빈칸 노트 */
+  itemCount: number;
+  cardCount: number;
+  masteryRate: number;
+}
+
+/** 단어장별 집계. 숫자는 서버가 센다 — 클라이언트가 각자 세면 값이 갈린다. */
+export async function fetchBookSummaries(
+  token: string,
+): Promise<Record<string, BookSummary>> {
+  const rows = await request<
+    {
+      word_book_id: string;
+      item_count: number;
+      card_count: number;
+      mastery_rate: number;
+    }[]
+  >("/v1/word-books/summaries", token);
+
+  return Object.fromEntries(
+    rows.map((row) => [
+      row.word_book_id,
+      {
+        wordBookId: row.word_book_id,
+        itemCount: row.item_count,
+        cardCount: row.card_count,
+        masteryRate: row.mastery_rate,
+      },
+    ]),
+  );
+}
+
 export async function fetchClozeNotes(
   token: string,
   wordBookId: string,

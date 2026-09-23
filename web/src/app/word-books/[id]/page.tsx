@@ -12,14 +12,62 @@ import {
   SubtleButton,
 } from "@/components/ui";
 import { useAuth } from "@/components/auth-provider";
-import { fetchClozeNotes } from "@/lib/api-client";
+import {
+  fetchBookSummaries,
+  fetchClozeNotes,
+  type BookSummary,
+} from "@/lib/api-client";
 import { CARD_KIND_LABELS, type CardKind, type ClozeNote } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { WORD_PAGE_SIZE as PAGE_SIZE } from "@/lib/constants";
-import { computeMasteryRate } from "@/lib/stats";
 import { activeWords, useVocab } from "@/lib/vocab-store";
 
 type WordFilter = "all" | "bookmarked";
+
+/** 목록 한 줄 — 단어와 빈칸 노트를 같은 모양으로 담는다. */
+interface Item {
+  id: string;
+  kind: "word" | "cloze";
+  createdAt: string;
+  primary: string;
+  hint?: string;
+  secondary: string;
+  href?: string;
+  bookmarked: boolean;
+}
+
+function Row({ index, item }: { index: number; item: Item }) {
+  const body = (
+    <>
+      <span className="w-7 shrink-0 text-right text-xs tabular-nums text-umber/35">
+        {index}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink group-hover:text-umber">
+        {item.primary}
+        {item.hint ? (
+          <span className="ml-2 text-xs font-normal text-umber/40">
+            {item.hint}
+          </span>
+        ) : null}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm text-umber/60">
+        {item.secondary}
+      </span>
+    </>
+  );
+
+  // 빈칸 노트는 아직 상세 화면이 없다 — 링크 없이 줄만 보여준다.
+  return item.href ? (
+    <Link
+      href={item.href}
+      className="group flex items-baseline gap-6 py-3.5 transition-colors"
+    >
+      {body}
+    </Link>
+  ) : (
+    <div className="flex items-baseline gap-6 py-3.5">{body}</div>
+  );
+}
 
 /** 목록에 보여줄 한 줄 — 빈칸은 답을 괄호로 감싼다. */
 function clozePreview(text: string): string {
@@ -38,6 +86,7 @@ export default function WordBookDetailPage() {
   const { getToken } = useAuth();
   const [savingKinds, setSavingKinds] = useState(false);
   const [clozeNotes, setClozeNotes] = useState<ClozeNote[]>([]);
+  const [summary, setSummary] = useState<BookSummary>();
   const [deleting, setDeleting] = useState(false);
   // 단어 추가 직후 새 단어가 있는 페이지로 바로 오도록, URL의 ?page=를 초기값으로 쓴다.
   const [page, setPage] = useState(() => {
@@ -55,8 +104,13 @@ export default function WordBookDetailPage() {
       try {
         const token = await getToken();
         if (!token) return;
-        const notes = await fetchClozeNotes(token, params.id);
-        if (!cancelled) setClozeNotes(notes);
+        const [notes, summaries] = await Promise.all([
+          fetchClozeNotes(token, params.id),
+          fetchBookSummaries(token),
+        ]);
+        if (cancelled) return;
+        setClozeNotes(notes);
+        setSummary(summaries[params.id]);
       } catch {
         // 목록을 못 받아도 단어 화면은 그대로 쓸 수 있다.
       }
@@ -96,12 +150,35 @@ export default function WordBookDetailPage() {
 
   const words = activeWords(book);
   const bookmarkedWords = words.filter((word) => word.isBookmarked);
+
+  // 단어와 빈칸 노트를 한 목록으로 섞는다. 사용자에게는 둘 다 "외울 거리"다 —
+  // 어디에 저장되는지는 알 바가 아니다.
+  const items: Item[] = [
+    ...words.map((word) => ({
+      id: word.id,
+      kind: "word" as const,
+      createdAt: word.createdAt,
+      primary: word.term,
+      hint: word.pronunciation,
+      secondary: word.meaning,
+      href: `/word-books/${book.id}/words/${word.id}`,
+      bookmarked: word.isBookmarked,
+    })),
+    ...clozeNotes.map((note) => ({
+      id: note.id,
+      kind: "cloze" as const,
+      createdAt: note.createdAt,
+      primary: clozePreview(note.text),
+      secondary: `빈칸 ${clozeCount(note.text)}`,
+      bookmarked: false,
+    })),
+  ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   // 앱 '정보' 탭과 같은 계산 — 단어별 점수(SM-2 간격 기반)의 평균이다.
-  const masteryRate = computeMasteryRate(book);
-  const visibleWords = filter === "bookmarked" ? bookmarkedWords : words;
-  const totalPages = Math.max(1, Math.ceil(visibleWords.length / PAGE_SIZE));
+  const visibleItems =
+    filter === "bookmarked" ? items.filter((item) => item.bookmarked) : items;
+  const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const pagedWords = visibleWords.slice(
+  const pagedItems = visibleItems.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   );
@@ -160,15 +237,8 @@ export default function WordBookDetailPage() {
         actions={
           <div className="flex items-center gap-1">
             <PrimaryLink href={`/word-books/${book.id}/words/new`}>
-              단어 추가
+              추가
             </PrimaryLink>
-            <GhostButton
-              onClick={() =>
-                router.push(`/word-books/${book.id}/cloze-notes/new`)
-              }
-            >
-              빈칸 노트
-            </GhostButton>
             <GhostButton
               className="text-umber/45 hover:bg-transparent hover:text-red-600"
               disabled={deleting}
@@ -180,53 +250,25 @@ export default function WordBookDetailPage() {
         }
       />
 
-          {clozeNotes.length > 0 ? (
-        <div className="mb-9">
-          <p className="text-xs font-semibold tracking-wide text-ink/35">
-            빈칸 노트
-          </p>
-          <ul className="mt-2 divide-y divide-taupe/25 border-t border-taupe/25">
-            {clozeNotes.map((note) => (
-              <li
-                key={note.id}
-                className="flex items-center justify-between gap-4 py-3"
-              >
-                <p className="min-w-0 truncate text-sm text-ink/80">
-                  {clozePreview(note.text)}
-                </p>
-                <span className="shrink-0 text-xs tabular-nums text-umber/45">
-                  빈칸 {clozeCount(note.text)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {summary && summary.itemCount > 0 ? (
+        <p className="mb-8 text-xs tabular-nums text-umber/45">
+          {summary.itemCount}개 · 카드 {summary.cardCount}장 · 암기{" "}
+          {summary.masteryRate}%
+        </p>
       ) : null}
 
-      {words.length === 0 && clozeNotes.length === 0 ? (
+      {items.length === 0 ? (
         <EmptyState
-          title="단어가 없습니다"
-          description="첫 단어를 추가해 보세요."
+          title="아직 비어 있습니다"
+          description="단어나 빈칸 문장을 추가해 보세요."
           action={
             <PrimaryLink href={`/word-books/${book.id}/words/new`}>
-              단어 추가
+              추가
             </PrimaryLink>
           }
         />
-      ) : words.length === 0 ? null : (
+      ) : (
         <>
-          <div className="mb-9">
-            <p className="text-xs font-semibold tracking-wide text-ink/35">
-              단어장 암기율
-            </p>
-            <p className="mt-1 flex items-baseline gap-0.5">
-              <span className="text-3xl font-bold tracking-tight tabular-nums text-ink">
-                {masteryRate}
-              </span>
-              <span className="text-base font-semibold text-ink/40">%</span>
-            </p>
-          </div>
-
           <div className="mb-9">
             <p className="text-xs font-semibold tracking-wide text-ink/35">
               카드 종류
@@ -258,7 +300,7 @@ export default function WordBookDetailPage() {
           <div className="mb-4 flex items-center gap-1">
             {(
               [
-                { key: "all", label: "전체", count: words.length },
+                { key: "all", label: "전체", count: items.length },
                 {
                   key: "bookmarked",
                   label: "즐겨찾기",
@@ -284,7 +326,7 @@ export default function WordBookDetailPage() {
             ))}
           </div>
 
-          {visibleWords.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <EmptyState
               title="즐겨찾기한 단어가 없습니다"
               description="단어 상세에서 별표를 눌러 즐겨찾기에 추가해 보세요."
@@ -292,30 +334,15 @@ export default function WordBookDetailPage() {
           ) : (
             <>
               <ul className="divide-y divide-taupe/25 border-t border-taupe/25">
-            {pagedWords.map((word, index) => (
-              <li key={word.id}>
-                <Link
-                  href={`/word-books/${book.id}/words/${word.id}`}
-                  className="group flex items-baseline gap-6 py-3.5 transition-colors"
-                >
-                  <span className="w-7 shrink-0 text-right text-xs tabular-nums text-umber/35">
-                    {(currentPage - 1) * PAGE_SIZE + index + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink group-hover:text-umber">
-                    {word.term}
-                    {word.pronunciation ? (
-                      <span className="ml-2 text-xs font-normal text-umber/40">
-                        {word.pronunciation}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-umber/60">
-                    {word.meaning}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                {pagedItems.map((item, index) => (
+                  <li key={item.id}>
+                    <Row
+                      index={(currentPage - 1) * PAGE_SIZE + index + 1}
+                      item={item}
+                    />
+                  </li>
+                ))}
+              </ul>
 
           {totalPages > 1 ? (
             <div className="mt-8 flex items-center justify-center gap-4">

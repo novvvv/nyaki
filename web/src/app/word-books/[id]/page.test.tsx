@@ -12,9 +12,11 @@ import type { ClozeNote, WordBook } from "@/lib/types";
  */
 
 const fetchClozeNotes = vi.fn();
+const fetchBookSummaries = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   fetchClozeNotes: (...args: unknown[]) => fetchClozeNotes(...args),
+  fetchBookSummaries: (...args: unknown[]) => fetchBookSummaries(...args),
 }));
 
 vi.mock("@/components/auth-provider", () => ({
@@ -55,31 +57,44 @@ const note: ClozeNote = {
 beforeEach(() => {
   vi.clearAllMocks();
   fetchClozeNotes.mockResolvedValue([note]);
+  fetchBookSummaries.mockResolvedValue({
+    b1: { wordBookId: "b1", itemCount: 1, cardCount: 1, masteryRate: 20 },
+  });
 });
 
 describe("단어장 상세", () => {
-  it("단어가 없어도 빈칸 노트를 보여준다", async () => {
+  it("단어가 없어도 빈칸 노트가 목록에 뜬다", async () => {
     const { default: Page } = await import("./page");
     render(<Page />);
 
-    await waitFor(() =>
-      expect(screen.getByText("빈칸 노트")).toBeInTheDocument(),
-    );
     // 목록에는 답을 괄호로 감싸 보여준다 — 원문 문법을 그대로 노출하지 않는다.
-    expect(
-      screen.getByText("TCP는 [ 연결 지향 ] 프로토콜이다"),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByText("TCP는 [ 연결 지향 ] 프로토콜이다"),
+      ).toBeInTheDocument(),
+    );
     expect(screen.getByText("빈칸 1")).toBeInTheDocument();
   });
 
-  it("단어도 노트도 없을 때만 빈 상태를 보여준다", async () => {
+  it("개수와 암기율은 서버가 센 값을 쓴다", async () => {
+    const { default: Page } = await import("./page");
+    render(<Page />);
+
+    // 빈칸 노트도 항목으로 세고, 암기율도 카드 기준이다.
+    await waitFor(() =>
+      expect(screen.getByText(/1개 · 카드 1장 · 암기 20%/)).toBeInTheDocument(),
+    );
+  });
+
+  it("단어도 노트도 없으면 빈 상태", async () => {
     fetchClozeNotes.mockResolvedValue([]);
+    fetchBookSummaries.mockResolvedValue({});
 
     const { default: Page } = await import("./page");
     render(<Page />);
 
     await waitFor(() =>
-      expect(screen.getByText("단어가 없습니다")).toBeInTheDocument(),
+      expect(screen.getByText("아직 비어 있습니다")).toBeInTheDocument(),
     );
   });
 });

@@ -8,12 +8,10 @@ import { PrimaryButton, SubtleButton } from "@/components/ui";
 import {
   fetchDueCounts,
   fetchDueWords,
-  fetchProgress,
   pushGrades,
   pushGradesBeacon,
   type DueCounts,
   type GradePreview,
-  type Progress,
   type ReviewGrade,
   type ReviewGradeItem,
 } from "@/lib/api-client";
@@ -51,14 +49,8 @@ export default function ReviewPage() {
   // 단어장별 due 개수. /review/due(최대 200개)의 길이로 세면 201개부터 틀려서
   // 개수 전용 엔드포인트를 따로 부른다.
   const [counts, setCounts] = useState<DueCounts>();
-  // 복습 흐름 설정. 세션 안에서 카드를 다시 보여줄지 정하는 데만 쓴다 —
-  // 실제 다음 복습 시각은 서버가 계산한다.
-  const [flow, setFlow] = useState<Progress>();
   // 단어 id → 버튼에 띄울 다음 간격. 서버가 계산해 내려준 값이다.
   const [previews, setPreviews] = useState<Record<string, GradePreview>>({});
-  // 이 세션 동안 각 단어가 몇 번째 단계인지. 버튼의 예상 간격이 이 값을 읽으므로
-  // ref가 아니라 상태로 둔다 — 렌더 중에 ref를 읽으면 갱신이 반영되지 않는다.
-  const [sessionSteps, setSessionSteps] = useState<Record<string, number>>({});
   // 선택한 단어장. undefined면 "아직 안 정함" = 전체를 뜻한다.
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>();
 
@@ -118,44 +110,20 @@ export default function ReviewPage() {
       setResult((prev) => ({ ...prev, [value]: prev[value] + 1 }));
       setFlipped(false);
 
-      // 학습 단계가 설정돼 있으면, 아직 졸업하지 않은 카드는 이 세션 안에서
-      // 다시 보여준다. 몇 분 뒤인지는 서버가 정하고 여기서는 순서만 정한다 —
-      // 웹은 SM-2를 계산하지 않는다(docs/WEB-REVIEW-PLAN.md 5절).
-      //
-      // 어느 단계 목록을 탈지는 "졸업한 적 있는 카드인가"로 가른다. 서버는
-      // lapses로 판단하지만 여기서는 간격이 잡혀 있는지로 근사한다 — 틀려도
-      // 이 세션의 등장 순서만 달라지고 저장되는 값은 서버 것이 맞는다.
-      const steps =
-        (word.srsIntervalDays ?? 0) > 0
-          ? (flow?.relearningSteps ?? [])
-          : (flow?.learningSteps ?? []);
-
-      let requeued = false;
-      if (steps.length > 0) {
-        const current = sessionSteps[word.id] ?? word.srsLearningStep ?? 0;
-        const nextStep = value === "again" ? 0 : current + 1;
-        if (nextStep < steps.length) {
-          setSessionSteps((prev) => ({ ...prev, [word.id]: nextStep }));
-          requeued = true;
-        }
-      }
-
-      if (requeued) {
-        setQueue((prev) => [...prev, word]);
-      } else {
-        // 졸업했거나 단계를 안 쓰는 카드 — 이 세션에서 끝났다.
-        setFinished((prev) => prev + 1);
-      }
+      // 채점한 카드는 이 세션에서 빠진다. 학습 단계가 잡아둔 다음 시각(1분·10분 뒤)은
+      // 서버가 계산하고, 그 카드는 **다음 테스트**에서 다시 나온다.
+      // 세션 안에서 다시 보여주면 진행이 늘 제자리라 끝이 안 보인다.
+      setFinished((prev) => prev + 1);
 
       const next = index + 1;
-      if (next >= queue.length + (requeued ? 1 : 0)) {
+      if (next >= queue.length) {
         setPhase("done");
         void flush();
       } else {
         setIndex(next);
       }
     },
-    [flow, flush, index, queue, sessionSteps],
+    [flush, index, queue],
   );
 
   useEffect(() => {
@@ -205,10 +173,9 @@ export default function ReviewPage() {
       try {
         const token = await getToken();
         if (!token) throw new Error("로그인이 필요합니다.");
-        const [due, dueCounts, progress] = await Promise.all([
+        const [due, dueCounts] = await Promise.all([
           fetchDueWords(token, MAX_COUNT),
           fetchDueCounts(token),
-          fetchProgress(token),
         ]);
         if (cancelled) return;
 
@@ -216,7 +183,6 @@ export default function ReviewPage() {
         setPreviews(due.previews);
         setDue(words);
         setCounts(dueCounts);
-        setFlow(progress);
         // 기본값 20이 due 개수보다 크면 개수에 맞춘다.
         setCountText((prev) => {
           const n = Number.parseInt(prev, 10);
@@ -239,30 +205,12 @@ export default function ReviewPage() {
   }, [phase, getToken]);
 
   /**
-   * 버튼에 띄울 다음 간격.
+   * 버튼에 띄울 다음 간격. 서버가 세션 시작 때 계산해준 값이다.
    *
-   * 서버가 세션 시작 때 계산해준 값을 쓴다. 다만 학습 단계 때문에 이 세션에서
-   * 이미 채점한 카드는 그 값이 낡았으므로, 단계 목록으로 다시 만든다 —
-   * 분 단위 단계는 SM-2 계산이 필요 없다.
+   * 한 카드는 세션에서 한 번만 채점되므로 이 값이 낡을 일이 없다 —
+   * 웹은 SM-2를 계산하지 않는다(docs/WEB-REVIEW-PLAN.md 5절).
    */
   function delaysFor(word: Word): { again: string; good: string } {
-    const step = sessionSteps[word.id];
-    const steps =
-      (word.srsIntervalDays ?? 0) > 0
-        ? (flow?.relearningSteps ?? [])
-        : (flow?.learningSteps ?? []);
-
-    if (step !== undefined && steps.length > 0) {
-      const next = step + 1;
-      return {
-        again: `${steps[0]}분`,
-        good:
-          next < steps.length
-            ? `${steps[next]}분`
-            : `${flow?.graduatingIntervalDays ?? 1}일`,
-      };
-    }
-
     const preview = previews[word.id];
     if (!preview) return { again: "", good: "" };
     return {
@@ -287,7 +235,6 @@ export default function ReviewPage() {
 
     pending.current = [];
     sent.current = false;
-    setSessionSteps({});
     // 무엇을 낼지는 항상 오래 밀린 순으로 고른다 — 섞는 것은 그 안의 순서뿐이다.
     const chosen = picked.slice(0, size);
     setQueue(shuffle ? shuffled(chosen) : chosen);

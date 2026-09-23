@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { formatDelay, nextSessionStep, shuffled } from "./review";
+import { formatDelay, shuffled } from "./review";
 
 describe("formatDelay — 채점 버튼에 띄울 간격", () => {
   it("30초 이하는 '즉시'로 본다 (단계를 끈 경우의 모름)", () => {
@@ -48,26 +48,5 @@ describe("shuffled — 랜덤 섞기", () => {
     const spy = vi.spyOn(Math, "random").mockReturnValue(0);
     expect(shuffled([1, 2, 3])).not.toEqual([1, 2, 3]);
     spy.mockRestore();
-  });
-});
-
-describe("nextSessionStep — 세션 안 재출제", () => {
-  const steps = [1, 10];
-
-  it("모름은 첫 단계로 돌아간다", () => {
-    expect(nextSessionStep(1, "again", steps)).toBe(0);
-  });
-
-  it("외움은 다음 단계로", () => {
-    expect(nextSessionStep(0, "good", steps)).toBe(1);
-  });
-
-  it("마지막 단계에서 외우면 졸업 — 세션에서 빠진다", () => {
-    expect(nextSessionStep(1, "good", steps)).toBeNull();
-  });
-
-  it("단계를 안 쓰면 재출제가 없다", () => {
-    expect(nextSessionStep(0, "again", [])).toBeNull();
-    expect(nextSessionStep(0, "good", [])).toBeNull();
   });
 });

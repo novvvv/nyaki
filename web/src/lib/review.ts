@@ -24,19 +24,3 @@ export function shuffled<T>(items: T[]): T[] {
   }
   return copy;
 }
-
-/**
- * 채점 후 이 카드가 세션에 다시 들어가는지, 들어간다면 몇 번째 단계인지.
- *
- * 서버 `api/app/vocab/srs.py`의 단계 진행과 같은 규칙이다. 다만 여기서 정하는
- * 것은 **이 세션의 등장 순서뿐**이고, 실제 다음 복습 시각은 서버가 계산한다.
- */
-export function nextSessionStep(
-  currentStep: number,
-  grade: "again" | "good",
-  steps: number[],
-): number | null {
-  if (steps.length === 0) return null;
-  const next = grade === "again" ? 0 : currentStep + 1;
-  return next < steps.length ? next : null;
-}

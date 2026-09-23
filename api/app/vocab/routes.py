@@ -20,6 +20,7 @@ from .schemas import (
     ClozeFaceResponse,
     ClozeNotePayload,
     ClozeNoteResponse,
+    ClozeSegmentResponse,
     DueCardResponse,
     GradePreviewResponse,
     ReviewDueCountResponse,
@@ -47,6 +48,7 @@ from .services import (
     delete_card,
     delete_cloze_note,
     list_cloze_notes,
+    cloze_segments,
     render_cloze,
     load_step_config,
     select_due_cards,
@@ -304,7 +306,15 @@ def get_review_due(
                     kind=card.kind,
                     source_type="cloze",
                     cloze=ClozeFaceResponse(
-                        note_id=note.id, front=front, back=back
+                        note_id=note.id,
+                        front=front,
+                        back=back,
+                        segments=[
+                            ClozeSegmentResponse(text=chunk, blank=is_blank, hint=hint)
+                            for chunk, is_blank, hint in cloze_segments(
+                                note.text, number
+                            )
+                        ],
                     ),
                     preview=preview_value,
                 )

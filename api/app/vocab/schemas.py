@@ -169,13 +169,26 @@ class DueCardResponse(BaseModel):
     preview: GradePreviewResponse
 
 
+class ClozeSegmentResponse(BaseModel):
+    """문장 조각 하나. blank면 그 자리가 지금 묻는 빈칸이다."""
+
+    text: str
+    blank: bool = False
+    hint: str | None = None
+
+
 class ClozeFaceResponse(BaseModel):
-    """빈칸 카드의 앞뒤. 서버가 이미 가려서 내려준다 —
-    파싱을 웹·앱이 각자 구현하면 렌더가 갈린다."""
+    """빈칸 카드의 문장. 서버가 조각으로 쪼개 내려준다 —
+    파싱을 웹·앱이 각자 구현하면 렌더가 갈린다.
+
+    화면은 빈칸 자리를 가렸다가 **그 자리에서** 답으로 바꾼다. 그래서 문장을
+    두 벌(front/back)로 주는 것만으로는 부족하고 자리 정보가 필요하다.
+    """
 
     note_id: str
     front: str
     back: str
+    segments: list[ClozeSegmentResponse] = []
 
 
 class ReviewDueResponse(BaseModel):

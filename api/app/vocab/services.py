@@ -205,6 +205,30 @@ def cloze_numbers(text: str) -> tuple[int, ...]:
     return tuple(sorted(n for n in found if n > 0))
 
 
+def cloze_segments(text: str, number: int) -> list[tuple[str, bool, str | None]]:
+    """문장을 조각으로 쪼갠다 — (글자, 이 자리가 묻는 빈칸인가, 힌트).
+
+    앞뒤를 **문장 두 개**로 내려주면 화면이 "가린 문장"과 "답 문장"을 위아래로
+    늘어놓게 된다. 사용자가 보고 싶은 것은 빈칸 자리가 답으로 바뀌는 것이다.
+    그래서 자리 정보를 그대로 준다.
+    """
+    out: list[tuple[str, bool, str | None]] = []
+    cursor = 0
+    for match in CLOZE_PATTERN.finditer(text):
+        if match.start() > cursor:
+            out.append((text[cursor : match.start()], False, None))
+        answer = match.group(2)
+        if int(match.group(1)) == number:
+            out.append((answer, True, match.group(3)))
+        else:
+            # 묻지 않는 빈칸은 답을 그대로 둔다 — 문맥으로 남긴다.
+            out.append((answer, False, None))
+        cursor = match.end()
+    if cursor < len(text):
+        out.append((text[cursor:], False, None))
+    return out
+
+
 def render_cloze(text: str, number: int) -> tuple[str, str]:
     """(앞면, 뒷면). 앞면은 해당 번호만 가리고 나머지는 답을 보여준다.
 

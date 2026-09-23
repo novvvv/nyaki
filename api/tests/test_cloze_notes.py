@@ -322,3 +322,24 @@ def test_summary_mastery_counts_cloze_cards() -> None:
     assert summary["mastery_rate"] == 20
 
     app.dependency_overrides.clear()
+
+
+def test_cloze_segments_mark_the_asked_blank() -> None:
+    """화면이 빈칸 자리를 그대로 답으로 바꿀 수 있게 조각으로 준다."""
+    client = _client("firebase-user-cloze-segments")
+    _put_note(client, "n1", TEXT)
+
+    card = _due(client)[0]
+    segments = card["cloze"]["segments"]
+
+    assert [s["text"] for s in segments] == [
+        "TCP는 ",
+        "연결 지향",
+        ", UDP는 ",
+        "비연결",
+        " 프로토콜이다",
+    ]
+    # 지금 묻는 빈칸만 blank다. 나머지 빈칸은 답이 보인 채 문맥으로 남는다.
+    assert [s["blank"] for s in segments] == [False, True, False, False, False]
+
+    app.dependency_overrides.clear()

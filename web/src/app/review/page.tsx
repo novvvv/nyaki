@@ -6,14 +6,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PrimaryButton, SubtleButton } from "@/components/ui";
 import {
+  fetchDueCounts,
   fetchDueWords,
   pushGrades,
   pushGradesBeacon,
+  type DueCounts,
   type ReviewGrade,
   type ReviewGradeItem,
 } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import type { Word } from "@/lib/types";
+import { useVocab } from "@/lib/vocab-store";
 
 type Phase = "setup" | "session" | "done";
 
@@ -33,6 +36,7 @@ function shuffled<T>(items: T[]): T[] {
 
 export default function ReviewPage() {
   const { getToken } = useAuth();
+  const { wordBooks } = useVocab();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [countText, setCountText] = useState("20");
@@ -45,6 +49,11 @@ export default function ReviewPage() {
   // 복습 주기가 돌아온 단어. 시작 화면의 상한이자 그대로 세션의 출제 목록이 된다.
   const [due, setDue] = useState<Word[]>();
   const [shuffle, setShuffle] = useState(false);
+  // 단어장별 due 개수. /review/due(최대 200개)의 길이로 세면 201개부터 틀려서
+  // 개수 전용 엔드포인트를 따로 부른다.
+  const [counts, setCounts] = useState<DueCounts>();
+  // 선택한 단어장. undefined면 "아직 안 정함" = 전체를 뜻한다.
+  const [selectedBookIds, setSelectedBookIds] = useState<string[]>();
 
   // 채점 결과는 세션이 끝날 때 한 번에 보낸다. 카드마다 보내면 30장에 30요청이
   // 되고, 매번 단어 전체를 재전송하게 된다. docs/WEB-REVIEW-PLAN.md 1절.
@@ -54,10 +63,23 @@ export default function ReviewPage() {
 
   const current = queue[index];
 
-  // 슬라이더 상한. due가 0이면 1로 둬야 슬라이더가 성립한다 —
-  // 이 경우 시작하면 기존대로 "오늘 복습할 단어가 없습니다" 화면으로 간다.
-  const dueCount = due?.length ?? 0;
-  const limit = Math.max(1, Math.min(dueCount, MAX_COUNT));
+  // 단어장이 하나뿐이면 고를 이유가 없어 선택 줄을 숨긴다.
+  const showBookPicker = wordBooks.length > 1;
+  const selected = selectedBookIds ?? wordBooks.map((book) => book.id);
+  const isSelected = (bookId: string) =>
+    !showBookPicker || selected.includes(bookId);
+
+  // 화면에 보여줄 개수는 서버가 센 값이다(상한 없음).
+  const dueCount = counts
+    ? showBookPicker
+      ? selected.reduce((sum, id) => sum + (counts.byBook[id] ?? 0), 0)
+      : counts.total
+    : 0;
+
+  // 슬라이더 상한. 실제로 출제할 수 있는 건 받아둔 목록(최대 200) 안에서
+  // 선택한 단어장에 속한 것까지다.
+  const picked = (due ?? []).filter((word) => isSelected(word.wordBookId));
+  const limit = Math.max(1, Math.min(picked.length, MAX_COUNT));
 
   const parsed = Number.parseInt(countText, 10);
   const size = Number.isNaN(parsed) ? 0 : Math.min(Math.max(parsed, 1), limit);
@@ -147,10 +169,14 @@ export default function ReviewPage() {
       try {
         const token = await getToken();
         if (!token) throw new Error("로그인이 필요합니다.");
-        const words = await fetchDueWords(token, MAX_COUNT);
+        const [words, dueCounts] = await Promise.all([
+          fetchDueWords(token, MAX_COUNT),
+          fetchDueCounts(token),
+        ]);
         if (cancelled) return;
 
         setDue(words);
+        setCounts(dueCounts);
         // 기본값 20이 due 개수보다 크면 개수에 맞춘다.
         setCountText((prev) => {
           const n = Number.parseInt(prev, 10);
@@ -172,6 +198,15 @@ export default function ReviewPage() {
     };
   }, [phase, getToken]);
 
+  function toggleBook(bookId: string) {
+    setSelectedBookIds((prev) => {
+      const base = prev ?? wordBooks.map((book) => book.id);
+      return base.includes(bookId)
+        ? base.filter((id) => id !== bookId)
+        : [...base, bookId];
+    });
+  }
+
   // 위에서 받아둔 목록을 그대로 쓴다. due는 오래 밀린 순이라 앞에서 size개를
   // 자르면 앱과 같은 "오래 밀린 순 N개"가 된다.
   function start() {
@@ -180,12 +215,12 @@ export default function ReviewPage() {
     pending.current = [];
     sent.current = false;
     // 무엇을 낼지는 항상 오래 밀린 순으로 고른다 — 섞는 것은 그 안의 순서뿐이다.
-    const picked = due.slice(0, size);
-    setQueue(shuffle ? shuffled(picked) : picked);
+    const chosen = picked.slice(0, size);
+    setQueue(shuffle ? shuffled(chosen) : chosen);
     setIndex(0);
     setFlipped(false);
     setResult({ again: 0, good: 0 });
-    setPhase(due.length === 0 ? "done" : "session");
+    setPhase(chosen.length === 0 ? "done" : "session");
   }
 
   function stop() {
@@ -379,6 +414,30 @@ export default function ReviewPage() {
         )}
       </p>
 
+      {showBookPicker ? (
+        <div className="mt-8 flex max-w-lg flex-wrap items-center justify-center gap-2">
+          {wordBooks.map((book) => {
+            const n = counts?.byBook[book.id] ?? 0;
+            const on = selected.includes(book.id);
+            return (
+              <SubtleButton
+                key={book.id}
+                onClick={() => toggleBook(book.id)}
+                disabled={n === 0}
+                aria-pressed={on}
+                className={cn(
+                  "px-3.5 py-1.5 text-xs",
+                  on && n > 0 && "border-ink bg-ink text-cream hover:text-cream",
+                )}
+              >
+                <span className="max-w-[9rem] truncate">{book.title}</span>
+                <span className="ml-1.5 tabular-nums opacity-60">{n}</span>
+              </SubtleButton>
+            );
+          })}
+        </div>
+      ) : null}
+
       <div className="mt-12 flex items-end justify-center gap-2">
         <input
           type="number"
@@ -421,7 +480,7 @@ export default function ReviewPage() {
 
       <PrimaryButton
         onClick={start}
-        disabled={!due || size < 1 || loading}
+        disabled={!due || size < 1 || loading || picked.length === 0}
         className="mt-12 gap-2 px-7 py-2.5"
       >
         {loading ? "불러오는 중…" : "시작하기"}

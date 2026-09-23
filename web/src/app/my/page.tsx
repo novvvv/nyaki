@@ -1,8 +1,144 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+
 import { useAuth } from "@/components/auth-provider";
-import { Card, PageHeader, SubtleButton } from "@/components/ui";
+import { Card, PageHeader, SubtleButton, TextInput } from "@/components/ui";
+import {
+  fetchProgress,
+  updateDailyLimits,
+  type Progress,
+} from "@/lib/api-client";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
+
+/**
+ * 하루 한도 — 안키의 "새 카드/일", "최대 복습량/일"에 해당한다.
+ *
+ * 값은 서버가 들고 있다. 이 숫자가 곧 출제량을 정하기 때문에 기기마다 다르면
+ * 안 된다. 입력은 문자열로 들고 있다가 저장할 때만 숫자로 바꾼다 — 지우는
+ * 도중(빈 문자열)에 0으로 튀는 걸 막는다.
+ */
+function DailyLimits() {
+  const { getToken } = useAuth();
+  const [progress, setProgress] = useState<Progress>();
+  const [newText, setNewText] = useState("");
+  const [reviewText, setReviewText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string>();
+
+  const load = useCallback(async () => {
+    const token = await getToken();
+    if (!token) return;
+    const value = await fetchProgress(token);
+    setProgress(value);
+    setNewText(String(value.dailyNewLimit));
+    setReviewText(String(value.dailyReviewLimit));
+  }, [getToken]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        await load();
+      } catch {
+        if (!cancelled) setMessage("설정을 불러오지 못했어요.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [load]);
+
+  const dirty =
+    progress !== undefined &&
+    (newText !== String(progress.dailyNewLimit) ||
+      reviewText !== String(progress.dailyReviewLimit));
+
+  async function save() {
+    if (!progress || saving) return;
+    setSaving(true);
+    setMessage(undefined);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+
+      const clamp = (text: string, fallback: number) => {
+        const n = Number.parseInt(text, 10);
+        return Number.isNaN(n) ? fallback : Math.min(Math.max(n, 0), 9999);
+      };
+
+      const saved = await updateDailyLimits(token, {
+        dailyNewLimit: clamp(newText, progress.dailyNewLimit),
+        dailyReviewLimit: clamp(reviewText, progress.dailyReviewLimit),
+      });
+      setProgress(saved);
+      setNewText(String(saved.dailyNewLimit));
+      setReviewText(String(saved.dailyReviewLimit));
+      setMessage("저장했다냥");
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error ? reason.message : "저장하지 못했어요.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="mb-12">
+      <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">
+        학습
+      </p>
+      <div className="divide-y divide-taupe/25">
+        <Row
+          label="하루에 새로 배울 단어"
+          value="팩을 담아도 이 개수만큼만 새로 나옵니다"
+          action={
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={9999}
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              aria-label="하루에 새로 배울 단어 수"
+              className="w-24 text-right tabular-nums"
+            />
+          }
+        />
+        <Row
+          label="하루 복습 상한"
+          value="밀린 복습이 너무 많을 때만 줄이세요"
+          action={
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={9999}
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              aria-label="하루 복습 상한"
+              className="w-24 text-right tabular-nums"
+            />
+          }
+        />
+      </div>
+
+      <div className="mt-4 flex items-center justify-end gap-3">
+        {message ? (
+          <p className="text-xs text-umber/45">{message}</p>
+        ) : null}
+        <SubtleButton
+          className="py-1.5 text-xs"
+          disabled={!dirty || saving}
+          onClick={() => void save()}
+        >
+          {saving ? "저장 중…" : "저장"}
+        </SubtleButton>
+      </div>
+    </section>
+  );
+}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -75,6 +211,8 @@ export default function MyPage() {
         <Stat label="단어장" value={`${wordBooks.length}`} />
         <Stat label="모은 단어" value={`${wordCount}`} />
       </div>
+
+      <DailyLimits />
 
       <section>
         <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">

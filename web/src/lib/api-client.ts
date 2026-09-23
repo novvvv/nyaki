@@ -231,6 +231,77 @@ export async function fetchDueWords(
   return body.words.map(toWord);
 }
 
+export interface DueCounts {
+  total: number;
+  /** 단어장 id → due 개수. due가 0인 단어장은 들어있지 않다. */
+  byBook: Record<string, number>;
+}
+
+/**
+ * 복습 대상 개수만 받아온다.
+ *
+ * /v1/review/due는 한 번에 최대 200개라 응답 길이로 개수를 세면 201개부터
+ * 틀린다. 이쪽은 서버가 COUNT만 하므로 상한이 없다.
+ */
+export async function fetchDueCounts(token: string): Promise<DueCounts> {
+  const body = await request<{ total: number; by_book: Record<string, number> }>(
+    "/v1/review/due/count",
+    token,
+  );
+  return { total: body.total, byBook: body.by_book };
+}
+
+export interface Progress {
+  churuBalance: number;
+  capelinBalance: number;
+  completedToday: string[];
+  /** 하루에 새로 배울 단어 수 — 안키의 "새 카드/일" */
+  dailyNewLimit: number;
+  /** 하루 복습 상한 — 안키의 "최대 복습량/일". 9999면 사실상 무제한 */
+  dailyReviewLimit: number;
+}
+
+type ApiProgress = {
+  churu_balance: number;
+  capelin_balance: number;
+  completed_today: string[];
+  daily_new_limit: number;
+  daily_review_limit: number;
+};
+
+function toProgress(value: ApiProgress): Progress {
+  return {
+    churuBalance: value.churu_balance,
+    capelinBalance: value.capelin_balance,
+    completedToday: value.completed_today,
+    dailyNewLimit: value.daily_new_limit,
+    dailyReviewLimit: value.daily_review_limit,
+  };
+}
+
+export async function fetchProgress(token: string): Promise<Progress> {
+  return toProgress(await request<ApiProgress>("/v1/progress", token));
+}
+
+/** 하루 한도 변경. 보낸 항목만 바뀐다. */
+export async function updateDailyLimits(
+  token: string,
+  limits: { dailyNewLimit?: number; dailyReviewLimit?: number },
+): Promise<Progress> {
+  const body: Record<string, number> = {};
+  if (limits.dailyNewLimit !== undefined)
+    body.daily_new_limit = limits.dailyNewLimit;
+  if (limits.dailyReviewLimit !== undefined)
+    body.daily_review_limit = limits.dailyReviewLimit;
+
+  return toProgress(
+    await request<ApiProgress>("/v1/progress/settings", token, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
 function gradesBody(grades: ReviewGradeItem[]) {
   return JSON.stringify({
     grades: grades.map((g) => ({

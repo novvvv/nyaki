@@ -16,7 +16,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 배포 게이트 — 마이그레이션까지 실제로 돌려보고 통과해야 배포로 넘어간다.
+  test:
+    uses: ./.github/workflows/api-tests.yml
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -57,9 +62,21 @@ jobs:
             cd /opt/nyaki/api
             docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --build api
             docker compose -f docker-compose.yml -f docker-compose.production.yml ps
-            # 기동 로그 — 마이그레이션 실패는 여기에만 남는다.
-            sleep 8
-            docker compose -f docker-compose.yml -f docker-compose.production.yml logs --tail=60 api
+            # 기동 확인 — 컨테이너 안에서 직접 본다.
+            # 외부 헬스체크는 API_HEALTH_URL 시크릿이 없으면 건너뛰도록 돼 있어서,
+            # 마이그레이션이 실패해 컨테이너가 죽어도 배포가 초록불이었다(2026-09-24).
+            for i in $(seq 1 12); do
+              if curl -fsS http://localhost:8000/health > /dev/null; then
+                echo "api up"
+                exit 0
+              fi
+              echo "waiting for api... ($i)"
+              sleep 5
+            done
+
+            echo "api did not come up — 아래는 기동 로그"
+            docker compose -f docker-compose.yml -f docker-compose.production.yml logs --tail=80 api
+            exit 1
 
       - name: Health check
         env:

@@ -1,0 +1,65 @@
+# 세 곳(서버·웹·앱)을 한 번에 검증한다.
+#
+# 배포(deploy-api.yml)는 이 중 서버 테스트를 다시 불러서 통과해야만 진행된다.
+# 무엇을 어디서 보는지는 docs/TESTING.md에 정리돼 있다.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api:
+    uses: ./.github/workflows/api-tests.yml
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src/app src/components src/lib
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  app:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze lib test
+
+      - name: Tests
+        run: flutter test

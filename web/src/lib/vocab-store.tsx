@@ -71,7 +71,11 @@ export function VocabProvider({ children }: { children: ReactNode }) {
   }, [getToken]);
 
   useEffect(() => {
-    void refresh();
+    // 이펙트 본문에서 곧바로 setState가 일어나지 않도록 async 블록으로 감싼다
+    // (react-hooks/set-state-in-effect). 첫 목록을 받아오는 것뿐이라 동작은 같다.
+    void (async () => {
+      await refresh();
+    })();
   }, [refresh, user?.uid]);
 
   const getWordBook = useCallback(

@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, time, timedelta, timezone
 
 from sqlalchemy import func, select
@@ -5,13 +6,20 @@ from sqlalchemy.orm import Session
 
 from ..models import (
     CardModel,
+    ClozeNoteModel,
     ReviewLogModel,
     SyncChangeModel,
     UserProgressModel,
     WordBookModel,
     WordModel,
 )
-from .schemas import CardPayload, ReviewGradeItem, WordBookPayload, WordPayload
+from .schemas import (
+    CardPayload,
+    ClozeNotePayload,
+    ReviewGradeItem,
+    WordBookPayload,
+    WordPayload,
+)
 from .srs import DEFAULT_STEPS, Sm2State, StepConfig, grade
 
 
@@ -177,8 +185,41 @@ def list_words(session: Session, user_id: str, word_book_id: str) -> list[WordMo
 # 종류는 고정 enum이다. 안키처럼 사용자가 템플릿을 짜게 하지 않는다 —
 # 개인 단어장에 HTML 편집기는 과하고, 종류를 늘리려면 여기에 한 줄 추가하면 된다.
 
-CARD_KINDS = ("recognition", "recall", "cloze")
+# 단어에서 나오는 카드 종류. 빈칸은 여기 없다 — 단어의 파생물이 아니라
+# 별개 노트 타입이라서다(ClozeNoteModel).
+CARD_KINDS = ("recognition", "recall")
 DEFAULT_CARD_KINDS = ("recognition",)
+
+# 안키와 같은 문법. `{{c1::답}}` · `{{c2::답::힌트}}`
+CLOZE_PATTERN = re.compile(r"\{\{c(\d+)::(.+?)(?:::(.+?))?\}\}", re.DOTALL)
+
+
+def cloze_numbers(text: str) -> tuple[int, ...]:
+    """이 텍스트가 만드는 빈칸 번호들. 중복은 하나로 본다.
+
+    같은 번호를 여러 번 쓰면(`{{c1::A}} … {{c1::B}}`) 한 카드에서 둘 다 가려진다 —
+    안키와 같은 동작이다.
+    """
+    found = {int(match.group(1)) for match in CLOZE_PATTERN.finditer(text)}
+    return tuple(sorted(n for n in found if n > 0))
+
+
+def render_cloze(text: str, number: int) -> tuple[str, str]:
+    """(앞면, 뒷면). 앞면은 해당 번호만 가리고 나머지는 답을 보여준다.
+
+    안키와 같다 — 한 번에 한 빈칸만 묻고, 나머지는 문맥으로 남긴다.
+    """
+
+    def to_front(match: re.Match[str]) -> str:
+        if int(match.group(1)) != number:
+            return match.group(2)
+        hint = match.group(3)
+        return f"[ {hint} ]" if hint else "[ … ]"
+
+    def to_back(match: re.Match[str]) -> str:
+        return match.group(2)
+
+    return CLOZE_PATTERN.sub(to_front, text), CLOZE_PATTERN.sub(to_back, text)
 
 
 def card_id_for(word_id: str, kind: str) -> str:
@@ -229,6 +270,7 @@ def sync_cards_for_word(session: Session, user_id: str, word: WordModel) -> None
                 CardModel(
                     id=card_id_for(word.id, kind),
                     user_id=user_id,
+                    source_type="word",
                     word_id=word.id,
                     kind=kind,
                     srs_due_at=word.srs_due_at,
@@ -303,6 +345,108 @@ def delete_card(
     entity.updated_at = utc_now()
     session.flush()
     return entity, _new_change(session, user_id, "card", card_id)
+
+
+def sync_cards_for_note(session: Session, user_id: str, note: ClozeNoteModel) -> None:
+    """빈칸 노트의 카드를 텍스트에 맞춘다.
+
+    빈칸 번호가 곧 카드 종류다(c1, c2 …). 번호를 지우면 그 카드는 soft delete —
+    다시 넣으면 복습 기록이 살아난다.
+    """
+    numbers = () if note.is_deleted else cloze_numbers(note.text)
+    kinds = tuple(f"c{number}" for number in numbers)
+
+    existing = {
+        card.kind: card
+        for card in session.scalars(
+            select(CardModel).where(
+                CardModel.user_id == user_id, CardModel.note_id == note.id
+            )
+        )
+    }
+
+    touched: list[str] = []
+
+    for kind in kinds:
+        card = existing.get(kind)
+        if card is None:
+            session.add(
+                CardModel(
+                    id=card_id_for(note.id, kind),
+                    user_id=user_id,
+                    source_type="cloze",
+                    note_id=note.id,
+                    kind=kind,
+                    srs_due_at=note.created_at,
+                    created_at=note.created_at,
+                    updated_at=note.updated_at,
+                )
+            )
+            touched.append(card_id_for(note.id, kind))
+        elif card.is_deleted:
+            card.is_deleted = False
+            card.updated_at = note.updated_at
+            touched.append(card.id)
+
+    for kind, card in existing.items():
+        if kind not in kinds and not card.is_deleted:
+            card.is_deleted = True
+            card.updated_at = note.updated_at
+            touched.append(card.id)
+
+    session.flush()
+    for card_id in touched:
+        _new_change(session, user_id, "card", card_id)
+
+
+def upsert_cloze_note(
+    session: Session, user_id: str, payload: "ClozeNotePayload"
+) -> tuple[ClozeNoteModel, int | None]:
+    entity = session.get(ClozeNoteModel, {"id": payload.id, "user_id": user_id})
+    if entity is not None and not _is_newer(payload.updated_at, entity.updated_at):
+        return entity, None
+
+    if entity is None:
+        entity = ClozeNoteModel(user_id=user_id, **payload.model_dump())
+        session.add(entity)
+    else:
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(entity, field, value)
+
+    session.flush()
+    sync_cards_for_note(session, user_id, entity)
+    return entity, _new_change(session, user_id, "cloze_note", payload.id)
+
+
+def delete_cloze_note(
+    session: Session, user_id: str, note_id: str
+) -> tuple[ClozeNoteModel | None, int | None]:
+    entity = session.get(ClozeNoteModel, {"id": note_id, "user_id": user_id})
+    if entity is None:
+        return None, None
+    if entity.is_deleted:
+        return entity, None
+    entity.is_deleted = True
+    entity.updated_at = utc_now()
+    session.flush()
+    sync_cards_for_note(session, user_id, entity)
+    return entity, _new_change(session, user_id, "cloze_note", note_id)
+
+
+def list_cloze_notes(
+    session: Session, user_id: str, word_book_id: str
+) -> list[ClozeNoteModel]:
+    return list(
+        session.scalars(
+            select(ClozeNoteModel)
+            .where(
+                ClozeNoteModel.user_id == user_id,
+                ClozeNoteModel.word_book_id == word_book_id,
+                ClozeNoteModel.is_deleted.is_(False),
+            )
+            .order_by(ClozeNoteModel.created_at)
+        )
+    )
 
 
 def sync_cards_for_book(session: Session, user_id: str, word_book_id: str) -> None:
@@ -449,19 +593,25 @@ def _due_base(user_id: str):
     )
 
 
-def _one_card_per_word(cards: list[CardModel]) -> list[CardModel]:
-    """같은 단어의 형제 카드는 한 세션에 하나만 낸다.
+def _one_card_per_source(cards: list[CardModel]) -> list[CardModel]:
+    """같은 출처(단어 또는 빈칸 노트)의 형제 카드는 한 세션에 하나만 낸다.
 
     "単語 → 뜻"을 풀고 곧바로 "뜻 → 単語"가 나오면 답을 이미 봐서 채점이 무의미하다.
+    빈칸 노트는 더 직접적이다 — c1 카드의 앞면이 c2의 답을 그대로 보여준다.
+
     안키의 bury siblings와 같은 목적이고, 여기서는 **이번 출제분에서 빼는** 것으로
     가볍게 처리한다. 밀려난 카드는 다음 세션에 나온다.
+
+    묶는 기준은 word_id가 아니라 **출처 키**다 — 빈칸 카드는 word_id가 전부 null이라
+    그걸로 묶으면 서로 다른 노트까지 한 장으로 합쳐진다.
     """
     seen: set[str] = set()
     out: list[CardModel] = []
     for card in cards:
-        if card.word_id in seen:
+        key = card.note_id or card.word_id or card.id
+        if key in seen:
             continue
-        seen.add(card.word_id)
+        seen.add(key)
         out.append(card)
     return out
 
@@ -482,7 +632,7 @@ def select_due_cards(
 
     reviews: list[CardModel] = []
     if review_quota > 0:
-        reviews = _one_card_per_word(
+        reviews = _one_card_per_source(
             list(
                 session.scalars(
                     select(CardModel)
@@ -495,7 +645,7 @@ def select_due_cards(
 
     news: list[CardModel] = []
     if new_quota > 0:
-        news = _one_card_per_word(
+        news = _one_card_per_source(
             list(
                 session.scalars(
                     select(CardModel)
@@ -524,14 +674,28 @@ def count_due_cards(session: Session, user_id: str) -> dict[str, int]:
         session.execute(
             select(WordModel.id, WordModel.word_book_id).where(
                 WordModel.user_id == user_id,
-                WordModel.id.in_([card.word_id for card in cards]),
+                WordModel.id.in_(
+                    [card.word_id for card in cards if card.word_id is not None]
+                ),
             )
         ).all()
+    )
+    book_of.update(
+        dict(
+            session.execute(
+                select(ClozeNoteModel.id, ClozeNoteModel.word_book_id).where(
+                    ClozeNoteModel.user_id == user_id,
+                    ClozeNoteModel.id.in_(
+                        [card.note_id for card in cards if card.note_id is not None]
+                    ),
+                )
+            ).all()
+        )
     )
 
     counts: dict[str, int] = {}
     for card in cards:
-        book_id = book_of.get(card.word_id)
+        book_id = book_of.get(card.note_id or card.word_id)
         if book_id is None:
             continue
         counts[book_id] = counts.get(book_id, 0) + 1
@@ -590,8 +754,13 @@ def apply_review_grades(
             missing += 1
             continue
 
-        word = session.get(WordModel, (card.word_id, user_id))
-        if word is None or word.is_deleted:
+        # 빈칸 카드에는 단어가 없다. 단어 카드일 때만 단어를 확인한다.
+        word = (
+            session.get(WordModel, (card.word_id, user_id))
+            if card.word_id is not None
+            else None
+        )
+        if card.word_id is not None and (word is None or word.is_deleted):
             missing += 1
             continue
 
@@ -623,7 +792,7 @@ def apply_review_grades(
 
         # 앱은 아직 단어 단위로 동기화한다. recognition 카드의 결과를 단어에도
         # 복사해 두 경로가 같은 값을 보게 한다. 앱이 카드로 넘어오면 지운다.
-        if card.kind == "recognition":
+        if card.kind == "recognition" and word is not None:
             word.srs_ease_factor = result.state.ease_factor
             word.srs_interval_days = result.state.interval_days
             word.srs_repetitions = result.state.repetitions
@@ -639,7 +808,8 @@ def apply_review_grades(
             ReviewLogModel(
                 id=item.id,
                 user_id=user_id,
-                word_id=card.word_id,
+                # 빈칸 카드는 단어가 없다 — 기록에는 출처 id를 남긴다.
+                word_id=card.word_id or card.note_id or card.id,
                 card_id=card.id,
                 grade=item.grade,
                 reviewed_at=item.reviewed_at,

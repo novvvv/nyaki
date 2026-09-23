@@ -61,12 +61,30 @@ class WordResponse(WordPayload):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ClozeNotePayload(BaseModel):
+    """빈칸 노트. 텍스트 한 덩이에 `{{cN::답}}`으로 빈칸을 찍는다."""
+
+    id: str = Field(min_length=1, max_length=80)
+    word_book_id: str = Field(min_length=1, max_length=80)
+    text: str = Field(min_length=1)
+    created_at: datetime
+    updated_at: datetime
+    is_deleted: bool = False
+
+
+class ClozeNoteResponse(ClozeNotePayload):
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CardPayload(BaseModel):
     """앱이 동기화로 올리는 카드. SRS 상태가 여기에 있다."""
 
     id: str = Field(min_length=1, max_length=120)
-    word_id: str = Field(min_length=1, max_length=80)
-    kind: Literal["recognition", "recall", "cloze"]
+    source_type: Literal["word", "cloze"] = "word"
+    word_id: str | None = Field(default=None, max_length=80)
+    note_id: str | None = Field(default=None, max_length=80)
+    # 단어 카드는 recognition·recall, 빈칸 카드는 c1·c2 …
+    kind: str = Field(min_length=1, max_length=32)
     srs_ease_factor: float = 2.5
     srs_interval_days: int = 0
     srs_repetitions: int = 0
@@ -84,11 +102,12 @@ class CardResponse(CardPayload):
 
 
 class SyncMutation(BaseModel):
-    entity_type: Literal["word_book", "word", "card"]
+    entity_type: Literal["word_book", "word", "card", "cloze_note"]
     action: Literal["upsert", "delete"]
     word_book: WordBookPayload | None = None
     word: WordPayload | None = None
     card: CardPayload | None = None
+    cloze_note: ClozeNotePayload | None = None
 
 
 class SyncPushRequest(BaseModel):
@@ -102,10 +121,11 @@ class SyncPushResponse(BaseModel):
 
 class SyncChange(BaseModel):
     cursor: int
-    entity_type: Literal["word_book", "word", "card"]
+    entity_type: Literal["word_book", "word", "card", "cloze_note"]
     word_book: WordBookResponse | None = None
     word: WordResponse | None = None
     card: CardResponse | None = None
+    cloze_note: ClozeNoteResponse | None = None
 
 
 class SyncPullResponse(BaseModel):
@@ -129,8 +149,20 @@ class DueCardResponse(BaseModel):
 
     id: str
     kind: str
-    word: WordResponse
+    source_type: str = "word"
+    # 단어 카드면 word가, 빈칸 카드면 cloze가 채워진다.
+    word: WordResponse | None = None
+    cloze: "ClozeFaceResponse | None" = None
     preview: GradePreviewResponse
+
+
+class ClozeFaceResponse(BaseModel):
+    """빈칸 카드의 앞뒤. 서버가 이미 가려서 내려준다 —
+    파싱을 웹·앱이 각자 구현하면 렌더가 갈린다."""
+
+    note_id: str
+    front: str
+    back: str
 
 
 class ReviewDueResponse(BaseModel):

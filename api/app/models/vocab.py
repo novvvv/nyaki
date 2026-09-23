@@ -121,8 +121,17 @@ class CardModel(Base):
 
     id: Mapped[str] = mapped_column(String(120), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
-    word_id: Mapped[str] = mapped_column(String(80))
-    # recognition(단어→뜻) · recall(뜻→단어) · cloze(예문 빈칸)
+
+    # 카드는 단어에서 나오기도 하고 빈칸 노트에서 나오기도 한다.
+    # source_type이 둘 중 무엇인지 말하고, 그에 맞는 컬럼만 채워진다.
+    source_type: Mapped[str] = mapped_column(
+        String(16), default="word", server_default="word"
+    )
+    word_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    note_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+
+    # 단어 카드는 recognition(단어→뜻) · recall(뜻→단어),
+    # 빈칸 노트 카드는 c1 · c2 … (빈칸 번호)
     kind: Mapped[str] = mapped_column(String(32))
 
     srs_ease_factor: Mapped[float] = mapped_column(
@@ -137,6 +146,36 @@ class CardModel(Base):
     )
     srs_learning_step: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
+# ==================== ✨ ClozeNote Model Entity ✨ ==================== #
+
+class ClozeNoteModel(Base):
+    """빈칸 노트 — 안키의 Cloze 노트 타입.
+
+    단어의 파생물이 **아니다.** 문장 한 덩이에 빈칸을 여럿 찍어 카드를 여러 장
+    만든다. 단어 암기뿐 아니라 정의·조문·개념을 외우는 데 쓴다.
+
+        「TCP는 {{c1::연결 지향}}, UDP는 {{c2::비연결}} 프로토콜이다」
+          → c1 카드, c2 카드
+
+    문법은 안키와 같은 `{{cN::답}}`이다. 안키를 쓰던 사람이 그대로 붙여넣을 수 있고
+    파서도 정규식 하나면 된다.
+    """
+
+    __tablename__ = "cloze_notes"
+    __table_args__ = (
+        Index("ix_cloze_notes_user_updated", "user_id", "updated_at"),
+        Index("ix_cloze_notes_book", "user_id", "word_book_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    word_book_id: Mapped[str] = mapped_column(String(80))
+    text: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

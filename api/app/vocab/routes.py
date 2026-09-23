@@ -8,9 +8,18 @@ from sqlalchemy.orm import Session
 
 from ..core.auth import get_current_user_id
 from ..core.database import get_session
-from ..models import CardModel, SyncChangeModel, WordBookModel, WordModel
+from ..models import (
+    CardModel,
+    ClozeNoteModel,
+    SyncChangeModel,
+    WordBookModel,
+    WordModel,
+)
 from .schemas import (
     CardResponse,
+    ClozeFaceResponse,
+    ClozeNotePayload,
+    ClozeNoteResponse,
     DueCardResponse,
     GradePreviewResponse,
     ReviewDueCountResponse,
@@ -34,9 +43,13 @@ from .services import (
     delete_word_book,
     count_due_cards,
     delete_card,
+    delete_cloze_note,
+    list_cloze_notes,
+    render_cloze,
     load_step_config,
     select_due_cards,
     upsert_card,
+    upsert_cloze_note,
     utc_now,
     list_word_books,
     list_words,
@@ -150,6 +163,60 @@ def remove_word(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.get(
+    "/word-books/{word_book_id}/cloze-notes",
+    response_model=list[ClozeNoteResponse],
+)
+def get_cloze_notes(
+    word_book_id: str,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[ClozeNoteResponse]:
+    _get_word_book(session, user_id, word_book_id)
+    return [
+        ClozeNoteResponse.model_validate(note)
+        for note in list_cloze_notes(session, user_id, word_book_id)
+    ]
+
+
+@router.put(
+    "/word-books/{word_book_id}/cloze-notes/{note_id}",
+    response_model=ClozeNoteResponse,
+)
+def put_cloze_note(
+    word_book_id: str,
+    note_id: str,
+    payload: ClozeNotePayload,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> ClozeNoteResponse:
+    if payload.id != note_id or payload.word_book_id != word_book_id:
+        raise HTTPException(status_code=400, detail="URL과 payload의 ID가 다릅니다.")
+    _get_word_book(session, user_id, word_book_id)
+    entity, _ = upsert_cloze_note(session, user_id, payload)
+    session.commit()
+    session.refresh(entity)
+    return ClozeNoteResponse.model_validate(entity)
+
+
+@router.delete(
+    "/word-books/{word_book_id}/cloze-notes/{note_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remove_cloze_note(
+    word_book_id: str,
+    note_id: str,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    _get_word_book(session, user_id, word_book_id)
+    entity, _ = delete_cloze_note(session, user_id, note_id)
+    if entity is None:
+        raise HTTPException(status_code=404, detail="빈칸 노트를 찾을 수 없습니다.")
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/review/due", response_model=ReviewDueResponse)
 def get_review_due(
     limit: int = Query(default=50, ge=1, le=9999),
@@ -166,7 +233,20 @@ def get_review_due(
         for word in session.scalars(
             select(WordModel).where(
                 WordModel.user_id == user_id,
-                WordModel.id.in_([card.word_id for card in cards]),
+                WordModel.id.in_(
+                    [card.word_id for card in cards if card.word_id is not None]
+                ),
+            )
+        )
+    }
+    notes = {
+        note.id: note
+        for note in session.scalars(
+            select(ClozeNoteModel).where(
+                ClozeNoteModel.user_id == user_id,
+                ClozeNoteModel.id.in_(
+                    [card.note_id for card in cards if card.note_id is not None]
+                ),
             )
         )
     }
@@ -174,8 +254,9 @@ def get_review_due(
     due_cards: list[DueCardResponse] = []
     previews: dict[str, GradePreviewResponse] = {}
     for card in cards:
-        word = words.get(card.word_id)
-        if word is None:
+        word = words.get(card.word_id) if card.word_id else None
+        note = notes.get(card.note_id) if card.note_id else None
+        if word is None and note is None:
             continue
 
         preview_value = GradePreviewResponse(
@@ -195,11 +276,29 @@ def get_review_due(
                 )
             )
         )
+        if note is not None:
+            # 가리는 일은 서버가 한다 — 웹·앱이 각자 파싱하면 렌더가 갈린다.
+            number = int(card.kind[1:]) if card.kind[1:].isdigit() else 1
+            front, back = render_cloze(note.text, number)
+            due_cards.append(
+                DueCardResponse(
+                    id=card.id,
+                    kind=card.kind,
+                    source_type="cloze",
+                    cloze=ClozeFaceResponse(
+                        note_id=note.id, front=front, back=back
+                    ),
+                    preview=preview_value,
+                )
+            )
+            continue
+
         word_payload = WordResponse.model_validate(word)
         due_cards.append(
             DueCardResponse(
                 id=card.id,
                 kind=card.kind,
+                source_type="word",
                 word=word_payload,
                 preview=preview_value,
             )
@@ -209,7 +308,7 @@ def get_review_due(
     return ReviewDueResponse(
         cards=due_cards,
         # 호환 필드 — 카드 도입 전 클라이언트가 words/previews를 읽는다.
-        words=[card.word for card in due_cards],
+        words=[card.word for card in due_cards if card.word is not None],
         previews=previews,
     )
 
@@ -260,6 +359,22 @@ def _apply_mutation(session: Session, user_id: str, mutation: SyncMutation) -> i
         if mutation.word_book is None:
             raise HTTPException(status_code=400, detail="단어장 payload가 필요합니다.")
         _, cursor = upsert_word_book(session, user_id, mutation.word_book)
+        return cursor
+
+    if mutation.entity_type == "cloze_note":
+        if mutation.cloze_note is None:
+            raise HTTPException(status_code=400, detail="빈칸 노트 payload가 필요합니다.")
+        if mutation.action == "delete":
+            entity = session.get(
+                ClozeNoteModel, {"id": mutation.cloze_note.id, "user_id": user_id}
+            )
+            if entity is None:
+                payload = mutation.cloze_note.model_copy(update={"is_deleted": True})
+                _, cursor = upsert_cloze_note(session, user_id, payload)
+                return cursor
+            _, cursor = delete_cloze_note(session, user_id, mutation.cloze_note.id)
+            return cursor
+        _, cursor = upsert_cloze_note(session, user_id, mutation.cloze_note)
         return cursor
 
     if mutation.entity_type == "card":
@@ -340,6 +455,18 @@ def sync_pull(
                         cursor=change.cursor,
                         entity_type="word_book",
                         word_book=WordBookResponse.model_validate(entity),
+                    )
+                )
+        elif change.entity_type == "cloze_note":
+            entity = session.get(
+                ClozeNoteModel, {"id": change.entity_id, "user_id": user_id}
+            )
+            if entity is not None:
+                result.append(
+                    SyncChange(
+                        cursor=change.cursor,
+                        entity_type="cloze_note",
+                        cloze_note=ClozeNoteResponse.model_validate(entity),
                     )
                 )
         elif change.entity_type == "card":

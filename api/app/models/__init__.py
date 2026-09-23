@@ -18,11 +18,18 @@ default vs server_default
 from .content import ArtistModel, PostModel
 from .gamification import QuestStateModel, UserProgressModel
 from .sync import SyncChangeModel
-from .vocab import CardModel, ReviewLogModel, WordBookModel, WordModel
+from .vocab import (
+    CardModel,
+    ClozeNoteModel,
+    ReviewLogModel,
+    WordBookModel,
+    WordModel,
+)
 
 __all__ = [
     "WordBookModel",
     "CardModel",
+    "ClozeNoteModel",
     "WordModel",
     "ReviewLogModel",
     "SyncChangeModel",

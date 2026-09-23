@@ -87,6 +87,33 @@ WordBook (1) ──────< (N) Word
 4. Hub PK는 `(id, user_id)`
 5. 충돌: `updated_at` 최신 wins — **row 전체 단위**(SRS 필드도 예외 아님)
 
+### 1.3. 노트와 카드 (2026-09-24)
+
+**출제되는 것은 단어가 아니라 카드다.** 안키의 Note/Card 구분을 따랐다.
+
+```
+단어(정보)      ──<  카드   recognition(단어→뜻) · recall(뜻→단어)
+빈칸 노트(정보) ──<  카드   c1 · c2 … (빈칸 번호)
+```
+
+**왜 나눴나** — 같은 단어라도 "単語 → 뜻"과 "뜻 → 単語"는 익는 속도가 다르다.
+SRS 상태가 단어 행에 하나뿐이면 방향을 구분할 수 없다. 그래서 `srs_*` 6컬럼이
+`cards`로 옮겨갔다. `words.srs_*`는 아직 남아 있다 — 앱과 웹 암기율이 그걸
+읽는다. 둘을 카드로 옮기면 제거한다.
+
+**빈칸 노트는 단어의 파생물이 아니다.** 문장 한 덩이에 빈칸을 여럿 찍어 카드를
+여러 장 만든다. 단어 암기뿐 아니라 정의·개념을 외우는 데 쓴다. 문법은 안키와
+같은 `{{cN::답}}`이고, **가리는 일은 서버가 한다** — 웹·앱이 각자 파싱하면
+렌더가 갈린다.
+
+**카드 id는 `{출처 id}:{kind}`** 규칙이다. 서버·웹·앱이 같은 값을 계산할 수
+있어야 오프라인에서 만든 카드가 충돌 없이 합쳐진다.
+
+**형제 카드는 한 세션에 하나만 낸다.** 같은 출처의 다른 카드가 연달아 나오면
+답을 이미 봐서 채점이 무의미하다 — 특히 빈칸은 c1의 앞면이 c2의 답을 그대로
+보여준다. 안키의 bury siblings와 같은 목적이고, 묶는 기준은 **출처 키**다
+(word_id로 묶으면 빈칸 카드끼리 전부 한 장으로 합쳐진다).
+
 ### 1.2. 게이미피케이션
 
 ```
@@ -210,6 +237,9 @@ erDiagram
 ```mermaid
 erDiagram
   word_books ||--o{ words : contains
+  word_books ||--o{ cloze_notes : contains
+  words ||--o{ cards : "recognition · recall"
+  cloze_notes ||--o{ cards : "c1 · c2 …"
   user_progress ||--o{ quest_states : "user_id"
   word_books {
     string id PK
@@ -236,6 +266,33 @@ erDiagram
     datetime srs_due_at
     datetime srs_last_reviewed_at "nullable"
     int srs_learning_step "nullable, 학습 단계 인덱스"
+    datetime created_at
+    datetime updated_at
+    bool is_deleted
+  }
+  cards {
+    string id PK "`{출처 id}:{kind}`"
+    string user_id PK
+    string source_type "word | cloze"
+    string word_id "nullable"
+    string note_id "nullable"
+    string kind "recognition·recall 또는 c1·c2…"
+    float srs_ease_factor
+    int srs_interval_days
+    int srs_repetitions
+    int srs_lapses
+    datetime srs_due_at
+    datetime srs_last_reviewed_at "nullable"
+    int srs_learning_step "nullable"
+    datetime created_at
+    datetime updated_at
+    bool is_deleted
+  }
+  cloze_notes {
+    string id PK
+    string user_id PK
+    string word_book_id
+    string text "{{cN::답}} 문법"
     datetime created_at
     datetime updated_at
     bool is_deleted
@@ -311,6 +368,7 @@ Base `/v1` · `Authorization: Bearer <Firebase ID token>` · ISO 8601 · OpenAPI
 | GET/PUT/DELETE | `/v1/content/...` | 웹 콘텐츠 (쓰기는 `require_admin_id`) |
 | GET | `/v1/review/due/count` | 오늘 낼 수 있는 개수 (단어장별, 상한 없음) |
 | PUT | `/v1/progress/settings` | 하루 한도 · 복습 흐름 설정 |
+| GET/PUT/DELETE | `/v1/word-books/{id}/cloze-notes/...` | 빈칸 노트 |
 
 ### Sync
 

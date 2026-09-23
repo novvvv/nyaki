@@ -15,6 +15,7 @@ part 'app_database.g.dart';
   tables: [
     WordBooks,
     WordEntries,
+    Cards,
     SyncOutbox,
     SyncState,
     UserProgress,
@@ -27,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +72,23 @@ class AppDatabase extends _$AppDatabase {
             // 열빙어 잔액 캐시. Hub의 user_progress.capelin_balance 대응
             // (alembic 0008). 기본값 0이라 기존 row는 자동으로 채워진다.
             await migrator.addColumn(userProgress, userProgress.capelinBalance);
+          }
+          if (from < 9) {
+            // 카드. Hub cards 대응(alembic 0012).
+            // 기존 단어는 recognition 카드 한 장으로 옮긴다 — 서버 마이그레이션과
+            // 같은 규칙(id = `{wordId}:recognition`)이라 양쪽이 같은 행을 가리킨다.
+            await migrator.createTable(cards);
+            await migrator.addColumn(wordBooks, wordBooks.cardKinds);
+            await migrator.database.customStatement(
+              "INSERT INTO cards (id, word_id, kind, srs_ease_factor, "
+              "srs_interval_days, srs_repetitions, srs_lapses, srs_due_at, "
+              "srs_last_reviewed_at, srs_learning_step, created_at, updated_at, "
+              "is_deleted) "
+              "SELECT id || ':recognition', id, 'recognition', srs_ease_factor, "
+              "srs_interval_days, srs_repetitions, srs_lapses, srs_due_at, "
+              "srs_last_reviewed_at, srs_learning_step, created_at, updated_at, "
+              "is_deleted FROM word_entries",
+            );
           }
           if (from < 8) {
             // 학습 단계(분 단위). Hub words.srs_learning_step 대응 (alembic 0011).

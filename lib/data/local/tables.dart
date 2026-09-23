@@ -19,6 +19,10 @@ class WordBooks extends Table {
   DateTimeColumn get updatedAt => dateTime()();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
 
+  //  cardKinds - 이 단어장이 만드는 카드 종류. "recognition,recall" 형태.
+  //  null이면 recognition 하나(= 카드 도입 전과 같은 동작).
+  TextColumn get cardKinds => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -37,6 +41,36 @@ class WordBooks extends Table {
 // createdAt - 큐에 쌓인 시각 
 
 // ======================================================= //
+
+// ==================== ✨ Cards ✨ ==================== //
+// 단어 하나에서 나오는 출제 카드. 안키의 Card에 해당한다.
+// SRS 상태가 단어가 아니라 여기 붙는다 — 같은 단어라도 "単語 → 뜻"과
+// "뜻 → 単語"는 익는 속도가 다르다.
+//
+// id는 `{wordId}:{kind}` 규칙이라 서버와 같은 값을 만든다(Hub cards, alembic 0012).
+// ===================================================== //
+@DataClassName('CardRow')
+class Cards extends Table {
+  TextColumn get id => text()();
+  TextColumn get wordId => text()();
+  // recognition(단어→뜻) · recall(뜻→단어) · cloze(예문 빈칸)
+  TextColumn get kind => text()();
+
+  RealColumn get srsEaseFactor => real().withDefault(const Constant(2.5))();
+  IntColumn get srsIntervalDays => integer().withDefault(const Constant(0))();
+  IntColumn get srsRepetitions => integer().withDefault(const Constant(0))();
+  IntColumn get srsLapses => integer().withDefault(const Constant(0))();
+  DateTimeColumn get srsDueAt => dateTime()();
+  DateTimeColumn get srsLastReviewedAt => dateTime().nullable()();
+  IntColumn get srsLearningStep => integer().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
 
 @DataClassName('SyncOutboxRow')
 class SyncOutbox extends Table {

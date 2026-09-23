@@ -238,6 +238,7 @@ class DriftVocabRepository implements VocabRepository {
             ..where((book) => book.id.equals(input.wordBookId)))
           .write(WordBooksCompanion(updatedAt: Value(now)));
       await _enqueueWord(id, 'upsert');
+      await _syncCardsForWord(id);
     });
 
     return getWord(input.wordBookId, id);
@@ -321,6 +322,7 @@ class DriftVocabRepository implements VocabRepository {
             ..where((book) => book.id.equals(wordBookId)))
           .write(WordBooksCompanion(updatedAt: Value(now)));
       await _enqueueWord(wordId, 'delete');
+      await _syncCardsForWord(wordId);
     });
   }
 
@@ -370,15 +372,33 @@ class DriftVocabRepository implements VocabRepository {
     // "채점 전" 현재 상태 전체가 필요하다 — SM-2 계산이 이전 ease/interval에 의존한다.
     final row = await getWord(wordBookId, wordId);
 
-    final state = Sm2State(
-      easeFactor: row.srsEaseFactor,
-      intervalDays: row.srsIntervalDays,
-      repetitions: row.srsRepetitions,
-      lapses: row.srsLapses,
-      dueAt: row.srsDueAt,
-      lastReviewedAt: row.srsLastReviewedAt,
-      learningStep: row.srsLearningStep,
-    );
+    // 채점 대상은 단어가 아니라 **카드**다(안키의 Card).
+    // 앱 화면은 아직 recognition 카드만 다룬다 — recall/cloze는 웹에서 낸다.
+    // 카드가 없으면(카드 도입 전 데이터) 만들어 두고 시작한다.
+    await _syncCardsForWord(wordId);
+    final cardId = cardIdFor(wordId, 'recognition');
+    final card = await (_db.select(_db.cards)..where((c) => c.id.equals(cardId)))
+        .getSingleOrNull();
+
+    final state = card != null
+        ? Sm2State(
+            easeFactor: card.srsEaseFactor,
+            intervalDays: card.srsIntervalDays,
+            repetitions: card.srsRepetitions,
+            lapses: card.srsLapses,
+            dueAt: card.srsDueAt,
+            lastReviewedAt: card.srsLastReviewedAt,
+            learningStep: card.srsLearningStep,
+          )
+        : Sm2State(
+            easeFactor: row.srsEaseFactor,
+            intervalDays: row.srsIntervalDays,
+            repetitions: row.srsRepetitions,
+            lapses: row.srsLapses,
+            dueAt: row.srsDueAt,
+            lastReviewedAt: row.srsLastReviewedAt,
+            learningStep: row.srsLearningStep,
+          );
 
     // 복습 흐름 설정은 서버가 진실이고 앱은 캐시를 읽는다.
     // 캐시가 없으면(로그인 전·구버전 Hub) 단계 없이 예전 방식으로 돈다.
@@ -390,6 +410,23 @@ class DriftVocabRepository implements VocabRepository {
         : gradeGood(state, now, config);
 
     await _db.transaction(() async {
+      // 1. 카드에 되쓴다 — 여기가 진짜 SRS 상태다.
+      await (_db.update(_db.cards)..where((c) => c.id.equals(cardId))).write(
+        CardsCompanion(
+          srsEaseFactor: Value(result.state.easeFactor),
+          srsIntervalDays: Value(result.state.intervalDays),
+          srsRepetitions: Value(result.state.repetitions),
+          srsLapses: Value(result.state.lapses),
+          srsDueAt: Value(result.state.dueAt),
+          srsLastReviewedAt: Value(result.state.lastReviewedAt),
+          srsLearningStep: Value(result.state.learningStep),
+          updatedAt: Value(now),
+        ),
+      );
+      await _enqueueCard(cardId, 'upsert');
+
+      // 2. 단어 행에도 복사한다. 목록·암기율이 아직 단어를 읽고,
+      //    서버도 recognition 카드를 같은 방식으로 단어에 반영한다.
       await (_db.update(_db.wordEntries)..where((w) => w.id.equals(wordId)))
           .write(
         WordEntriesCompanion(
@@ -474,6 +511,113 @@ class DriftVocabRepository implements VocabRepository {
           ))
         .getSingleOrNull();
     return row != null;
+  }
+
+  // ==================== ✨ 카드 ✨ ==================== //
+  // 안키의 Card. 단어는 정보를 담고 출제되는 것은 카드다.
+  // 서버 api/app/vocab/services.py의 sync_cards_for_word와 같은 규칙이어야 한다 —
+  // 오프라인에서 만든 카드가 서버에서 만든 것과 같은 id를 가져야 충돌 없이 합쳐진다.
+  // ==================================================== //
+
+  static const _defaultCardKinds = ['recognition'];
+
+  /// 카드 id는 규칙으로 만든다 — 서버와 같은 값이어야 한다.
+  static String cardIdFor(String wordId, String kind) => '$wordId:$kind';
+
+  List<String> _parseCardKinds(String? raw) {
+    if (raw == null || raw.isEmpty) return _defaultCardKinds;
+    final kinds = raw
+        .split(RegExp(r'[,\s]+'))
+        .map((chunk) => chunk.trim())
+        .where((chunk) =>
+            chunk == 'recognition' || chunk == 'recall' || chunk == 'cloze')
+        .toList(growable: false);
+    return kinds.isEmpty ? _defaultCardKinds : kinds;
+  }
+
+  /// 단어의 카드를 단어장 설정에 맞춘다. 없으면 만들고, 빠진 종류는 soft delete.
+  Future<void> _syncCardsForWord(String wordId) async {
+    final word = await (_db.select(_db.wordEntries)
+          ..where((w) => w.id.equals(wordId)))
+        .getSingleOrNull();
+    if (word == null) return;
+
+    final book = await (_db.select(_db.wordBooks)
+          ..where((b) => b.id.equals(word.wordBookId)))
+        .getSingleOrNull();
+    final kinds =
+        word.isDeleted ? <String>[] : _parseCardKinds(book?.cardKinds);
+
+    final existing = {
+      for (final card in await (_db.select(_db.cards)
+            ..where((c) => c.wordId.equals(wordId)))
+          .get())
+        card.kind: card,
+    };
+
+    for (final kind in kinds) {
+      final card = existing[kind];
+      if (card == null) {
+        await _db.into(_db.cards).insert(
+              CardsCompanion.insert(
+                id: cardIdFor(wordId, kind),
+                wordId: wordId,
+                kind: kind,
+                srsDueAt: word.srsDueAt,
+                createdAt: word.createdAt,
+                updatedAt: word.updatedAt,
+              ),
+            );
+        await _enqueueCard(cardIdFor(wordId, kind), 'upsert');
+      } else if (card.isDeleted) {
+        await (_db.update(_db.cards)..where((c) => c.id.equals(card.id)))
+            .write(CardsCompanion(
+          isDeleted: const Value(false),
+          updatedAt: Value(word.updatedAt),
+        ));
+        await _enqueueCard(card.id, 'upsert');
+      }
+    }
+
+    for (final entry in existing.entries) {
+      if (!kinds.contains(entry.key) && !entry.value.isDeleted) {
+        await (_db.update(_db.cards)..where((c) => c.id.equals(entry.value.id)))
+            .write(CardsCompanion(
+          isDeleted: const Value(true),
+          updatedAt: Value(word.updatedAt),
+        ));
+        await _enqueueCard(entry.value.id, 'upsert');
+      }
+    }
+  }
+
+  Future<void> _enqueueCard(String id, String operation) async {
+    final row = await (_db.select(_db.cards)..where((c) => c.id.equals(id)))
+        .getSingle();
+    await _db.into(_db.syncOutbox).insert(
+          SyncOutboxCompanion.insert(
+            entityType: 'card',
+            entityId: id,
+            operation: operation,
+            payloadJson: jsonEncode({
+              'id': row.id,
+              'word_id': row.wordId,
+              'kind': row.kind,
+              'srs_ease_factor': row.srsEaseFactor,
+              'srs_interval_days': row.srsIntervalDays,
+              'srs_repetitions': row.srsRepetitions,
+              'srs_lapses': row.srsLapses,
+              'srs_due_at': row.srsDueAt.toUtc().toIso8601String(),
+              'srs_last_reviewed_at':
+                  row.srsLastReviewedAt?.toUtc().toIso8601String(),
+              'srs_learning_step': row.srsLearningStep,
+              'created_at': row.createdAt.toUtc().toIso8601String(),
+              'updated_at': row.updatedAt.toUtc().toIso8601String(),
+              'is_deleted': row.isDeleted,
+            }),
+            createdAt: DateTime.now().toUtc(),
+          ),
+        );
   }
 
   Future<void> _enqueueWordBook(String id, String operation) async {

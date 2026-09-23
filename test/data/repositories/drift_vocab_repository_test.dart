@@ -192,4 +192,69 @@ void main() {
       expect(payload['srs_learning_step'], 1);
     });
   });
+
+  group('카드 — 안키의 Note/Card 구분', () {
+    test('단어를 만들면 recognition 카드가 함께 생긴다', () async {
+      final word = await seedWord();
+
+      final cards = await db.select(db.cards).get();
+      expect(cards, hasLength(1));
+      expect(cards.first.id, '${word.id}:recognition');
+      expect(cards.first.kind, 'recognition');
+      expect(cards.first.srsDueAt, word.srsDueAt);
+    });
+
+    test('카드도 outbox에 실린다 — 안 실으면 서버가 카드를 모른다', () async {
+      final word = await seedWord();
+
+      final cardRows =
+          (await outbox()).where((row) => row.entityType == 'card').toList();
+      expect(cardRows, hasLength(1));
+      expect(cardRows.first.entityId, '${word.id}:recognition');
+
+      final payload =
+          jsonDecode(cardRows.first.payloadJson) as Map<String, dynamic>;
+      expect(payload['kind'], 'recognition');
+      expect(payload['word_id'], word.id);
+    });
+
+    test('채점은 카드에 쓰이고 단어에도 복사된다', () async {
+      final word = await seedWord();
+
+      await repository.gradeWord(word.wordBookId, word.id, ReviewGrade.good);
+
+      final card = await (db.select(db.cards)
+            ..where((c) => c.id.equals('${word.id}:recognition')))
+          .getSingle();
+      expect(card.srsIntervalDays, 1);
+      expect(card.srsRepetitions, 1);
+
+      // 목록·암기율이 아직 단어를 읽는다. 서버도 같은 방식으로 복사한다.
+      final updated = await repository.getWord(word.wordBookId, word.id);
+      expect(updated.srsIntervalDays, 1);
+    });
+
+    test('채점하면 카드 변경이 outbox에 쌓인다', () async {
+      final word = await seedWord();
+      final before =
+          (await outbox()).where((row) => row.entityType == 'card').length;
+
+      await repository.gradeWord(word.wordBookId, word.id, ReviewGrade.good);
+
+      final after =
+          (await outbox()).where((row) => row.entityType == 'card').length;
+      expect(after, greaterThan(before));
+    });
+
+    test('단어를 지우면 카드도 빠진다', () async {
+      final word = await seedWord();
+
+      await repository.deleteWord(word.wordBookId, word.id);
+
+      final card = await (db.select(db.cards)
+            ..where((c) => c.wordId.equals(word.id)))
+          .getSingle();
+      expect(card.isDeleted, isTrue);
+    });
+  });
 }

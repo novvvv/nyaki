@@ -89,8 +89,8 @@ class SyncCoordinator {
               (row) => {
                 'entity_type': row.entityType,
                 'action': row.operation,
-                row.entityType == 'word_book' ? 'word_book' : 'word':
-                    jsonDecode(row.payloadJson),
+                // 서버는 entity_type과 같은 이름의 키에서 payload를 읽는다.
+                row.entityType: jsonDecode(row.payloadJson),
               },
             )
             .toList(),
@@ -125,12 +125,13 @@ class SyncCoordinator {
 
     await _db.transaction(() async {
       for (final change in changes) {
-        if (change['entity_type'] == 'word_book') {
-          await _mergeWordBook(
-            (change['word_book'] as Map<String, dynamic>),
-          );
-        } else {
-          await _mergeWord((change['word'] as Map<String, dynamic>));
+        switch (change['entity_type']) {
+          case 'word_book':
+            await _mergeWordBook(change['word_book'] as Map<String, dynamic>);
+          case 'card':
+            await _mergeCard(change['card'] as Map<String, dynamic>);
+          default:
+            await _mergeWord(change['word'] as Map<String, dynamic>);
         }
       }
       await _db.into(_db.syncState).insertOnConflictUpdate(
@@ -159,6 +160,40 @@ class SyncCoordinator {
             createdAt: DateTime.parse(json['created_at'] as String),
             updatedAt: remoteUpdatedAt,
             isDeleted: Value(json['is_deleted'] as bool),
+          ),
+        );
+  }
+
+  /// 서버가 내려준 카드를 로컬에 합친다. 충돌 규칙은 단어와 같다 —
+  /// updated_at이 더 최신인 쪽이 이긴다.
+  Future<void> _mergeCard(Map<String, dynamic> json) async {
+    final id = json['id'] as String;
+    final remoteUpdatedAt = DateTime.parse(json['updated_at'] as String);
+    final local =
+        await (_db.select(_db.cards)..where((c) => c.id.equals(id)))
+            .getSingleOrNull();
+    if (local != null && !remoteUpdatedAt.isAfter(local.updatedAt)) return;
+
+    await _db.into(_db.cards).insertOnConflictUpdate(
+          CardsCompanion.insert(
+            id: id,
+            wordId: json['word_id'] as String,
+            kind: json['kind'] as String,
+            srsEaseFactor:
+                Value((json['srs_ease_factor'] as num?)?.toDouble() ?? 2.5),
+            srsIntervalDays: Value(json['srs_interval_days'] as int? ?? 0),
+            srsRepetitions: Value(json['srs_repetitions'] as int? ?? 0),
+            srsLapses: Value(json['srs_lapses'] as int? ?? 0),
+            srsDueAt: DateTime.parse(json['srs_due_at'] as String),
+            srsLastReviewedAt: Value(
+              json['srs_last_reviewed_at'] != null
+                  ? DateTime.parse(json['srs_last_reviewed_at'] as String)
+                  : null,
+            ),
+            srsLearningStep: Value(json['srs_learning_step'] as int?),
+            createdAt: DateTime.parse(json['created_at'] as String),
+            updatedAt: remoteUpdatedAt,
+            isDeleted: Value(json['is_deleted'] as bool? ?? false),
           ),
         );
   }

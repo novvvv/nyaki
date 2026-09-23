@@ -47,9 +47,15 @@ class $WordBooksTable extends WordBooks
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _cardKindsMeta =
+      const VerificationMeta('cardKinds');
+  @override
+  late final GeneratedColumn<String> cardKinds = GeneratedColumn<String>(
+      'card_kinds', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, title, description, createdAt, updatedAt, isDeleted];
+      [id, title, description, createdAt, updatedAt, isDeleted, cardKinds];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -93,6 +99,10 @@ class $WordBooksTable extends WordBooks
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
     }
+    if (data.containsKey('card_kinds')) {
+      context.handle(_cardKindsMeta,
+          cardKinds.isAcceptableOrUnknown(data['card_kinds']!, _cardKindsMeta));
+    }
     return context;
   }
 
@@ -114,6 +124,8 @@ class $WordBooksTable extends WordBooks
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      cardKinds: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}card_kinds']),
     );
   }
 
@@ -130,13 +142,15 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
+  final String? cardKinds;
   const WordBookRow(
       {required this.id,
       required this.title,
       this.description,
       required this.createdAt,
       required this.updatedAt,
-      required this.isDeleted});
+      required this.isDeleted,
+      this.cardKinds});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -148,6 +162,9 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || cardKinds != null) {
+      map['card_kinds'] = Variable<String>(cardKinds);
+    }
     return map;
   }
 
@@ -161,6 +178,9 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isDeleted: Value(isDeleted),
+      cardKinds: cardKinds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cardKinds),
     );
   }
 
@@ -174,6 +194,7 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      cardKinds: serializer.fromJson<String?>(json['cardKinds']),
     );
   }
   @override
@@ -186,6 +207,7 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
+      'cardKinds': serializer.toJson<String?>(cardKinds),
     };
   }
 
@@ -195,7 +217,8 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
           Value<String?> description = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
-          bool? isDeleted}) =>
+          bool? isDeleted,
+          Value<String?> cardKinds = const Value.absent()}) =>
       WordBookRow(
         id: id ?? this.id,
         title: title ?? this.title,
@@ -203,6 +226,7 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted ?? this.isDeleted,
+        cardKinds: cardKinds.present ? cardKinds.value : this.cardKinds,
       );
   WordBookRow copyWithCompanion(WordBooksCompanion data) {
     return WordBookRow(
@@ -213,6 +237,7 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      cardKinds: data.cardKinds.present ? data.cardKinds.value : this.cardKinds,
     );
   }
 
@@ -224,14 +249,15 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
           ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('cardKinds: $cardKinds')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, description, createdAt, updatedAt, isDeleted);
+  int get hashCode => Object.hash(
+      id, title, description, createdAt, updatedAt, isDeleted, cardKinds);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -241,7 +267,8 @@ class WordBookRow extends DataClass implements Insertable<WordBookRow> {
           other.description == this.description &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.isDeleted == this.isDeleted);
+          other.isDeleted == this.isDeleted &&
+          other.cardKinds == this.cardKinds);
 }
 
 class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
@@ -251,6 +278,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isDeleted;
+  final Value<String?> cardKinds;
   final Value<int> rowid;
   const WordBooksCompanion({
     this.id = const Value.absent(),
@@ -259,6 +287,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.cardKinds = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WordBooksCompanion.insert({
@@ -268,6 +297,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.isDeleted = const Value.absent(),
+    this.cardKinds = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         title = Value(title),
@@ -280,6 +310,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isDeleted,
+    Expression<String>? cardKinds,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -289,6 +320,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (cardKinds != null) 'card_kinds': cardKinds,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -300,6 +332,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<bool>? isDeleted,
+      Value<String?>? cardKinds,
       Value<int>? rowid}) {
     return WordBooksCompanion(
       id: id ?? this.id,
@@ -308,6 +341,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
+      cardKinds: cardKinds ?? this.cardKinds,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -333,6 +367,9 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
+    if (cardKinds.present) {
+      map['card_kinds'] = Variable<String>(cardKinds.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -348,6 +385,7 @@ class WordBooksCompanion extends UpdateCompanion<WordBookRow> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('cardKinds: $cardKinds, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1377,6 +1415,659 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
           ..write('memorizationStatus: $memorizationStatus, ')
           ..write('isBookmarked: $isBookmarked, ')
           ..write('tagsJson: $tagsJson, ')
+          ..write('srsEaseFactor: $srsEaseFactor, ')
+          ..write('srsIntervalDays: $srsIntervalDays, ')
+          ..write('srsRepetitions: $srsRepetitions, ')
+          ..write('srsLapses: $srsLapses, ')
+          ..write('srsDueAt: $srsDueAt, ')
+          ..write('srsLastReviewedAt: $srsLastReviewedAt, ')
+          ..write('srsLearningStep: $srsLearningStep, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CardsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _wordIdMeta = const VerificationMeta('wordId');
+  @override
+  late final GeneratedColumn<String> wordId = GeneratedColumn<String>(
+      'word_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _srsEaseFactorMeta =
+      const VerificationMeta('srsEaseFactor');
+  @override
+  late final GeneratedColumn<double> srsEaseFactor = GeneratedColumn<double>(
+      'srs_ease_factor', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(2.5));
+  static const VerificationMeta _srsIntervalDaysMeta =
+      const VerificationMeta('srsIntervalDays');
+  @override
+  late final GeneratedColumn<int> srsIntervalDays = GeneratedColumn<int>(
+      'srs_interval_days', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _srsRepetitionsMeta =
+      const VerificationMeta('srsRepetitions');
+  @override
+  late final GeneratedColumn<int> srsRepetitions = GeneratedColumn<int>(
+      'srs_repetitions', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _srsLapsesMeta =
+      const VerificationMeta('srsLapses');
+  @override
+  late final GeneratedColumn<int> srsLapses = GeneratedColumn<int>(
+      'srs_lapses', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _srsDueAtMeta =
+      const VerificationMeta('srsDueAt');
+  @override
+  late final GeneratedColumn<DateTime> srsDueAt = GeneratedColumn<DateTime>(
+      'srs_due_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _srsLastReviewedAtMeta =
+      const VerificationMeta('srsLastReviewedAt');
+  @override
+  late final GeneratedColumn<DateTime> srsLastReviewedAt =
+      GeneratedColumn<DateTime>('srs_last_reviewed_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _srsLearningStepMeta =
+      const VerificationMeta('srsLearningStep');
+  @override
+  late final GeneratedColumn<int> srsLearningStep = GeneratedColumn<int>(
+      'srs_learning_step', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        wordId,
+        kind,
+        srsEaseFactor,
+        srsIntervalDays,
+        srsRepetitions,
+        srsLapses,
+        srsDueAt,
+        srsLastReviewedAt,
+        srsLearningStep,
+        createdAt,
+        updatedAt,
+        isDeleted
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cards';
+  @override
+  VerificationContext validateIntegrity(Insertable<CardRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('word_id')) {
+      context.handle(_wordIdMeta,
+          wordId.isAcceptableOrUnknown(data['word_id']!, _wordIdMeta));
+    } else if (isInserting) {
+      context.missing(_wordIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('srs_ease_factor')) {
+      context.handle(
+          _srsEaseFactorMeta,
+          srsEaseFactor.isAcceptableOrUnknown(
+              data['srs_ease_factor']!, _srsEaseFactorMeta));
+    }
+    if (data.containsKey('srs_interval_days')) {
+      context.handle(
+          _srsIntervalDaysMeta,
+          srsIntervalDays.isAcceptableOrUnknown(
+              data['srs_interval_days']!, _srsIntervalDaysMeta));
+    }
+    if (data.containsKey('srs_repetitions')) {
+      context.handle(
+          _srsRepetitionsMeta,
+          srsRepetitions.isAcceptableOrUnknown(
+              data['srs_repetitions']!, _srsRepetitionsMeta));
+    }
+    if (data.containsKey('srs_lapses')) {
+      context.handle(_srsLapsesMeta,
+          srsLapses.isAcceptableOrUnknown(data['srs_lapses']!, _srsLapsesMeta));
+    }
+    if (data.containsKey('srs_due_at')) {
+      context.handle(_srsDueAtMeta,
+          srsDueAt.isAcceptableOrUnknown(data['srs_due_at']!, _srsDueAtMeta));
+    } else if (isInserting) {
+      context.missing(_srsDueAtMeta);
+    }
+    if (data.containsKey('srs_last_reviewed_at')) {
+      context.handle(
+          _srsLastReviewedAtMeta,
+          srsLastReviewedAt.isAcceptableOrUnknown(
+              data['srs_last_reviewed_at']!, _srsLastReviewedAtMeta));
+    }
+    if (data.containsKey('srs_learning_step')) {
+      context.handle(
+          _srsLearningStepMeta,
+          srsLearningStep.isAcceptableOrUnknown(
+              data['srs_learning_step']!, _srsLearningStepMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CardRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CardRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      wordId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}word_id'])!,
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      srsEaseFactor: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}srs_ease_factor'])!,
+      srsIntervalDays: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_interval_days'])!,
+      srsRepetitions: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_repetitions'])!,
+      srsLapses: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_lapses'])!,
+      srsDueAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}srs_due_at'])!,
+      srsLastReviewedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}srs_last_reviewed_at']),
+      srsLearningStep: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_learning_step']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+    );
+  }
+
+  @override
+  $CardsTable createAlias(String alias) {
+    return $CardsTable(attachedDatabase, alias);
+  }
+}
+
+class CardRow extends DataClass implements Insertable<CardRow> {
+  final String id;
+  final String wordId;
+  final String kind;
+  final double srsEaseFactor;
+  final int srsIntervalDays;
+  final int srsRepetitions;
+  final int srsLapses;
+  final DateTime srsDueAt;
+  final DateTime? srsLastReviewedAt;
+  final int? srsLearningStep;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool isDeleted;
+  const CardRow(
+      {required this.id,
+      required this.wordId,
+      required this.kind,
+      required this.srsEaseFactor,
+      required this.srsIntervalDays,
+      required this.srsRepetitions,
+      required this.srsLapses,
+      required this.srsDueAt,
+      this.srsLastReviewedAt,
+      this.srsLearningStep,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.isDeleted});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['word_id'] = Variable<String>(wordId);
+    map['kind'] = Variable<String>(kind);
+    map['srs_ease_factor'] = Variable<double>(srsEaseFactor);
+    map['srs_interval_days'] = Variable<int>(srsIntervalDays);
+    map['srs_repetitions'] = Variable<int>(srsRepetitions);
+    map['srs_lapses'] = Variable<int>(srsLapses);
+    map['srs_due_at'] = Variable<DateTime>(srsDueAt);
+    if (!nullToAbsent || srsLastReviewedAt != null) {
+      map['srs_last_reviewed_at'] = Variable<DateTime>(srsLastReviewedAt);
+    }
+    if (!nullToAbsent || srsLearningStep != null) {
+      map['srs_learning_step'] = Variable<int>(srsLearningStep);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    return map;
+  }
+
+  CardsCompanion toCompanion(bool nullToAbsent) {
+    return CardsCompanion(
+      id: Value(id),
+      wordId: Value(wordId),
+      kind: Value(kind),
+      srsEaseFactor: Value(srsEaseFactor),
+      srsIntervalDays: Value(srsIntervalDays),
+      srsRepetitions: Value(srsRepetitions),
+      srsLapses: Value(srsLapses),
+      srsDueAt: Value(srsDueAt),
+      srsLastReviewedAt: srsLastReviewedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(srsLastReviewedAt),
+      srsLearningStep: srsLearningStep == null && nullToAbsent
+          ? const Value.absent()
+          : Value(srsLearningStep),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      isDeleted: Value(isDeleted),
+    );
+  }
+
+  factory CardRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CardRow(
+      id: serializer.fromJson<String>(json['id']),
+      wordId: serializer.fromJson<String>(json['wordId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      srsEaseFactor: serializer.fromJson<double>(json['srsEaseFactor']),
+      srsIntervalDays: serializer.fromJson<int>(json['srsIntervalDays']),
+      srsRepetitions: serializer.fromJson<int>(json['srsRepetitions']),
+      srsLapses: serializer.fromJson<int>(json['srsLapses']),
+      srsDueAt: serializer.fromJson<DateTime>(json['srsDueAt']),
+      srsLastReviewedAt:
+          serializer.fromJson<DateTime?>(json['srsLastReviewedAt']),
+      srsLearningStep: serializer.fromJson<int?>(json['srsLearningStep']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'wordId': serializer.toJson<String>(wordId),
+      'kind': serializer.toJson<String>(kind),
+      'srsEaseFactor': serializer.toJson<double>(srsEaseFactor),
+      'srsIntervalDays': serializer.toJson<int>(srsIntervalDays),
+      'srsRepetitions': serializer.toJson<int>(srsRepetitions),
+      'srsLapses': serializer.toJson<int>(srsLapses),
+      'srsDueAt': serializer.toJson<DateTime>(srsDueAt),
+      'srsLastReviewedAt': serializer.toJson<DateTime?>(srsLastReviewedAt),
+      'srsLearningStep': serializer.toJson<int?>(srsLearningStep),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+    };
+  }
+
+  CardRow copyWith(
+          {String? id,
+          String? wordId,
+          String? kind,
+          double? srsEaseFactor,
+          int? srsIntervalDays,
+          int? srsRepetitions,
+          int? srsLapses,
+          DateTime? srsDueAt,
+          Value<DateTime?> srsLastReviewedAt = const Value.absent(),
+          Value<int?> srsLearningStep = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          bool? isDeleted}) =>
+      CardRow(
+        id: id ?? this.id,
+        wordId: wordId ?? this.wordId,
+        kind: kind ?? this.kind,
+        srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
+        srsIntervalDays: srsIntervalDays ?? this.srsIntervalDays,
+        srsRepetitions: srsRepetitions ?? this.srsRepetitions,
+        srsLapses: srsLapses ?? this.srsLapses,
+        srsDueAt: srsDueAt ?? this.srsDueAt,
+        srsLastReviewedAt: srsLastReviewedAt.present
+            ? srsLastReviewedAt.value
+            : this.srsLastReviewedAt,
+        srsLearningStep: srsLearningStep.present
+            ? srsLearningStep.value
+            : this.srsLearningStep,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        isDeleted: isDeleted ?? this.isDeleted,
+      );
+  CardRow copyWithCompanion(CardsCompanion data) {
+    return CardRow(
+      id: data.id.present ? data.id.value : this.id,
+      wordId: data.wordId.present ? data.wordId.value : this.wordId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      srsEaseFactor: data.srsEaseFactor.present
+          ? data.srsEaseFactor.value
+          : this.srsEaseFactor,
+      srsIntervalDays: data.srsIntervalDays.present
+          ? data.srsIntervalDays.value
+          : this.srsIntervalDays,
+      srsRepetitions: data.srsRepetitions.present
+          ? data.srsRepetitions.value
+          : this.srsRepetitions,
+      srsLapses: data.srsLapses.present ? data.srsLapses.value : this.srsLapses,
+      srsDueAt: data.srsDueAt.present ? data.srsDueAt.value : this.srsDueAt,
+      srsLastReviewedAt: data.srsLastReviewedAt.present
+          ? data.srsLastReviewedAt.value
+          : this.srsLastReviewedAt,
+      srsLearningStep: data.srsLearningStep.present
+          ? data.srsLearningStep.value
+          : this.srsLearningStep,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CardRow(')
+          ..write('id: $id, ')
+          ..write('wordId: $wordId, ')
+          ..write('kind: $kind, ')
+          ..write('srsEaseFactor: $srsEaseFactor, ')
+          ..write('srsIntervalDays: $srsIntervalDays, ')
+          ..write('srsRepetitions: $srsRepetitions, ')
+          ..write('srsLapses: $srsLapses, ')
+          ..write('srsDueAt: $srsDueAt, ')
+          ..write('srsLastReviewedAt: $srsLastReviewedAt, ')
+          ..write('srsLearningStep: $srsLearningStep, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      wordId,
+      kind,
+      srsEaseFactor,
+      srsIntervalDays,
+      srsRepetitions,
+      srsLapses,
+      srsDueAt,
+      srsLastReviewedAt,
+      srsLearningStep,
+      createdAt,
+      updatedAt,
+      isDeleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CardRow &&
+          other.id == this.id &&
+          other.wordId == this.wordId &&
+          other.kind == this.kind &&
+          other.srsEaseFactor == this.srsEaseFactor &&
+          other.srsIntervalDays == this.srsIntervalDays &&
+          other.srsRepetitions == this.srsRepetitions &&
+          other.srsLapses == this.srsLapses &&
+          other.srsDueAt == this.srsDueAt &&
+          other.srsLastReviewedAt == this.srsLastReviewedAt &&
+          other.srsLearningStep == this.srsLearningStep &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.isDeleted == this.isDeleted);
+}
+
+class CardsCompanion extends UpdateCompanion<CardRow> {
+  final Value<String> id;
+  final Value<String> wordId;
+  final Value<String> kind;
+  final Value<double> srsEaseFactor;
+  final Value<int> srsIntervalDays;
+  final Value<int> srsRepetitions;
+  final Value<int> srsLapses;
+  final Value<DateTime> srsDueAt;
+  final Value<DateTime?> srsLastReviewedAt;
+  final Value<int?> srsLearningStep;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> isDeleted;
+  final Value<int> rowid;
+  const CardsCompanion({
+    this.id = const Value.absent(),
+    this.wordId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.srsEaseFactor = const Value.absent(),
+    this.srsIntervalDays = const Value.absent(),
+    this.srsRepetitions = const Value.absent(),
+    this.srsLapses = const Value.absent(),
+    this.srsDueAt = const Value.absent(),
+    this.srsLastReviewedAt = const Value.absent(),
+    this.srsLearningStep = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CardsCompanion.insert({
+    required String id,
+    required String wordId,
+    required String kind,
+    this.srsEaseFactor = const Value.absent(),
+    this.srsIntervalDays = const Value.absent(),
+    this.srsRepetitions = const Value.absent(),
+    this.srsLapses = const Value.absent(),
+    required DateTime srsDueAt,
+    this.srsLastReviewedAt = const Value.absent(),
+    this.srsLearningStep = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.isDeleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        wordId = Value(wordId),
+        kind = Value(kind),
+        srsDueAt = Value(srsDueAt),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<CardRow> custom({
+    Expression<String>? id,
+    Expression<String>? wordId,
+    Expression<String>? kind,
+    Expression<double>? srsEaseFactor,
+    Expression<int>? srsIntervalDays,
+    Expression<int>? srsRepetitions,
+    Expression<int>? srsLapses,
+    Expression<DateTime>? srsDueAt,
+    Expression<DateTime>? srsLastReviewedAt,
+    Expression<int>? srsLearningStep,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isDeleted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (wordId != null) 'word_id': wordId,
+      if (kind != null) 'kind': kind,
+      if (srsEaseFactor != null) 'srs_ease_factor': srsEaseFactor,
+      if (srsIntervalDays != null) 'srs_interval_days': srsIntervalDays,
+      if (srsRepetitions != null) 'srs_repetitions': srsRepetitions,
+      if (srsLapses != null) 'srs_lapses': srsLapses,
+      if (srsDueAt != null) 'srs_due_at': srsDueAt,
+      if (srsLastReviewedAt != null) 'srs_last_reviewed_at': srsLastReviewedAt,
+      if (srsLearningStep != null) 'srs_learning_step': srsLearningStep,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CardsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? wordId,
+      Value<String>? kind,
+      Value<double>? srsEaseFactor,
+      Value<int>? srsIntervalDays,
+      Value<int>? srsRepetitions,
+      Value<int>? srsLapses,
+      Value<DateTime>? srsDueAt,
+      Value<DateTime?>? srsLastReviewedAt,
+      Value<int?>? srsLearningStep,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<bool>? isDeleted,
+      Value<int>? rowid}) {
+    return CardsCompanion(
+      id: id ?? this.id,
+      wordId: wordId ?? this.wordId,
+      kind: kind ?? this.kind,
+      srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
+      srsIntervalDays: srsIntervalDays ?? this.srsIntervalDays,
+      srsRepetitions: srsRepetitions ?? this.srsRepetitions,
+      srsLapses: srsLapses ?? this.srsLapses,
+      srsDueAt: srsDueAt ?? this.srsDueAt,
+      srsLastReviewedAt: srsLastReviewedAt ?? this.srsLastReviewedAt,
+      srsLearningStep: srsLearningStep ?? this.srsLearningStep,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (wordId.present) {
+      map['word_id'] = Variable<String>(wordId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (srsEaseFactor.present) {
+      map['srs_ease_factor'] = Variable<double>(srsEaseFactor.value);
+    }
+    if (srsIntervalDays.present) {
+      map['srs_interval_days'] = Variable<int>(srsIntervalDays.value);
+    }
+    if (srsRepetitions.present) {
+      map['srs_repetitions'] = Variable<int>(srsRepetitions.value);
+    }
+    if (srsLapses.present) {
+      map['srs_lapses'] = Variable<int>(srsLapses.value);
+    }
+    if (srsDueAt.present) {
+      map['srs_due_at'] = Variable<DateTime>(srsDueAt.value);
+    }
+    if (srsLastReviewedAt.present) {
+      map['srs_last_reviewed_at'] = Variable<DateTime>(srsLastReviewedAt.value);
+    }
+    if (srsLearningStep.present) {
+      map['srs_learning_step'] = Variable<int>(srsLearningStep.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CardsCompanion(')
+          ..write('id: $id, ')
+          ..write('wordId: $wordId, ')
+          ..write('kind: $kind, ')
           ..write('srsEaseFactor: $srsEaseFactor, ')
           ..write('srsIntervalDays: $srsIntervalDays, ')
           ..write('srsRepetitions: $srsRepetitions, ')
@@ -2776,6 +3467,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $WordBooksTable wordBooks = $WordBooksTable(this);
   late final $WordEntriesTable wordEntries = $WordEntriesTable(this);
+  late final $CardsTable cards = $CardsTable(this);
   late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $UserProgressTable userProgress = $UserProgressTable(this);
@@ -2784,8 +3476,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [wordBooks, wordEntries, syncOutbox, syncState, userProgress, questState];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        wordBooks,
+        wordEntries,
+        cards,
+        syncOutbox,
+        syncState,
+        userProgress,
+        questState
+      ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
         [
@@ -2807,6 +3506,7 @@ typedef $$WordBooksTableCreateCompanionBuilder = WordBooksCompanion Function({
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<bool> isDeleted,
+  Value<String?> cardKinds,
   Value<int> rowid,
 });
 typedef $$WordBooksTableUpdateCompanionBuilder = WordBooksCompanion Function({
@@ -2816,6 +3516,7 @@ typedef $$WordBooksTableUpdateCompanionBuilder = WordBooksCompanion Function({
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
+  Value<String?> cardKinds,
   Value<int> rowid,
 });
 
@@ -2866,6 +3567,9 @@ class $$WordBooksTableFilterComposer
   ColumnFilters<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get cardKinds => $composableBuilder(
+      column: $table.cardKinds, builder: (column) => ColumnFilters(column));
+
   Expression<bool> wordEntriesRefs(
       Expression<bool> Function($$WordEntriesTableFilterComposer f) f) {
     final $$WordEntriesTableFilterComposer composer = $composerBuilder(
@@ -2914,6 +3618,9 @@ class $$WordBooksTableOrderingComposer
 
   ColumnOrderings<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get cardKinds => $composableBuilder(
+      column: $table.cardKinds, builder: (column) => ColumnOrderings(column));
 }
 
 class $$WordBooksTableAnnotationComposer
@@ -2942,6 +3649,9 @@ class $$WordBooksTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<String> get cardKinds =>
+      $composableBuilder(column: $table.cardKinds, builder: (column) => column);
 
   Expression<T> wordEntriesRefs<T extends Object>(
       Expression<T> Function($$WordEntriesTableAnnotationComposer a) f) {
@@ -2994,6 +3704,7 @@ class $$WordBooksTableTableManager extends RootTableManager<
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
+            Value<String?> cardKinds = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               WordBooksCompanion(
@@ -3003,6 +3714,7 @@ class $$WordBooksTableTableManager extends RootTableManager<
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
+            cardKinds: cardKinds,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -3012,6 +3724,7 @@ class $$WordBooksTableTableManager extends RootTableManager<
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<bool> isDeleted = const Value.absent(),
+            Value<String?> cardKinds = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               WordBooksCompanion.insert(
@@ -3021,6 +3734,7 @@ class $$WordBooksTableTableManager extends RootTableManager<
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
+            cardKinds: cardKinds,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -3613,6 +4327,299 @@ typedef $$WordEntriesTableProcessedTableManager = ProcessedTableManager<
     (WordRow, $$WordEntriesTableReferences),
     WordRow,
     PrefetchHooks Function({bool wordBookId})>;
+typedef $$CardsTableCreateCompanionBuilder = CardsCompanion Function({
+  required String id,
+  required String wordId,
+  required String kind,
+  Value<double> srsEaseFactor,
+  Value<int> srsIntervalDays,
+  Value<int> srsRepetitions,
+  Value<int> srsLapses,
+  required DateTime srsDueAt,
+  Value<DateTime?> srsLastReviewedAt,
+  Value<int?> srsLearningStep,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<bool> isDeleted,
+  Value<int> rowid,
+});
+typedef $$CardsTableUpdateCompanionBuilder = CardsCompanion Function({
+  Value<String> id,
+  Value<String> wordId,
+  Value<String> kind,
+  Value<double> srsEaseFactor,
+  Value<int> srsIntervalDays,
+  Value<int> srsRepetitions,
+  Value<int> srsLapses,
+  Value<DateTime> srsDueAt,
+  Value<DateTime?> srsLastReviewedAt,
+  Value<int?> srsLearningStep,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<bool> isDeleted,
+  Value<int> rowid,
+});
+
+class $$CardsTableFilterComposer extends Composer<_$AppDatabase, $CardsTable> {
+  $$CardsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get wordId => $composableBuilder(
+      column: $table.wordId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get srsEaseFactor => $composableBuilder(
+      column: $table.srsEaseFactor, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsIntervalDays => $composableBuilder(
+      column: $table.srsIntervalDays,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsRepetitions => $composableBuilder(
+      column: $table.srsRepetitions,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsLapses => $composableBuilder(
+      column: $table.srsLapses, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get srsDueAt => $composableBuilder(
+      column: $table.srsDueAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get srsLastReviewedAt => $composableBuilder(
+      column: $table.srsLastReviewedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsLearningStep => $composableBuilder(
+      column: $table.srsLearningStep,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+}
+
+class $$CardsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CardsTable> {
+  $$CardsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get wordId => $composableBuilder(
+      column: $table.wordId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get srsEaseFactor => $composableBuilder(
+      column: $table.srsEaseFactor,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get srsIntervalDays => $composableBuilder(
+      column: $table.srsIntervalDays,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get srsRepetitions => $composableBuilder(
+      column: $table.srsRepetitions,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get srsLapses => $composableBuilder(
+      column: $table.srsLapses, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get srsDueAt => $composableBuilder(
+      column: $table.srsDueAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get srsLastReviewedAt => $composableBuilder(
+      column: $table.srsLastReviewedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get srsLearningStep => $composableBuilder(
+      column: $table.srsLearningStep,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CardsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CardsTable> {
+  $$CardsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get wordId =>
+      $composableBuilder(column: $table.wordId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<double> get srsEaseFactor => $composableBuilder(
+      column: $table.srsEaseFactor, builder: (column) => column);
+
+  GeneratedColumn<int> get srsIntervalDays => $composableBuilder(
+      column: $table.srsIntervalDays, builder: (column) => column);
+
+  GeneratedColumn<int> get srsRepetitions => $composableBuilder(
+      column: $table.srsRepetitions, builder: (column) => column);
+
+  GeneratedColumn<int> get srsLapses =>
+      $composableBuilder(column: $table.srsLapses, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get srsDueAt =>
+      $composableBuilder(column: $table.srsDueAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get srsLastReviewedAt => $composableBuilder(
+      column: $table.srsLastReviewedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get srsLearningStep => $composableBuilder(
+      column: $table.srsLearningStep, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+}
+
+class $$CardsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CardsTable,
+    CardRow,
+    $$CardsTableFilterComposer,
+    $$CardsTableOrderingComposer,
+    $$CardsTableAnnotationComposer,
+    $$CardsTableCreateCompanionBuilder,
+    $$CardsTableUpdateCompanionBuilder,
+    (CardRow, BaseReferences<_$AppDatabase, $CardsTable, CardRow>),
+    CardRow,
+    PrefetchHooks Function()> {
+  $$CardsTableTableManager(_$AppDatabase db, $CardsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CardsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CardsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CardsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> wordId = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<double> srsEaseFactor = const Value.absent(),
+            Value<int> srsIntervalDays = const Value.absent(),
+            Value<int> srsRepetitions = const Value.absent(),
+            Value<int> srsLapses = const Value.absent(),
+            Value<DateTime> srsDueAt = const Value.absent(),
+            Value<DateTime?> srsLastReviewedAt = const Value.absent(),
+            Value<int?> srsLearningStep = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CardsCompanion(
+            id: id,
+            wordId: wordId,
+            kind: kind,
+            srsEaseFactor: srsEaseFactor,
+            srsIntervalDays: srsIntervalDays,
+            srsRepetitions: srsRepetitions,
+            srsLapses: srsLapses,
+            srsDueAt: srsDueAt,
+            srsLastReviewedAt: srsLastReviewedAt,
+            srsLearningStep: srsLearningStep,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            isDeleted: isDeleted,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String wordId,
+            required String kind,
+            Value<double> srsEaseFactor = const Value.absent(),
+            Value<int> srsIntervalDays = const Value.absent(),
+            Value<int> srsRepetitions = const Value.absent(),
+            Value<int> srsLapses = const Value.absent(),
+            required DateTime srsDueAt,
+            Value<DateTime?> srsLastReviewedAt = const Value.absent(),
+            Value<int?> srsLearningStep = const Value.absent(),
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<bool> isDeleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CardsCompanion.insert(
+            id: id,
+            wordId: wordId,
+            kind: kind,
+            srsEaseFactor: srsEaseFactor,
+            srsIntervalDays: srsIntervalDays,
+            srsRepetitions: srsRepetitions,
+            srsLapses: srsLapses,
+            srsDueAt: srsDueAt,
+            srsLastReviewedAt: srsLastReviewedAt,
+            srsLearningStep: srsLearningStep,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            isDeleted: isDeleted,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CardsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $CardsTable,
+    CardRow,
+    $$CardsTableFilterComposer,
+    $$CardsTableOrderingComposer,
+    $$CardsTableAnnotationComposer,
+    $$CardsTableCreateCompanionBuilder,
+    $$CardsTableUpdateCompanionBuilder,
+    (CardRow, BaseReferences<_$AppDatabase, $CardsTable, CardRow>),
+    CardRow,
+    PrefetchHooks Function()>;
 typedef $$SyncOutboxTableCreateCompanionBuilder = SyncOutboxCompanion Function({
   Value<int> id,
   required String entityType,
@@ -4349,6 +5356,8 @@ class $AppDatabaseManager {
       $$WordBooksTableTableManager(_db, _db.wordBooks);
   $$WordEntriesTableTableManager get wordEntries =>
       $$WordEntriesTableTableManager(_db, _db.wordEntries);
+  $$CardsTableTableManager get cards =>
+      $$CardsTableTableManager(_db, _db.cards);
   $$SyncOutboxTableTableManager get syncOutbox =>
       $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
   $$SyncStateTableTableManager get syncState =>

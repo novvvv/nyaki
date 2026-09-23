@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   EmptyState,
@@ -11,7 +11,9 @@ import {
   PrimaryLink,
   SubtleButton,
 } from "@/components/ui";
-import { CARD_KIND_LABELS, type CardKind } from "@/lib/types";
+import { useAuth } from "@/components/auth-provider";
+import { fetchClozeNotes } from "@/lib/api-client";
+import { CARD_KIND_LABELS, type CardKind, type ClozeNote } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { WORD_PAGE_SIZE as PAGE_SIZE } from "@/lib/constants";
 import { computeMasteryRate } from "@/lib/stats";
@@ -19,12 +21,23 @@ import { activeWords, useVocab } from "@/lib/vocab-store";
 
 type WordFilter = "all" | "bookmarked";
 
+/** 목록에 보여줄 한 줄 — 빈칸은 답을 괄호로 감싼다. */
+function clozePreview(text: string): string {
+  return text.replaceAll(/\{\{c\d+::(.+?)(?:::.+?)?\}\}/g, "[ $1 ]");
+}
+
+function clozeCount(text: string): number {
+  return new Set([...text.matchAll(/\{\{c(\d+)::/g)].map((m) => m[1])).size;
+}
+
 export default function WordBookDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { getWordBook, deleteWordBook, updateWordBook } = useVocab();
+  const { getToken } = useAuth();
   const [savingKinds, setSavingKinds] = useState(false);
+  const [clozeNotes, setClozeNotes] = useState<ClozeNote[]>([]);
   const [deleting, setDeleting] = useState(false);
   // 단어 추가 직후 새 단어가 있는 페이지로 바로 오도록, URL의 ?page=를 초기값으로 쓴다.
   const [page, setPage] = useState(() => {
@@ -34,6 +47,25 @@ export default function WordBookDetailPage() {
   const [pagedBookId, setPagedBookId] = useState(params.id);
   const [filter, setFilter] = useState<WordFilter>("all");
   const book = getWordBook(params.id);
+
+  // 빈칸 노트는 단어와 저장소가 달라 따로 받아온다.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const notes = await fetchClozeNotes(token, params.id);
+        if (!cancelled) setClozeNotes(notes);
+      } catch {
+        // 목록을 못 받아도 단어 화면은 그대로 쓸 수 있다.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, params.id]);
+
 
   // 다른 단어장으로 이동하면 페이지/필터를 초기 상태로 되돌린다 (렌더 중 상태 조정 패턴)
   if (pagedBookId !== params.id) {
@@ -131,6 +163,13 @@ export default function WordBookDetailPage() {
               단어 추가
             </PrimaryLink>
             <GhostButton
+              onClick={() =>
+                router.push(`/word-books/${book.id}/cloze-notes/new`)
+              }
+            >
+              빈칸 노트
+            </GhostButton>
+            <GhostButton
               className="text-umber/45 hover:bg-transparent hover:text-red-600"
               disabled={deleting}
               onClick={() => void handleDeleteBook()}
@@ -192,6 +231,29 @@ export default function WordBookDetailPage() {
               })}
             </div>
           </div>
+
+          {clozeNotes.length > 0 ? (
+            <div className="mb-9">
+              <p className="text-xs font-semibold tracking-wide text-ink/35">
+                빈칸 노트
+              </p>
+              <ul className="mt-2 divide-y divide-taupe/25 border-t border-taupe/25">
+                {clozeNotes.map((note) => (
+                  <li
+                    key={note.id}
+                    className="flex items-center justify-between gap-4 py-3"
+                  >
+                    <p className="min-w-0 truncate text-sm text-ink/80">
+                      {clozePreview(note.text)}
+                    </p>
+                    <span className="shrink-0 text-xs tabular-nums text-umber/45">
+                      빈칸 {clozeCount(note.text)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           <div className="mb-4 flex items-center gap-1">
             {(

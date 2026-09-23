@@ -23,10 +23,7 @@ import {
 } from "./api-client";
 
 import type { Word, WordBook, WordBookInput, WordInput } from "./types";
-
-function newId(prefix: string) {
-  return `${prefix}-${crypto.randomUUID()}`;
-}
+import { newId } from "./utils";
 
 interface VocabContextValue {
   wordBooks: WordBook[];

@@ -64,6 +64,7 @@ function dueWords(
     cards: words.map((word) => ({
       id: `${word.id}:${kind}`,
       kind,
+      sourceType: "word" as const,
       word,
       preview: { againSeconds: 60, goodSeconds: 600 },
     })),
@@ -171,6 +172,33 @@ describe("복습 세션", () => {
 
     await user.click(screen.getByText("cat 뜻"));
     expect(screen.getByText("cat")).toBeInTheDocument();
+  });
+
+  it("빈칸 카드는 서버가 가린 문장을 그대로 보여준다", async () => {
+    fetchDueWords.mockResolvedValue({
+      cards: [
+        {
+          id: "n1:c1",
+          kind: "c1",
+          sourceType: "cloze" as const,
+          cloze: {
+            noteId: "n1",
+            front: "TCP는 [ … ] 프로토콜이다",
+            back: "TCP는 연결 지향 프로토콜이다",
+          },
+          preview: { againSeconds: 60, goodSeconds: 600 },
+        },
+      ],
+    });
+
+    const user = userEvent.setup();
+    await startSession(user);
+
+    expect(screen.getByText("TCP는 [ … ] 프로토콜이다")).toBeInTheDocument();
+    expect(screen.getByText("빈칸")).toBeInTheDocument();
+
+    await user.click(screen.getByText("TCP는 [ … ] 프로토콜이다"));
+    expect(screen.getByText("TCP는 연결 지향 프로토콜이다")).toBeInTheDocument();
   });
 
   it("복습할 단어가 없으면 시작 자체가 막힌다", async () => {

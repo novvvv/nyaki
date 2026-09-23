@@ -1,5 +1,6 @@
 import type {
   CardKind,
+  ClozeNote,
   Word,
   WordBook,
   WordBookInput,
@@ -146,6 +147,73 @@ export async function putBook(
   return toWordBook(book);
 }
 
+type ApiClozeNote = {
+  id: string;
+  word_book_id: string;
+  text: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+};
+
+function toClozeNote(value: ApiClozeNote): ClozeNote {
+  return {
+    id: value.id,
+    wordBookId: value.word_book_id,
+    text: value.text,
+    createdAt: value.created_at,
+    updatedAt: value.updated_at,
+  };
+}
+
+export async function fetchClozeNotes(
+  token: string,
+  wordBookId: string,
+): Promise<ClozeNote[]> {
+  const notes = await request<ApiClozeNote[]>(
+    `/v1/word-books/${wordBookId}/cloze-notes`,
+    token,
+  );
+  return notes.map(toClozeNote);
+}
+
+export async function putClozeNote(
+  token: string,
+  wordBookId: string,
+  id: string,
+  text: string,
+  createdAt = now(),
+): Promise<ClozeNote> {
+  const note = await request<ApiClozeNote>(
+    `/v1/word-books/${wordBookId}/cloze-notes/${id}`,
+    token,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        id,
+        word_book_id: wordBookId,
+        text: text.trim(),
+        created_at: createdAt,
+        updated_at: now(),
+        is_deleted: false,
+      }),
+    },
+  );
+  return toClozeNote(note);
+}
+
+export async function removeClozeNote(
+  token: string,
+  wordBookId: string,
+  id: string,
+): Promise<void> {
+  await request<unknown>(
+    `/v1/word-books/${wordBookId}/cloze-notes/${id}`,
+    token,
+    { method: "DELETE" },
+  );
+}
+
 export async function putWord(
   token: string,
   wordBookId: string,
@@ -254,11 +322,23 @@ export interface GradePreview {
   goodSeconds: number;
 }
 
+export interface ClozeFace {
+  noteId: string;
+  /** 서버가 이미 가려서 내려준 앞면. 파싱을 웹이 다시 하지 않는다. */
+  front: string;
+  back: string;
+}
+
 export interface DueCard {
-  /** `{word_id}:{kind}` */
+  /** `{출처 id}:{kind}` */
   id: string;
-  kind: CardKind;
-  word: Word;
+  /** 단어 카드는 recognition·recall, 빈칸 카드는 c1·c2 … */
+  kind: string;
+  sourceType: "word" | "cloze";
+  /** 단어 카드면 채워진다. */
+  word?: Word;
+  /** 빈칸 카드면 채워진다. */
+  cloze?: ClozeFace;
   /** 버튼에 띄울 다음 간격. 서버가 SM-2로 계산한 값이다. */
   preview: GradePreview;
 }
@@ -274,8 +354,10 @@ export async function fetchDueWords(
   const body = await request<{
     cards: {
       id: string;
-      kind: CardKind;
-      word: ApiWord;
+      kind: string;
+      source_type: "word" | "cloze";
+      word: ApiWord | null;
+      cloze: { note_id: string; front: string; back: string } | null;
       preview: { again_seconds: number; good_seconds: number };
     }[];
   }>(`/v1/review/due?limit=${limit}`, token);
@@ -284,7 +366,15 @@ export async function fetchDueWords(
     cards: (body.cards ?? []).map((card) => ({
       id: card.id,
       kind: card.kind,
-      word: toWord(card.word),
+      sourceType: card.source_type ?? "word",
+      word: card.word ? toWord(card.word) : undefined,
+      cloze: card.cloze
+        ? {
+            noteId: card.cloze.note_id,
+            front: card.cloze.front,
+            back: card.cloze.back,
+          }
+        : undefined,
       preview: {
         againSeconds: card.preview.again_seconds,
         goodSeconds: card.preview.good_seconds,

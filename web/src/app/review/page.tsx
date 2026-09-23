@@ -30,26 +30,29 @@ const MAX_COUNT = 9999;
 /**
  * 카드 앞면 — 무엇을 보고 떠올릴지는 종류가 정한다.
  *
- * cloze는 예문에서 단어를 가린다. 안키처럼 `{{c1::}}` 파서를 두지 않는다 —
- * 우리는 단어와 예문이 이미 따로 있어서 찾아 치환하면 된다.
+ * 빈칸 카드는 서버가 이미 가려서 내려준다. 웹이 `{{cN::}}`을 다시 파싱하면
+ * 앱과 렌더가 갈린다.
  */
 function front(card: DueCard): string {
-  const { term, meaning, example } = card.word;
-  if (card.kind === "recall") return meaning;
-  if (card.kind === "cloze") {
-    if (!example) return term;
-    return example.includes(term)
-      ? example.replaceAll(term, "[ … ]")
-      : `${example} ( … )`;
-  }
-  return term;
+  if (card.cloze) return card.cloze.front;
+  const word = card.word;
+  if (!word) return "";
+  return card.kind === "recall" ? word.meaning : word.term;
 }
 
 /** 카드 뒷면 — 앞면이 물은 것의 답. */
 function back(card: DueCard): string {
-  if (card.kind === "recall") return card.word.term;
-  if (card.kind === "cloze") return card.word.example ?? card.word.term;
-  return card.word.meaning;
+  if (card.cloze) return card.cloze.back;
+  const word = card.word;
+  if (!word) return "";
+  return card.kind === "recall" ? word.term : word.meaning;
+}
+
+/** 진행 줄에 붙는 종류 표시. 기본 카드에는 붙이지 않는다. */
+function kindLabel(card: DueCard): string | null {
+  if (card.sourceType === "cloze") return "빈칸";
+  if (card.kind === "recall") return CARD_KIND_LABELS.recall;
+  return null;
 }
 
 export default function ReviewPage() {
@@ -100,8 +103,10 @@ export default function ReviewPage() {
 
   // 슬라이더 상한. 실제로 출제할 수 있는 건 받아둔 목록(최대 200) 안에서
   // 선택한 단어장에 속한 것까지다.
-  const picked = (due ?? []).filter((card) =>
-    isSelected(card.word.wordBookId),
+  // 빈칸 카드는 단어가 없어 단어장을 화면에서 가릴 수 없다 — 항상 포함한다.
+  // (서버가 단어장별 개수는 노트 기준으로 세어 내려준다)
+  const picked = (due ?? []).filter(
+    (card) => !card.word || isSelected(card.word.wordBookId),
   );
   const limit = Math.max(1, Math.min(picked.length, MAX_COUNT));
 
@@ -127,7 +132,7 @@ export default function ReviewPage() {
 
       pending.current.push({
         id: crypto.randomUUID(),
-        wordId: card.word.id,
+        wordId: card.word?.id ?? card.cloze?.noteId ?? card.id,
         cardId: card.id,
         grade: value,
         reviewedAt: new Date().toISOString(),
@@ -297,9 +302,9 @@ export default function ReviewPage() {
             {finished} / {sessionSize}
           </span>
           {/* 어느 방향으로 묻는 카드인지. 기본 종류뿐이면 군더더기라 숨긴다. */}
-          {current.kind !== "recognition" ? (
+          {kindLabel(current) ? (
             <span className="shrink-0 text-[11px] text-ink/35">
-              {CARD_KIND_LABELS[current.kind]}
+              {kindLabel(current)}
             </span>
           ) : null}
           <div className="h-px flex-1 bg-taupe/50">
@@ -317,24 +322,32 @@ export default function ReviewPage() {
           onClick={() => setFlipped((prev) => !prev)}
           className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center"
         >
-          <p className="text-4xl font-semibold tracking-tight text-ink">
+          <p
+            className={cn(
+              "font-semibold tracking-tight text-ink",
+              // 빈칸은 문장 한 덩이라 단어와 같은 크기로 두면 넘친다.
+              current.sourceType === "cloze"
+                ? "text-2xl leading-relaxed"
+                : "text-4xl",
+            )}
+          >
             {front(current)}
           </p>
 
           {flipped ? (
             <div className="space-y-3">
-              {current.word.pronunciation ? (
+              {current.word?.pronunciation ? (
                 <p className="text-base text-ink/45">
                   {current.word.pronunciation}
                 </p>
               ) : null}
               <p className="text-2xl text-ink">{back(current)}</p>
-              {current.kind !== "cloze" && current.word.example ? (
+              {current.word?.example ? (
                 <p className="pt-4 text-base text-ink/55">
                   {current.word.example}
                 </p>
               ) : null}
-              {current.word.exampleMeaning ? (
+              {current.word?.exampleMeaning ? (
                 <p className="text-sm text-ink/40">
                   {current.word.exampleMeaning}
                 </p>
@@ -342,7 +355,11 @@ export default function ReviewPage() {
             </div>
           ) : (
             <p className="text-xs text-ink/25">
-              {current.kind === "recall" ? "눌러서 단어 보기" : "눌러서 뜻 보기"}
+              {current.sourceType === "cloze"
+                ? "눌러서 답 보기"
+                : current.kind === "recall"
+                  ? "눌러서 단어 보기"
+                  : "눌러서 뜻 보기"}
             </p>
           )}
         </button>

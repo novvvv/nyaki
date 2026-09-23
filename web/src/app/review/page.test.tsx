@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { DueWords } from "@/lib/api-client";
+import type { DueCard, DueWords } from "@/lib/api-client";
 import type { Word } from "@/lib/types";
 
 /**
@@ -56,12 +56,17 @@ function word(id: string, term: string): Word {
 }
 
 /** 학습 단계를 켠 상태를 흉내 낸다 — 모름 1분, 외움 10분. */
-function dueWords(words: Word[]): DueWords {
+function dueWords(
+  words: Word[],
+  kind: DueCard["kind"] = "recognition",
+): DueWords {
   return {
-    words,
-    previews: Object.fromEntries(
-      words.map((w) => [w.id, { againSeconds: 60, goodSeconds: 600 }]),
-    ),
+    cards: words.map((word) => ({
+      id: `${word.id}:${kind}`,
+      kind,
+      word,
+      preview: { againSeconds: 60, goodSeconds: 600 },
+    })),
   };
 }
 
@@ -139,6 +144,33 @@ describe("복습 세션", () => {
 
     expect(screen.getByText("1분")).toBeInTheDocument();
     expect(screen.getByText("10분")).toBeInTheDocument();
+  });
+
+  it("채점에 card_id를 실어 보낸다 — 서버가 어느 카드인지 알아야 한다", async () => {
+    const user = userEvent.setup();
+    await startSession(user);
+
+    await user.click(screen.getByRole("button", { name: "외움" }));
+    await user.click(screen.getByRole("button", { name: "외움" }));
+
+    await waitFor(() => expect(pushGrades).toHaveBeenCalledOnce());
+    const [, grades] = pushGrades.mock.calls[0];
+    expect(grades[0].cardId).toBe("w1:recognition");
+  });
+
+  it("recall 카드는 뜻을 먼저 보여준다", async () => {
+    fetchDueWords.mockResolvedValue(dueWords([word("w1", "cat")], "recall"));
+
+    const user = userEvent.setup();
+    await startSession(user);
+
+    // 앞면이 뜻이고, 뒤집으면 단어가 나온다.
+    expect(screen.getByText("cat 뜻")).toBeInTheDocument();
+    expect(screen.queryByText("cat")).not.toBeInTheDocument();
+    expect(screen.getByText("눌러서 단어 보기")).toBeInTheDocument();
+
+    await user.click(screen.getByText("cat 뜻"));
+    expect(screen.getByText("cat")).toBeInTheDocument();
   });
 
   it("복습할 단어가 없으면 시작 자체가 막힌다", async () => {

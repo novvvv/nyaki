@@ -36,47 +36,54 @@ afterEach(() => {
 });
 
 describe("fetchDueWords", () => {
-  it("단어와 버튼 예상 간격을 함께 돌려준다", async () => {
+  const apiWord = {
+    id: "w1",
+    word_book_id: "b1",
+    term: "cat",
+    meaning: "고양이",
+    memorization_status: "memorized",
+    is_bookmarked: true,
+    tags: ["기초"],
+    srs_interval_days: 8,
+    srs_learning_step: null,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+    is_deleted: false,
+  };
+
+  it("카드와 단어 내용, 예상 간격을 함께 돌려준다", async () => {
     vi.stubGlobal(
       "fetch",
       mockJson({
-        words: [
+        cards: [
           {
-            id: "w1",
-            word_book_id: "b1",
-            term: "cat",
-            meaning: "고양이",
-            memorization_status: "memorized",
-            is_bookmarked: true,
-            tags: ["기초"],
-            srs_interval_days: 8,
-            srs_learning_step: null,
-            created_at: "2026-09-01T00:00:00Z",
-            updated_at: "2026-09-01T00:00:00Z",
-            is_deleted: false,
+            id: "w1:recall",
+            kind: "recall",
+            word: apiWord,
+            preview: { again_seconds: 600, good_seconds: 1728000 },
           },
         ],
-        previews: { w1: { again_seconds: 600, good_seconds: 1728000 } },
       }),
     );
 
     const result = await fetchDueWords(TOKEN, 30);
 
-    expect(result.words[0]).toMatchObject({
+    expect(result.cards[0].id).toBe("w1:recall");
+    expect(result.cards[0].kind).toBe("recall");
+    expect(result.cards[0].word).toMatchObject({
       id: "w1",
       wordBookId: "b1",
       srsIntervalDays: 8,
-      srsLearningStep: null,
       isBookmarked: true,
     });
-    expect(result.previews.w1).toEqual({
+    expect(result.cards[0].preview).toEqual({
       againSeconds: 600,
       goodSeconds: 1728000,
     });
   });
 
   it("limit을 쿼리로 보내고 토큰을 헤더에 싣는다", async () => {
-    const fetchMock = mockJson({ words: [], previews: {} });
+    const fetchMock = mockJson({ cards: [] });
     vi.stubGlobal("fetch", fetchMock);
 
     await fetchDueWords(TOKEN, 42);
@@ -88,11 +95,9 @@ describe("fetchDueWords", () => {
     );
   });
 
-  it("previews가 없는 응답도 견딘다 — 구버전 서버 호환", async () => {
-    vi.stubGlobal("fetch", mockJson({ words: [] }));
-    await expect(fetchDueWords(TOKEN, 10)).resolves.toMatchObject({
-      previews: {},
-    });
+  it("cards가 없는 응답도 견딘다", async () => {
+    vi.stubGlobal("fetch", mockJson({}));
+    await expect(fetchDueWords(TOKEN, 10)).resolves.toEqual({ cards: [] });
   });
 });
 
@@ -191,6 +196,7 @@ describe("pushGrades", () => {
       {
         id: "log-1",
         wordId: "w1",
+        cardId: "w1:recognition",
         grade: "good",
         reviewedAt: "2026-09-23T12:00:00.000Z",
       },
@@ -207,6 +213,7 @@ describe("pushGrades", () => {
     expect(body.grades[0]).toEqual({
       id: "log-1",
       word_id: "w1",
+      card_id: "w1:recognition",
       grade: "good",
       reviewed_at: "2026-09-23T12:00:00.000Z",
     });

@@ -10,14 +10,14 @@ import {
   fetchDueWords,
   pushGrades,
   pushGradesBeacon,
+  type DueCard,
   type DueCounts,
-  type GradePreview,
   type ReviewGrade,
   type ReviewGradeItem,
 } from "@/lib/api-client";
 import { formatDelay, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
-import type { Word } from "@/lib/types";
+import { CARD_KIND_LABELS } from "@/lib/types";
 import { useVocab } from "@/lib/vocab-store";
 
 type Phase = "setup" | "session" | "done";
@@ -27,13 +27,38 @@ const SCREEN = "min-h-[calc(100vh-8.5rem)]";
 // 오늘 due인 단어 수가 정한다 — 이 값은 그 위에 얹힌 안전장치일 뿐이다.
 const MAX_COUNT = 9999;
 
+/**
+ * 카드 앞면 — 무엇을 보고 떠올릴지는 종류가 정한다.
+ *
+ * cloze는 예문에서 단어를 가린다. 안키처럼 `{{c1::}}` 파서를 두지 않는다 —
+ * 우리는 단어와 예문이 이미 따로 있어서 찾아 치환하면 된다.
+ */
+function front(card: DueCard): string {
+  const { term, meaning, example } = card.word;
+  if (card.kind === "recall") return meaning;
+  if (card.kind === "cloze") {
+    if (!example) return term;
+    return example.includes(term)
+      ? example.replaceAll(term, "[ … ]")
+      : `${example} ( … )`;
+  }
+  return term;
+}
+
+/** 카드 뒷면 — 앞면이 물은 것의 답. */
+function back(card: DueCard): string {
+  if (card.kind === "recall") return card.word.term;
+  if (card.kind === "cloze") return card.word.example ?? card.word.term;
+  return card.word.meaning;
+}
+
 export default function ReviewPage() {
   const { getToken } = useAuth();
   const { wordBooks } = useVocab();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [countText, setCountText] = useState("20");
-  const [queue, setQueue] = useState<Word[]>([]);
+  const [queue, setQueue] = useState<DueCard[]>([]);
   // 진행 표시는 **카드 수** 기준이다. 학습 단계 때문에 한 카드가 세션 안에서
   // 여러 번 나오는데, 그때마다 분모가 늘면 "풀수록 늘어나는" 화면이 된다.
   const [sessionSize, setSessionSize] = useState(0);
@@ -43,14 +68,12 @@ export default function ReviewPage() {
   const [result, setResult] = useState({ again: 0, good: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
-  // 복습 주기가 돌아온 단어. 시작 화면의 상한이자 그대로 세션의 출제 목록이 된다.
-  const [due, setDue] = useState<Word[]>();
+  // 복습 주기가 돌아온 카드. 시작 화면의 상한이자 그대로 세션의 출제 목록이 된다.
+  const [due, setDue] = useState<DueCard[]>();
   const [shuffle, setShuffle] = useState(false);
   // 단어장별 due 개수. /review/due(최대 200개)의 길이로 세면 201개부터 틀려서
   // 개수 전용 엔드포인트를 따로 부른다.
   const [counts, setCounts] = useState<DueCounts>();
-  // 단어 id → 버튼에 띄울 다음 간격. 서버가 계산해 내려준 값이다.
-  const [previews, setPreviews] = useState<Record<string, GradePreview>>({});
   // 선택한 단어장. undefined면 "아직 안 정함" = 전체를 뜻한다.
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>();
 
@@ -77,7 +100,9 @@ export default function ReviewPage() {
 
   // 슬라이더 상한. 실제로 출제할 수 있는 건 받아둔 목록(최대 200) 안에서
   // 선택한 단어장에 속한 것까지다.
-  const picked = (due ?? []).filter((word) => isSelected(word.wordBookId));
+  const picked = (due ?? []).filter((card) =>
+    isSelected(card.word.wordBookId),
+  );
   const limit = Math.max(1, Math.min(picked.length, MAX_COUNT));
 
   const parsed = Number.parseInt(countText, 10);
@@ -97,12 +122,13 @@ export default function ReviewPage() {
 
   const grade = useCallback(
     (value: ReviewGrade) => {
-      const word = queue[index];
-      if (!word) return;
+      const card = queue[index];
+      if (!card) return;
 
       pending.current.push({
         id: crypto.randomUUID(),
-        wordId: word.id,
+        wordId: card.word.id,
+        cardId: card.id,
         grade: value,
         reviewedAt: new Date().toISOString(),
       });
@@ -173,21 +199,20 @@ export default function ReviewPage() {
       try {
         const token = await getToken();
         if (!token) throw new Error("로그인이 필요합니다.");
-        const [due, dueCounts] = await Promise.all([
+        const [dueResult, dueCounts] = await Promise.all([
           fetchDueWords(token, MAX_COUNT),
           fetchDueCounts(token),
         ]);
         if (cancelled) return;
 
-        const words = due.words;
-        setPreviews(due.previews);
-        setDue(words);
+        const cards = dueResult.cards;
+        setDue(cards);
         setCounts(dueCounts);
         // 기본값 20이 due 개수보다 크면 개수에 맞춘다.
         setCountText((prev) => {
           const n = Number.parseInt(prev, 10);
           const wanted = Number.isNaN(n) ? 20 : n;
-          return String(Math.max(1, Math.min(wanted, words.length)));
+          return String(Math.max(1, Math.min(wanted, cards.length)));
         });
       } catch (reason) {
         if (cancelled) return;
@@ -204,18 +229,11 @@ export default function ReviewPage() {
     };
   }, [phase, getToken]);
 
-  /**
-   * 버튼에 띄울 다음 간격. 서버가 세션 시작 때 계산해준 값이다.
-   *
-   * 한 카드는 세션에서 한 번만 채점되므로 이 값이 낡을 일이 없다 —
-   * 웹은 SM-2를 계산하지 않는다(docs/WEB-REVIEW-PLAN.md 5절).
-   */
-  function delaysFor(word: Word): { again: string; good: string } {
-    const preview = previews[word.id];
-    if (!preview) return { again: "", good: "" };
+  /** 버튼에 띄울 다음 간격. 카드마다 서버가 계산해 실어 보낸다. */
+  function delaysFor(card: DueCard): { again: string; good: string } {
     return {
-      again: formatDelay(preview.againSeconds),
-      good: formatDelay(preview.goodSeconds),
+      again: formatDelay(card.preview.againSeconds),
+      good: formatDelay(card.preview.goodSeconds),
     };
   }
 
@@ -278,6 +296,12 @@ export default function ReviewPage() {
           <span className="shrink-0 text-xs tabular-nums text-ink/35">
             {finished} / {sessionSize}
           </span>
+          {/* 어느 방향으로 묻는 카드인지. 기본 종류뿐이면 군더더기라 숨긴다. */}
+          {current.kind !== "recognition" ? (
+            <span className="shrink-0 text-[11px] text-ink/35">
+              {CARD_KIND_LABELS[current.kind]}
+            </span>
+          ) : null}
           <div className="h-px flex-1 bg-taupe/50">
             <div
               className="h-px bg-ink transition-all duration-200"
@@ -294,24 +318,32 @@ export default function ReviewPage() {
           className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center"
         >
           <p className="text-4xl font-semibold tracking-tight text-ink">
-            {current.term}
+            {front(current)}
           </p>
 
           {flipped ? (
             <div className="space-y-3">
-              {current.pronunciation ? (
-                <p className="text-base text-ink/45">{current.pronunciation}</p>
+              {current.word.pronunciation ? (
+                <p className="text-base text-ink/45">
+                  {current.word.pronunciation}
+                </p>
               ) : null}
-              <p className="text-2xl text-ink">{current.meaning}</p>
-              {current.example ? (
-                <p className="pt-4 text-base text-ink/55">{current.example}</p>
+              <p className="text-2xl text-ink">{back(current)}</p>
+              {current.kind !== "cloze" && current.word.example ? (
+                <p className="pt-4 text-base text-ink/55">
+                  {current.word.example}
+                </p>
               ) : null}
-              {current.exampleMeaning ? (
-                <p className="text-sm text-ink/40">{current.exampleMeaning}</p>
+              {current.word.exampleMeaning ? (
+                <p className="text-sm text-ink/40">
+                  {current.word.exampleMeaning}
+                </p>
               ) : null}
             </div>
           ) : (
-            <p className="text-xs text-ink/25">눌러서 뜻 보기</p>
+            <p className="text-xs text-ink/25">
+              {current.kind === "recall" ? "눌러서 단어 보기" : "눌러서 뜻 보기"}
+            </p>
           )}
         </button>
 

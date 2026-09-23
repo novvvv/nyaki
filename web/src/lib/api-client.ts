@@ -1,10 +1,17 @@
-import type { Word, WordBook, WordBookInput, WordInput } from "./types";
+import type {
+  CardKind,
+  Word,
+  WordBook,
+  WordBookInput,
+  WordInput,
+} from "./types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 type ApiWordBook = {
   id: string;
   title: string;
+  card_kinds: string | null;
   description: string | null;
   created_at: string;
   updated_at: string;
@@ -38,8 +45,21 @@ function toWordBook(value: ApiWordBook): WordBook {
     description: value.description ?? undefined,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
+    cardKinds: parseCardKinds(value.card_kinds),
     words: [],
   };
+}
+
+/** "recognition,recall" → ["recognition", "recall"]. 모르는 값은 버린다. */
+function parseCardKinds(raw: string | null | undefined): CardKind[] {
+  if (!raw) return ["recognition"];
+  const kinds = raw
+    .split(/[,\s]+/)
+    .map((chunk) => chunk.trim())
+    .filter((chunk): chunk is CardKind =>
+      chunk === "recognition" || chunk === "recall" || chunk === "cloze",
+    );
+  return kinds.length > 0 ? kinds : ["recognition"];
 }
 
 function toWord(value: ApiWord): Word {
@@ -105,6 +125,9 @@ export async function putBook(
   token: string,
   id: string,
   input: WordBookInput,
+  // 수정할 때는 원래 생성 시각을 그대로 보내야 한다. 서버는 보낸 필드를
+  // 그대로 덮어쓰므로(exclude_unset), now()를 보내면 생성 시각이 바뀐다.
+  createdAt = now(),
 ): Promise<WordBook> {
   const timestamp = now();
   const book = await request<ApiWordBook>(`/v1/word-books/${id}`, token, {
@@ -113,7 +136,9 @@ export async function putBook(
       id,
       title: input.title.trim(),
       description: input.description?.trim() || null,
-      created_at: timestamp,
+      // 안 보내면 서버가 기존 값을 유지한다(exclude_unset).
+      ...(input.cardKinds ? { card_kinds: input.cardKinds.join(",") } : {}),
+      created_at: createdAt,
       updated_at: timestamp,
       is_deleted: false,
     }),
@@ -218,6 +243,8 @@ export interface ReviewGradeItem {
   /** 클라이언트가 만든 고유 id. 재전송해도 서버가 한 번만 반영하게 하는 열쇠다. */
   id: string;
   wordId: string;
+  /** 어느 카드를 채점했는지. 없으면 서버가 recognition으로 본다. */
+  cardId?: string;
   grade: ReviewGrade;
   reviewedAt: string;
 }
@@ -227,10 +254,17 @@ export interface GradePreview {
   goodSeconds: number;
 }
 
+export interface DueCard {
+  /** `{word_id}:{kind}` */
+  id: string;
+  kind: CardKind;
+  word: Word;
+  /** 버튼에 띄울 다음 간격. 서버가 SM-2로 계산한 값이다. */
+  preview: GradePreview;
+}
+
 export interface DueWords {
-  words: Word[];
-  /** 단어 id → 버튼에 띄울 다음 간격. 서버가 SM-2로 계산한 값이다. */
-  previews: Record<string, GradePreview>;
+  cards: DueCard[];
 }
 
 export async function fetchDueWords(
@@ -238,18 +272,25 @@ export async function fetchDueWords(
   limit: number,
 ): Promise<DueWords> {
   const body = await request<{
-    words: ApiWord[];
-    previews: Record<string, { again_seconds: number; good_seconds: number }>;
+    cards: {
+      id: string;
+      kind: CardKind;
+      word: ApiWord;
+      preview: { again_seconds: number; good_seconds: number };
+    }[];
   }>(`/v1/review/due?limit=${limit}`, token);
 
-  const previews: Record<string, GradePreview> = {};
-  for (const [id, value] of Object.entries(body.previews ?? {})) {
-    previews[id] = {
-      againSeconds: value.again_seconds,
-      goodSeconds: value.good_seconds,
-    };
-  }
-  return { words: body.words.map(toWord), previews };
+  return {
+    cards: (body.cards ?? []).map((card) => ({
+      id: card.id,
+      kind: card.kind,
+      word: toWord(card.word),
+      preview: {
+        againSeconds: card.preview.again_seconds,
+        goodSeconds: card.preview.good_seconds,
+      },
+    })),
+  };
 }
 
 export interface DueCounts {
@@ -354,6 +395,7 @@ function gradesBody(grades: ReviewGradeItem[]) {
     grades: grades.map((g) => ({
       id: g.id,
       word_id: g.wordId,
+      ...(g.cardId ? { card_id: g.cardId } : {}),
       grade: g.grade,
       reviewed_at: g.reviewedAt,
     })),

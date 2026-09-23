@@ -35,6 +35,7 @@ interface VocabContextValue {
   refresh: () => Promise<void>;
   getWordBook: (id: string) => WordBook | undefined;
   createWordBook: (input: WordBookInput) => Promise<WordBook>;
+  updateWordBook: (id: string, input: WordBookInput) => Promise<WordBook>;
   createWord: (wordBookId: string, input: WordInput) => Promise<Word>;
   updateWord: (
     wordBookId: string,
@@ -93,6 +94,23 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     setWordBooks((prev) => [created, ...prev]);
     return created;
   }, [getToken]);
+
+  const updateWordBook = useCallback(
+    async (id: string, input: WordBookInput) => {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+
+      const current = wordBooks.find((book) => book.id === id);
+      const saved = await putBook(token, id, input, current?.createdAt);
+      // 단어 목록은 서버 응답에 없다 — 갖고 있던 것을 유지한다.
+      const next: WordBook = { ...saved, words: current?.words ?? [] };
+      setWordBooks((prev) =>
+        prev.map((book) => (book.id === id ? next : book)),
+      );
+      return next;
+    },
+    [getToken, wordBooks],
+  );
 
   const createWord = useCallback(async (wordBookId: string, input: WordInput) => {
     const token = await getToken();
@@ -190,6 +208,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       refresh,
       getWordBook,
       createWordBook,
+      updateWordBook,
       createWord,
       updateWord,
       deleteWord,
@@ -202,6 +221,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       refresh,
       getWordBook,
       createWordBook,
+      updateWordBook,
       createWord,
       updateWord,
       deleteWord,

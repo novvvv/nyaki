@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..models import (
+    CardModel,
     ReviewLogModel,
     SyncChangeModel,
     UserProgressModel,
@@ -50,6 +51,8 @@ def upsert_word_book(
             setattr(entity, field, value)
 
     session.flush()
+    # 카드 종류가 바뀌었으면 그 단어장의 단어들이 가진 카드를 맞춘다.
+    sync_cards_for_book(session, user_id, payload.id)
     return entity, _new_change(session, user_id, "word_book", payload.id)
 
 
@@ -71,6 +74,8 @@ def upsert_word(
             setattr(entity, field, value)
 
     session.flush()
+    # 단어가 생기거나 바뀌면 카드도 맞춘다 — 출제되는 것은 카드다.
+    sync_cards_for_word(session, user_id, entity)
     return entity, _new_change(session, user_id, "word", payload.id)
 
 
@@ -83,6 +88,8 @@ def delete_word(session: Session, user_id: str, word_id: str) -> tuple[WordModel
     entity.is_deleted = True
     entity.updated_at = utc_now()
     session.flush()
+    # 단어가 지워지면 그 카드도 출제 대상에서 빠져야 한다.
+    sync_cards_for_word(session, user_id, entity)
     return entity, _new_change(session, user_id, "word", word_id)
 
 
@@ -102,6 +109,22 @@ def delete_word_book(
             WordModel.user_id == user_id,
             WordModel.word_book_id == word_book_id,
             WordModel.is_deleted.is_(False),
+        )
+        .values(is_deleted=True, updated_at=entity.updated_at)
+    )
+    # 단어장이 지워지면 그 안의 카드도 전부 지운다. 단어를 한 건씩 훑지 않고
+    # word_id 목록으로 한 번에 처리한다 — 단어가 수백 개일 수 있다.
+    session.execute(
+        CardModel.__table__.update()
+        .where(
+            CardModel.user_id == user_id,
+            CardModel.is_deleted.is_(False),
+            CardModel.word_id.in_(
+                select(WordModel.id).where(
+                    WordModel.user_id == user_id,
+                    WordModel.word_book_id == word_book_id,
+                )
+            ),
         )
         .values(is_deleted=True, updated_at=entity.updated_at)
     )
@@ -131,6 +154,97 @@ def list_words(session: Session, user_id: str, word_book_id: str) -> list[WordMo
             .order_by(WordModel.created_at)
         )
     )
+
+
+# ==================== 카드 ====================
+#
+# 안키의 Note/Card 구분. 단어는 정보를 담고, 출제되는 것은 카드다.
+# 같은 단어라도 "単語 → 뜻"과 "뜻 → 単語"는 익는 속도가 다르므로 SRS 상태가
+# 카드마다 따로 있어야 한다.
+#
+# 종류는 고정 enum이다. 안키처럼 사용자가 템플릿을 짜게 하지 않는다 —
+# 개인 단어장에 HTML 편집기는 과하고, 종류를 늘리려면 여기에 한 줄 추가하면 된다.
+
+CARD_KINDS = ("recognition", "recall", "cloze")
+DEFAULT_CARD_KINDS = ("recognition",)
+
+
+def card_id_for(word_id: str, kind: str) -> str:
+    """카드 id는 규칙으로 만든다 — 클라이언트도 같은 값을 계산할 수 있어야 한다."""
+    return f"{word_id}:{kind}"
+
+
+def parse_card_kinds(raw: str | None) -> tuple[str, ...]:
+    """단어장의 card_kinds 문자열 → 종류 목록. 모르는 값은 버린다."""
+    if raw is None:
+        return DEFAULT_CARD_KINDS
+    kinds = tuple(
+        chunk.strip()
+        for chunk in raw.replace(",", " ").split()
+        if chunk.strip() in CARD_KINDS
+    )
+    # 전부 지우면 출제할 게 없어진다 — 최소 한 종류는 남긴다.
+    return kinds or DEFAULT_CARD_KINDS
+
+
+def sync_cards_for_word(session: Session, user_id: str, word: WordModel) -> None:
+    """단어의 카드를 단어장 설정에 맞춘다.
+
+    - 없는 종류는 만든다. 새 카드는 단어와 같은 시각에 due로 시작한다.
+    - 빠진 종류는 soft delete 한다. 되살릴 때 복습 기록이 남아 있어야 한다.
+    - 단어가 지워졌으면 카드도 전부 지운다.
+    """
+    book = session.get(WordBookModel, {"id": word.word_book_id, "user_id": user_id})
+    kinds = () if word.is_deleted else parse_card_kinds(
+        book.card_kinds if book is not None else None
+    )
+
+    existing = {
+        card.kind: card
+        for card in session.scalars(
+            select(CardModel).where(
+                CardModel.user_id == user_id, CardModel.word_id == word.id
+            )
+        )
+    }
+
+    for kind in kinds:
+        card = existing.get(kind)
+        if card is None:
+            session.add(
+                CardModel(
+                    id=card_id_for(word.id, kind),
+                    user_id=user_id,
+                    word_id=word.id,
+                    kind=kind,
+                    srs_due_at=word.srs_due_at,
+                    created_at=word.created_at,
+                    updated_at=word.updated_at,
+                )
+            )
+        elif card.is_deleted:
+            card.is_deleted = False
+            card.updated_at = word.updated_at
+
+    for kind, card in existing.items():
+        if kind not in kinds and not card.is_deleted:
+            card.is_deleted = True
+            card.updated_at = word.updated_at
+
+    session.flush()
+
+
+def sync_cards_for_book(session: Session, user_id: str, word_book_id: str) -> None:
+    """단어장의 카드 종류가 바뀌었을 때 그 안의 단어를 전부 맞춘다."""
+    words = session.scalars(
+        select(WordModel).where(
+            WordModel.user_id == user_id,
+            WordModel.word_book_id == word_book_id,
+            WordModel.is_deleted.is_(False),
+        )
+    )
+    for word in words:
+        sync_cards_for_word(session, user_id, word)
 
 
 # ==================== 하루 한도 ====================
@@ -256,21 +370,38 @@ def load_step_config(session: Session, user_id: str) -> StepConfig:
 
 
 def _due_base(user_id: str):
+    """출제 대상 카드의 공통 조건. 단어가 지워졌으면 카드도 지워지므로 카드만 본다."""
     return (
-        WordModel.user_id == user_id,
-        WordModel.is_deleted.is_(False),
-        WordModel.srs_due_at <= utc_now(),
+        CardModel.user_id == user_id,
+        CardModel.is_deleted.is_(False),
+        CardModel.srs_due_at <= utc_now(),
     )
 
 
-def select_due_words(session: Session, user_id: str, limit: int | None = None) -> list[WordModel]:
-    """오늘 낼 수 있는 단어. 하루 한도를 적용한다.
+def _one_card_per_word(cards: list[CardModel]) -> list[CardModel]:
+    """같은 단어의 형제 카드는 한 세션에 하나만 낸다.
+
+    "単語 → 뜻"을 풀고 곧바로 "뜻 → 単語"가 나오면 답을 이미 봐서 채점이 무의미하다.
+    안키의 bury siblings와 같은 목적이고, 여기서는 **이번 출제분에서 빼는** 것으로
+    가볍게 처리한다. 밀려난 카드는 다음 세션에 나온다.
+    """
+    seen: set[str] = set()
+    out: list[CardModel] = []
+    for card in cards:
+        if card.word_id in seen:
+            continue
+        seen.add(card.word_id)
+        out.append(card)
+    return out
+
+
+def select_due_cards(
+    session: Session, user_id: str, limit: int | None = None
+) -> list[CardModel]:
+    """오늘 낼 수 있는 카드. 하루 한도와 형제 카드 규칙을 적용한다.
 
     복습 카드를 먼저(오래 밀린 순), 남은 자리에 새 카드를 채운다.
-
-    새 카드는 due(= created_at) 순이라 결과적으로 추가한 순서가 된다. 안키의
-    Insertion order 기본값이 Sequential인 것과 같은 이유다 — 팩을 받으면 앞
-    단원부터 나가야 한다.
+    새 카드는 due(= created_at) 순이라 결과적으로 추가한 순서가 된다.
     """
     new_limit, review_limit = _daily_limits(session, user_id)
     new_used, review_used = _consumed_today(session, user_id)
@@ -278,82 +409,61 @@ def select_due_words(session: Session, user_id: str, limit: int | None = None) -
     review_quota = max(0, review_limit - review_used)
     new_quota = max(0, new_limit - new_used)
 
-    reviews: list[WordModel] = []
+    reviews: list[CardModel] = []
     if review_quota > 0:
-        reviews = list(
-            session.scalars(
-                select(WordModel)
-                .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_not(None))
-                .order_by(WordModel.srs_due_at.asc())
-                .limit(review_quota)
+        reviews = _one_card_per_word(
+            list(
+                session.scalars(
+                    select(CardModel)
+                    .where(*_due_base(user_id), CardModel.srs_last_reviewed_at.is_not(None))
+                    .order_by(CardModel.srs_due_at.asc())
+                    .limit(review_quota * 2)
+                )
             )
-        )
+        )[:review_quota]
 
-    news: list[WordModel] = []
+    news: list[CardModel] = []
     if new_quota > 0:
-        news = list(
-            session.scalars(
-                select(WordModel)
-                .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_(None))
-                .order_by(WordModel.srs_due_at.asc(), WordModel.created_at.asc())
-                .limit(new_quota)
+        news = _one_card_per_word(
+            list(
+                session.scalars(
+                    select(CardModel)
+                    .where(*_due_base(user_id), CardModel.srs_last_reviewed_at.is_(None))
+                    .order_by(CardModel.srs_due_at.asc(), CardModel.created_at.asc())
+                    .limit(new_quota * 2)
+                )
             )
-        )
+        )[:new_quota]
 
-    words = reviews + news
-    return words[:limit] if limit is not None else words
+    cards = reviews + news
+    return cards[:limit] if limit is not None else cards
 
 
-def list_due_words(session: Session, user_id: str, limit: int) -> list[WordModel]:
-    return list(
-        session.scalars(
-            select(WordModel)
-            .where(
+def count_due_cards(session: Session, user_id: str) -> dict[str, int]:
+    """오늘 낼 수 있는 카드 수를 **단어장별로** 센다.
+
+    select_due_cards와 같은 규칙으로 세야 한다 — 화면의 숫자와 실제 출제량이
+    다르면 사용자는 어느 쪽도 믿지 않는다.
+    """
+    cards = select_due_cards(session, user_id)
+    if not cards:
+        return {}
+
+    book_of = dict(
+        session.execute(
+            select(WordModel.id, WordModel.word_book_id).where(
                 WordModel.user_id == user_id,
-                WordModel.is_deleted.is_(False),
-                WordModel.srs_due_at <= utc_now(),
+                WordModel.id.in_([card.word_id for card in cards]),
             )
-            .order_by(WordModel.srs_due_at.asc())
-            .limit(limit)
-        )
+        ).all()
     )
 
-
-def count_due_words(session: Session, user_id: str) -> dict[str, int]:
-    """오늘 낼 수 있는 단어 수를 단어장별로 센다.
-
-    select_due_words와 **같은 규칙**(하루 한도 적용)으로 세야 한다. 화면의 숫자와
-    실제 출제량이 다르면 사용자는 어느 쪽도 믿지 않는다.
-
-    단어 본문은 읽지 않고 (id, word_book_id) 두 칼럼만 읽는다.
-    """
-    new_limit, review_limit = _daily_limits(session, user_id)
-    new_used, review_used = _consumed_today(session, user_id)
-
     counts: dict[str, int] = {}
-
-    review_quota = max(0, review_limit - review_used)
-    if review_quota > 0:
-        rows = session.execute(
-            select(WordModel.word_book_id)
-            .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_not(None))
-            .order_by(WordModel.srs_due_at.asc())
-            .limit(review_quota)
-        )
-        for (book_id,) in rows:
-            counts[book_id] = counts.get(book_id, 0) + 1
-
-    new_quota = max(0, new_limit - new_used)
-    if new_quota > 0:
-        rows = session.execute(
-            select(WordModel.word_book_id)
-            .where(*_due_base(user_id), WordModel.srs_last_reviewed_at.is_(None))
-            .order_by(WordModel.srs_due_at.asc(), WordModel.created_at.asc())
-            .limit(new_quota)
-        )
-        for (book_id,) in rows:
-            counts[book_id] = counts.get(book_id, 0) + 1
-
+    for card in cards:
+        book_id = book_of.get(card.word_id)
+        if book_id is None:
+            continue
+        counts[book_id] = counts.get(book_id, 0) + 1
     return counts
 
 
@@ -401,46 +511,65 @@ def apply_review_grades(
         # 한 요청 안에 같은 id가 두 번 들어온 경우도 막는다.
         seen.add(item.id)
 
-        word = session.get(WordModel, (item.word_id, user_id))
+        # 카드를 찾는다. card_id를 안 보낸 클라이언트(앱)는 아직 단어 단위로
+        # 채점하므로 recognition 카드로 본다 — 동기화 전환 전까지의 다리다.
+        card_id = item.card_id or card_id_for(item.word_id, "recognition")
+        card = session.get(CardModel, (card_id, user_id))
+        if card is None or card.is_deleted:
+            missing += 1
+            continue
+
+        word = session.get(WordModel, (card.word_id, user_id))
         if word is None or word.is_deleted:
             missing += 1
             continue
 
-        # 2. 단어의 srs_* 컬럼을 Sm2State로 묶어 계산한다
+        # 2. 카드의 srs_* 컬럼을 Sm2State로 묶어 계산한다
         result = grade(
             Sm2State(
-                ease_factor=word.srs_ease_factor,
-                interval_days=word.srs_interval_days,
-                repetitions=word.srs_repetitions,
-                lapses=word.srs_lapses,
-                due_at=word.srs_due_at,
-                last_reviewed_at=word.srs_last_reviewed_at,
-                learning_step=word.srs_learning_step,
+                ease_factor=card.srs_ease_factor,
+                interval_days=card.srs_interval_days,
+                repetitions=card.srs_repetitions,
+                lapses=card.srs_lapses,
+                due_at=card.srs_due_at,
+                last_reviewed_at=card.srs_last_reviewed_at,
+                learning_step=card.srs_learning_step,
             ),
             item.grade,
             now,
             config,
         )
 
-        # 3. 결과를 다시 컬럼으로 푼다
-        word.srs_ease_factor = result.state.ease_factor
-        word.srs_interval_days = result.state.interval_days
-        word.srs_repetitions = result.state.repetitions
-        word.srs_lapses = result.state.lapses
-        word.srs_due_at = result.state.due_at
-        word.srs_last_reviewed_at = result.state.last_reviewed_at
-        word.srs_learning_step = result.state.learning_step
-        word.memorization_status = result.memorization_status
-        word.updated_at = now
+        # 3. 결과를 카드에 되쓴다
+        card.srs_ease_factor = result.state.ease_factor
+        card.srs_interval_days = result.state.interval_days
+        card.srs_repetitions = result.state.repetitions
+        card.srs_lapses = result.state.lapses
+        card.srs_due_at = result.state.due_at
+        card.srs_last_reviewed_at = result.state.last_reviewed_at
+        card.srs_learning_step = result.state.learning_step
+        card.updated_at = now
 
-        # 앱이 pull로 이 변경을 받아가야 한다.
-        _new_change(session, user_id, "word", word.id)
+        # 앱은 아직 단어 단위로 동기화한다. recognition 카드의 결과를 단어에도
+        # 복사해 두 경로가 같은 값을 보게 한다. 앱이 카드로 넘어오면 지운다.
+        if card.kind == "recognition":
+            word.srs_ease_factor = result.state.ease_factor
+            word.srs_interval_days = result.state.interval_days
+            word.srs_repetitions = result.state.repetitions
+            word.srs_lapses = result.state.lapses
+            word.srs_due_at = result.state.due_at
+            word.srs_last_reviewed_at = result.state.last_reviewed_at
+            word.srs_learning_step = result.state.learning_step
+            word.memorization_status = result.memorization_status
+            word.updated_at = now
+            _new_change(session, user_id, "word", word.id)
 
         session.add(
             ReviewLogModel(
                 id=item.id,
                 user_id=user_id,
-                word_id=item.word_id,
+                word_id=card.word_id,
+                card_id=card.id,
                 grade=item.grade,
                 reviewed_at=item.reviewed_at,
                 created_at=now,

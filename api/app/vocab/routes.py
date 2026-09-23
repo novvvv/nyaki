@@ -10,6 +10,7 @@ from ..core.auth import get_current_user_id
 from ..core.database import get_session
 from ..models import SyncChangeModel, WordBookModel, WordModel
 from .schemas import (
+    DueCardResponse,
     GradePreviewResponse,
     ReviewDueCountResponse,
     ReviewDueResponse,
@@ -30,9 +31,9 @@ from .services import (
     apply_review_grades,
     delete_word,
     delete_word_book,
-    count_due_words,
+    count_due_cards,
     load_step_config,
-    select_due_words,
+    select_due_cards,
     utc_now,
     list_word_books,
     list_words,
@@ -152,33 +153,61 @@ def get_review_due(
     session: Session = Depends(get_session),
     user_id: str = Depends(get_current_user_id),
 ) -> ReviewDueResponse:
-    words = select_due_words(session, user_id, limit)
+    """오늘 낼 카드. 하루 한도와 형제 카드 규칙이 이미 적용된 목록이다."""
+    cards = select_due_cards(session, user_id, limit)
     config = load_step_config(session, user_id)
     now = utc_now()
 
-    previews = {
-        word.id: GradePreviewResponse(
+    words = {
+        word.id: word
+        for word in session.scalars(
+            select(WordModel).where(
+                WordModel.user_id == user_id,
+                WordModel.id.in_([card.word_id for card in cards]),
+            )
+        )
+    }
+
+    due_cards: list[DueCardResponse] = []
+    previews: dict[str, GradePreviewResponse] = {}
+    for card in cards:
+        word = words.get(card.word_id)
+        if word is None:
+            continue
+
+        preview_value = GradePreviewResponse(
             **asdict(
                 preview(
                     Sm2State(
-                        ease_factor=word.srs_ease_factor,
-                        interval_days=word.srs_interval_days,
-                        repetitions=word.srs_repetitions,
-                        lapses=word.srs_lapses,
-                        due_at=word.srs_due_at,
-                        last_reviewed_at=word.srs_last_reviewed_at,
-                        learning_step=word.srs_learning_step,
+                        ease_factor=card.srs_ease_factor,
+                        interval_days=card.srs_interval_days,
+                        repetitions=card.srs_repetitions,
+                        lapses=card.srs_lapses,
+                        due_at=card.srs_due_at,
+                        last_reviewed_at=card.srs_last_reviewed_at,
+                        learning_step=card.srs_learning_step,
                     ),
                     now,
                     config,
                 )
             )
         )
-        for word in words
-    }
+        word_payload = WordResponse.model_validate(word)
+        due_cards.append(
+            DueCardResponse(
+                id=card.id,
+                kind=card.kind,
+                word=word_payload,
+                preview=preview_value,
+            )
+        )
+        previews[word.id] = preview_value
 
     return ReviewDueResponse(
-        words=[WordResponse.model_validate(w) for w in words], previews=previews
+        cards=due_cards,
+        # 호환 필드 — 카드 도입 전 클라이언트가 words/previews를 읽는다.
+        words=[card.word for card in due_cards],
+        previews=previews,
     )
 
 
@@ -192,7 +221,7 @@ def get_review_due_count(
     /review/due는 한 번에 최대 200개라 개수를 세는 용도로 쓰면 201개부터 틀린다.
     이쪽은 COUNT라 상한이 필요 없다.
     """
-    by_book = count_due_words(session, user_id)
+    by_book = count_due_cards(session, user_id)
     return ReviewDueCountResponse(total=sum(by_book.values()), by_book=by_book)
 
 

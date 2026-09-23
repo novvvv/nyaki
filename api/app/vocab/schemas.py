@@ -7,6 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class WordBookPayload(BaseModel):
     id: str = Field(min_length=1, max_length=80)
     title: str = Field(min_length=1, max_length=200)
+    # 이 단어장이 만드는 카드 종류. "recognition" 또는 "recognition,recall".
+    # 없으면 recognition 하나(= 카드 도입 전과 같은 동작).
+    card_kinds: str | None = Field(default=None, max_length=120)
     description: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -93,9 +96,23 @@ class GradePreviewResponse(BaseModel):
     good_seconds: int
 
 
+class DueCardResponse(BaseModel):
+    """출제할 카드 한 장. 화면에 필요한 단어 내용을 함께 싣는다.
+
+    카드만 주면 클라이언트가 단어를 따로 조회해야 한다 — 세션 시작에 요청이
+    두 번 들어가고, 그 사이 단어가 바뀌면 화면이 어긋난다.
+    """
+
+    id: str
+    kind: str
+    word: WordResponse
+    preview: GradePreviewResponse
+
+
 class ReviewDueResponse(BaseModel):
+    cards: list[DueCardResponse] = []
+    # 아래 둘은 카드 도입 전 클라이언트를 위한 호환 필드다. 앱이 카드로 넘어오면 뺀다.
     words: list[WordResponse]
-    # 단어 id → 버튼에 띄울 예상 간격. 웹이 SM-2를 다시 구현하지 않도록 서버가 준다.
     previews: dict[str, GradePreviewResponse] = {}
 
 
@@ -111,9 +128,11 @@ class ReviewDueCountResponse(BaseModel):
 
 
 class ReviewGradeItem(BaseModel):
+    # card_id는 선택이다 — 앱은 아직 단어 단위로 채점한다(recognition으로 본다).
     # 클라이언트가 만든 고유 id. 재전송을 걸러내는 열쇠라 필수다.
     id: str = Field(min_length=1, max_length=80)
     word_id: str = Field(min_length=1, max_length=80)
+    card_id: str | None = Field(default=None, max_length=120)
     grade: Literal["again", "good"]
     # 채점했다고 클라이언트가 주장하는 시각. 기록만 하고 계산에는 쓰지 않는다 —
     # 기기 시계를 미래로 돌려 복습 간격을 늘리는 걸 막기 위해 서버 수신 시각을 쓴다.

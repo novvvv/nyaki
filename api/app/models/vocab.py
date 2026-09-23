@@ -16,6 +16,12 @@ class WordBookModel(Base):
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    # 이 단어장이 만드는 카드 종류. "recognition" 또는 "recognition,recall".
+    # null이면 recognition 하나(= 지금까지의 동작).
+    #
+    # 안키는 노트 타입에 카드 템플릿을 매달지만, 개인 단어장에서 템플릿 편집기까지
+    # 두는 건 과하다. 종류를 고정 enum으로 두고 단어장이 고른다.
+    card_kinds: Mapped[str | None] = mapped_column(String(120), nullable=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -93,6 +99,49 @@ class WordModel(Base):
 
 # ==================== ✨ Review Log Model Entity ✨ ==================== #
 
+# ==================== ✨ Card Model Entity ✨ ==================== #
+
+class CardModel(Base):
+    """단어 하나에서 나오는 출제 카드. 안키의 Card에 해당한다.
+
+    **SRS 상태가 단어가 아니라 여기에 붙는다.** 같은 단어라도 "単語 → 뜻"은
+    20일 간격인데 "뜻 → 単語"는 3일 간격일 수 있다. 방향마다 익는 속도가 다르다.
+
+    id는 `{word_id}:{kind}`로 만든다 — 클라이언트도 서버도 같은 값을 계산할 수
+    있어야 카드를 새로 만들 때 조율이 필요 없다. 마이그레이션도 이 규칙으로
+    기존 단어의 카드를 채운다.
+    """
+
+    __tablename__ = "cards"
+    __table_args__ = (
+        Index("ix_cards_user_due", "user_id", "srs_due_at"),
+        Index("ix_cards_user_word", "user_id", "word_id"),
+        Index("ix_cards_user_updated", "user_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    word_id: Mapped[str] = mapped_column(String(80))
+    # recognition(단어→뜻) · recall(뜻→단어) · cloze(예문 빈칸)
+    kind: Mapped[str] = mapped_column(String(32))
+
+    srs_ease_factor: Mapped[float] = mapped_column(
+        Float, default=2.5, server_default="2.5"
+    )
+    srs_interval_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    srs_repetitions: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    srs_lapses: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    srs_due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    srs_last_reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    srs_learning_step: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
 class ReviewLogModel(Base):
     """채점 한 번의 기록. Anki의 revlog에 해당한다.
 
@@ -116,6 +165,8 @@ class ReviewLogModel(Base):
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
     word_id: Mapped[str] = mapped_column(String(80))
+    # 어느 카드를 채점했는지. 카드 도입 전 기록은 recognition으로 채웠다.
+    card_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
     grade: Mapped[str] = mapped_column(String(16))
 

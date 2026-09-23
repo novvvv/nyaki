@@ -61,11 +61,34 @@ class WordResponse(WordPayload):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CardPayload(BaseModel):
+    """앱이 동기화로 올리는 카드. SRS 상태가 여기에 있다."""
+
+    id: str = Field(min_length=1, max_length=120)
+    word_id: str = Field(min_length=1, max_length=80)
+    kind: Literal["recognition", "recall", "cloze"]
+    srs_ease_factor: float = 2.5
+    srs_interval_days: int = 0
+    srs_repetitions: int = 0
+    srs_lapses: int = 0
+    srs_due_at: datetime
+    srs_last_reviewed_at: datetime | None = None
+    srs_learning_step: int | None = None
+    created_at: datetime
+    updated_at: datetime
+    is_deleted: bool = False
+
+
+class CardResponse(CardPayload):
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SyncMutation(BaseModel):
-    entity_type: Literal["word_book", "word"]
+    entity_type: Literal["word_book", "word", "card"]
     action: Literal["upsert", "delete"]
     word_book: WordBookPayload | None = None
     word: WordPayload | None = None
+    card: CardPayload | None = None
 
 
 class SyncPushRequest(BaseModel):
@@ -79,9 +102,10 @@ class SyncPushResponse(BaseModel):
 
 class SyncChange(BaseModel):
     cursor: int
-    entity_type: Literal["word_book", "word"]
+    entity_type: Literal["word_book", "word", "card"]
     word_book: WordBookResponse | None = None
     word: WordResponse | None = None
+    card: CardResponse | None = None
 
 
 class SyncPullResponse(BaseModel):

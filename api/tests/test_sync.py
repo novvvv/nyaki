@@ -48,7 +48,14 @@ def test_push_then_pull_returns_only_changed_records() -> None:
 
     pulled = client.get("/v1/sync/pull?cursor=0")
     assert pulled.status_code == 200
-    assert len(pulled.json()["changes"]) == 2
+
+    # 단어장 · 단어 · 그 단어에서 생긴 카드. 카드 변경을 안 내려주면 앱은
+    # 카드가 생긴 걸 모른 채 단어 단위로만 보게 된다.
+    kinds = [change["entity_type"] for change in pulled.json()["changes"]]
+    assert sorted(kinds) == ["card", "word", "word_book"]
+
+    card = next(c for c in pulled.json()["changes"] if c["entity_type"] == "card")
+    assert card["card"]["kind"] == "recognition"
 
     nothing_new = client.get(f"/v1/sync/pull?cursor={pulled.json()['cursor']}")
     assert nothing_new.status_code == 200

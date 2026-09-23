@@ -11,7 +11,7 @@ from ..models import (
     WordBookModel,
     WordModel,
 )
-from .schemas import ReviewGradeItem, WordBookPayload, WordPayload
+from .schemas import CardPayload, ReviewGradeItem, WordBookPayload, WordPayload
 from .srs import DEFAULT_STEPS, Sm2State, StepConfig, grade
 
 
@@ -30,8 +30,20 @@ def _new_change(session: Session, user_id: str, entity_type: str, entity_id: str
     return change.cursor
 
 
+def _as_utc(value: datetime) -> datetime:
+    """시간대 없는 값은 UTC로 본다.
+
+    우리는 UTC로만 저장하지만 SQLite 경로는 naive datetime을 돌려준다.
+    그걸 그대로 astimezone에 넘기면 **로컬 시간(KST)으로 해석돼 9시간 어긋난다** —
+    충돌 판정이 뒤집혀 오래된 변경이 최신 값을 덮어쓴다.
+    """
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _is_newer(incoming: datetime, current: datetime) -> bool:
-    return incoming.astimezone(timezone.utc) > current.astimezone(timezone.utc)
+    return _as_utc(incoming) > _as_utc(current)
 
 
 def upsert_word_book(
@@ -208,6 +220,8 @@ def sync_cards_for_word(session: Session, user_id: str, word: WordModel) -> None
         )
     }
 
+    touched: list[str] = []
+
     for kind in kinds:
         card = existing.get(kind)
         if card is None:
@@ -222,16 +236,73 @@ def sync_cards_for_word(session: Session, user_id: str, word: WordModel) -> None
                     updated_at=word.updated_at,
                 )
             )
+            touched.append(card_id_for(word.id, kind))
         elif card.is_deleted:
             card.is_deleted = False
             card.updated_at = word.updated_at
+            touched.append(card.id)
 
     for kind, card in existing.items():
         if kind not in kinds and not card.is_deleted:
             card.is_deleted = True
             card.updated_at = word.updated_at
+            touched.append(card.id)
 
     session.flush()
+
+    # 앱이 pull로 받아가야 한다 — 카드가 생겼는데 알려주지 않으면 앱은 계속
+    # 단어 단위로만 보게 된다.
+    for card_id in touched:
+        _new_change(session, user_id, "card", card_id)
+
+
+def upsert_card(
+    session: Session, user_id: str, payload: "CardPayload"
+) -> tuple[CardModel, int | None]:
+    """앱이 동기화로 올린 카드를 반영한다. 충돌 규칙은 단어와 같다(updated_at 최신 우선).
+
+    recognition 카드는 결과를 단어 행에도 복사한다. 웹의 암기율이 아직
+    words.srs_interval_days를 읽기 때문이다 — 그쪽을 카드로 옮기면 지운다.
+    """
+    entity = session.get(CardModel, {"id": payload.id, "user_id": user_id})
+    if entity is not None and not _is_newer(payload.updated_at, entity.updated_at):
+        return entity, None
+
+    if entity is None:
+        entity = CardModel(user_id=user_id, **payload.model_dump())
+        session.add(entity)
+    else:
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(entity, field, value)
+
+    session.flush()
+
+    if entity.kind == "recognition":
+        word = session.get(WordModel, {"id": entity.word_id, "user_id": user_id})
+        if word is not None:
+            word.srs_ease_factor = entity.srs_ease_factor
+            word.srs_interval_days = entity.srs_interval_days
+            word.srs_repetitions = entity.srs_repetitions
+            word.srs_lapses = entity.srs_lapses
+            word.srs_due_at = entity.srs_due_at
+            word.srs_last_reviewed_at = entity.srs_last_reviewed_at
+            word.srs_learning_step = entity.srs_learning_step
+
+    return entity, _new_change(session, user_id, "card", payload.id)
+
+
+def delete_card(
+    session: Session, user_id: str, card_id: str
+) -> tuple[CardModel | None, int | None]:
+    entity = session.get(CardModel, {"id": card_id, "user_id": user_id})
+    if entity is None:
+        return None, None
+    if entity.is_deleted:
+        return entity, None
+    entity.is_deleted = True
+    entity.updated_at = utc_now()
+    session.flush()
+    return entity, _new_change(session, user_id, "card", card_id)
 
 
 def sync_cards_for_book(session: Session, user_id: str, word_book_id: str) -> None:

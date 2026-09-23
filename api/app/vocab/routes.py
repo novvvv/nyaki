@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from ..core.auth import get_current_user_id
 from ..core.database import get_session
-from ..models import SyncChangeModel, WordBookModel, WordModel
+from ..models import CardModel, SyncChangeModel, WordBookModel, WordModel
 from .schemas import (
+    CardResponse,
     DueCardResponse,
     GradePreviewResponse,
     ReviewDueCountResponse,
@@ -32,8 +33,10 @@ from .services import (
     delete_word,
     delete_word_book,
     count_due_cards,
+    delete_card,
     load_step_config,
     select_due_cards,
+    upsert_card,
     utc_now,
     list_word_books,
     list_words,
@@ -259,6 +262,20 @@ def _apply_mutation(session: Session, user_id: str, mutation: SyncMutation) -> i
         _, cursor = upsert_word_book(session, user_id, mutation.word_book)
         return cursor
 
+    if mutation.entity_type == "card":
+        if mutation.card is None:
+            raise HTTPException(status_code=400, detail="카드 payload가 필요합니다.")
+        if mutation.action == "delete":
+            entity = session.get(CardModel, {"id": mutation.card.id, "user_id": user_id})
+            if entity is None:
+                payload = mutation.card.model_copy(update={"is_deleted": True})
+                _, cursor = upsert_card(session, user_id, payload)
+                return cursor
+            _, cursor = delete_card(session, user_id, mutation.card.id)
+            return cursor
+        _, cursor = upsert_card(session, user_id, mutation.card)
+        return cursor
+
     if mutation.action == "delete":
         if mutation.word is None:
             raise HTTPException(status_code=400, detail="삭제할 단어 payload가 필요합니다.")
@@ -323,6 +340,16 @@ def sync_pull(
                         cursor=change.cursor,
                         entity_type="word_book",
                         word_book=WordBookResponse.model_validate(entity),
+                    )
+                )
+        elif change.entity_type == "card":
+            entity = session.get(CardModel, {"id": change.entity_id, "user_id": user_id})
+            if entity is not None:
+                result.append(
+                    SyncChange(
+                        cursor=change.cursor,
+                        entity_type="card",
+                        card=CardResponse.model_validate(entity),
                     )
                 )
         else:

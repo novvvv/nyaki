@@ -209,3 +209,113 @@ def test_count_matches_what_is_served() -> None:
     counted = client.get("/v1/review/due/count").json()
     assert counted["total"] == len(_due(client))
     assert counted["by_book"] == {BOOK: 5}
+
+
+# ==================== 동기화 ====================
+
+
+def _card_payload(card_id: str, **overrides) -> dict:
+    now = datetime.now(timezone.utc).isoformat()
+    payload = {
+        "id": card_id,
+        "word_id": card_id.split(":")[0],
+        "kind": card_id.split(":")[1],
+        "srs_ease_factor": 2.5,
+        "srs_interval_days": 0,
+        "srs_repetitions": 0,
+        "srs_lapses": 0,
+        "srs_due_at": now,
+        "created_at": now,
+        "updated_at": now,
+        "is_deleted": False,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_app_can_push_a_graded_card() -> None:
+    """앱은 오프라인에서 채점하고 나중에 카드를 올린다."""
+    client = _client("firebase-user-card-push")
+    _add_word(client, "w1")
+
+    later = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
+    pushed = client.post(
+        "/v1/sync/push",
+        json={
+            "changes": [
+                {
+                    "entity_type": "card",
+                    "action": "upsert",
+                    "card": _card_payload(
+                        "w1:recognition",
+                        srs_interval_days=3,
+                        srs_repetitions=2,
+                        srs_due_at=later,
+                        srs_last_reviewed_at=later,
+                        updated_at=later,
+                    ),
+                }
+            ]
+        },
+    )
+    assert pushed.status_code == 200
+    assert pushed.json()["accepted"] == 1
+
+    # 3일 뒤로 밀렸으니 오늘 목록에 없다.
+    assert _due(client) == []
+
+    # recognition 결과는 단어에도 복사된다 — 웹 암기율이 아직 단어를 읽는다.
+    word = client.get(f"/v1/word-books/{BOOK}/words").json()[0]
+    assert word["srs_interval_days"] == 3
+
+
+def test_pull_carries_cards() -> None:
+    client = _client("firebase-user-card-pull")
+    _add_word(client, "w1")
+
+    changes = client.get("/v1/sync/pull?cursor=0").json()["changes"]
+    cards = [c for c in changes if c["entity_type"] == "card"]
+
+    assert len(cards) == 1
+    assert cards[0]["card"]["id"] == "w1:recognition"
+
+
+def test_older_card_push_does_not_overwrite() -> None:
+    """충돌 규칙은 단어와 같다 — updated_at이 더 최신인 쪽이 이긴다."""
+    client = _client("firebase-user-card-conflict")
+    _add_word(client, "w1")
+
+    newer = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
+    older = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+
+    client.post(
+        "/v1/sync/push",
+        json={
+            "changes": [
+                {
+                    "entity_type": "card",
+                    "action": "upsert",
+                    "card": _card_payload(
+                        "w1:recognition", srs_interval_days=8, updated_at=newer
+                    ),
+                }
+            ]
+        },
+    )
+    client.post(
+        "/v1/sync/push",
+        json={
+            "changes": [
+                {
+                    "entity_type": "card",
+                    "action": "upsert",
+                    "card": _card_payload(
+                        "w1:recognition", srs_interval_days=1, updated_at=older
+                    ),
+                }
+            ]
+        },
+    )
+
+    word = client.get(f"/v1/word-books/{BOOK}/words").json()[0]
+    assert word["srs_interval_days"] == 8

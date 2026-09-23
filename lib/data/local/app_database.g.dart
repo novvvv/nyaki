@@ -1441,11 +1441,24 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sourceTypeMeta =
+      const VerificationMeta('sourceType');
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+      'source_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('word'));
   static const VerificationMeta _wordIdMeta = const VerificationMeta('wordId');
   @override
   late final GeneratedColumn<String> wordId = GeneratedColumn<String>(
-      'word_id', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      'word_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
+      'note_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _kindMeta = const VerificationMeta('kind');
   @override
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
@@ -1526,7 +1539,9 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
   @override
   List<GeneratedColumn> get $columns => [
         id,
+        sourceType,
         wordId,
+        noteId,
         kind,
         srsEaseFactor,
         srsIntervalDays,
@@ -1554,11 +1569,19 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
     } else if (isInserting) {
       context.missing(_idMeta);
     }
+    if (data.containsKey('source_type')) {
+      context.handle(
+          _sourceTypeMeta,
+          sourceType.isAcceptableOrUnknown(
+              data['source_type']!, _sourceTypeMeta));
+    }
     if (data.containsKey('word_id')) {
       context.handle(_wordIdMeta,
           wordId.isAcceptableOrUnknown(data['word_id']!, _wordIdMeta));
-    } else if (isInserting) {
-      context.missing(_wordIdMeta);
+    }
+    if (data.containsKey('note_id')) {
+      context.handle(_noteIdMeta,
+          noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta));
     }
     if (data.containsKey('kind')) {
       context.handle(
@@ -1633,8 +1656,12 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
     return CardRow(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      sourceType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_type'])!,
       wordId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}word_id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}word_id']),
+      noteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note_id']),
       kind: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
       srsEaseFactor: attachedDatabase.typeMapping.read(
@@ -1669,7 +1696,9 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
 
 class CardRow extends DataClass implements Insertable<CardRow> {
   final String id;
-  final String wordId;
+  final String sourceType;
+  final String? wordId;
+  final String? noteId;
   final String kind;
   final double srsEaseFactor;
   final int srsIntervalDays;
@@ -1683,7 +1712,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
   final bool isDeleted;
   const CardRow(
       {required this.id,
-      required this.wordId,
+      required this.sourceType,
+      this.wordId,
+      this.noteId,
       required this.kind,
       required this.srsEaseFactor,
       required this.srsIntervalDays,
@@ -1699,7 +1730,13 @@ class CardRow extends DataClass implements Insertable<CardRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['word_id'] = Variable<String>(wordId);
+    map['source_type'] = Variable<String>(sourceType);
+    if (!nullToAbsent || wordId != null) {
+      map['word_id'] = Variable<String>(wordId);
+    }
+    if (!nullToAbsent || noteId != null) {
+      map['note_id'] = Variable<String>(noteId);
+    }
     map['kind'] = Variable<String>(kind);
     map['srs_ease_factor'] = Variable<double>(srsEaseFactor);
     map['srs_interval_days'] = Variable<int>(srsIntervalDays);
@@ -1721,7 +1758,11 @@ class CardRow extends DataClass implements Insertable<CardRow> {
   CardsCompanion toCompanion(bool nullToAbsent) {
     return CardsCompanion(
       id: Value(id),
-      wordId: Value(wordId),
+      sourceType: Value(sourceType),
+      wordId:
+          wordId == null && nullToAbsent ? const Value.absent() : Value(wordId),
+      noteId:
+          noteId == null && nullToAbsent ? const Value.absent() : Value(noteId),
       kind: Value(kind),
       srsEaseFactor: Value(srsEaseFactor),
       srsIntervalDays: Value(srsIntervalDays),
@@ -1745,7 +1786,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CardRow(
       id: serializer.fromJson<String>(json['id']),
-      wordId: serializer.fromJson<String>(json['wordId']),
+      sourceType: serializer.fromJson<String>(json['sourceType']),
+      wordId: serializer.fromJson<String?>(json['wordId']),
+      noteId: serializer.fromJson<String?>(json['noteId']),
       kind: serializer.fromJson<String>(json['kind']),
       srsEaseFactor: serializer.fromJson<double>(json['srsEaseFactor']),
       srsIntervalDays: serializer.fromJson<int>(json['srsIntervalDays']),
@@ -1765,7 +1808,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'wordId': serializer.toJson<String>(wordId),
+      'sourceType': serializer.toJson<String>(sourceType),
+      'wordId': serializer.toJson<String?>(wordId),
+      'noteId': serializer.toJson<String?>(noteId),
       'kind': serializer.toJson<String>(kind),
       'srsEaseFactor': serializer.toJson<double>(srsEaseFactor),
       'srsIntervalDays': serializer.toJson<int>(srsIntervalDays),
@@ -1782,7 +1827,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
 
   CardRow copyWith(
           {String? id,
-          String? wordId,
+          String? sourceType,
+          Value<String?> wordId = const Value.absent(),
+          Value<String?> noteId = const Value.absent(),
           String? kind,
           double? srsEaseFactor,
           int? srsIntervalDays,
@@ -1796,7 +1843,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
           bool? isDeleted}) =>
       CardRow(
         id: id ?? this.id,
-        wordId: wordId ?? this.wordId,
+        sourceType: sourceType ?? this.sourceType,
+        wordId: wordId.present ? wordId.value : this.wordId,
+        noteId: noteId.present ? noteId.value : this.noteId,
         kind: kind ?? this.kind,
         srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
         srsIntervalDays: srsIntervalDays ?? this.srsIntervalDays,
@@ -1816,7 +1865,10 @@ class CardRow extends DataClass implements Insertable<CardRow> {
   CardRow copyWithCompanion(CardsCompanion data) {
     return CardRow(
       id: data.id.present ? data.id.value : this.id,
+      sourceType:
+          data.sourceType.present ? data.sourceType.value : this.sourceType,
       wordId: data.wordId.present ? data.wordId.value : this.wordId,
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
       kind: data.kind.present ? data.kind.value : this.kind,
       srsEaseFactor: data.srsEaseFactor.present
           ? data.srsEaseFactor.value
@@ -1845,7 +1897,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
   String toString() {
     return (StringBuffer('CardRow(')
           ..write('id: $id, ')
+          ..write('sourceType: $sourceType, ')
           ..write('wordId: $wordId, ')
+          ..write('noteId: $noteId, ')
           ..write('kind: $kind, ')
           ..write('srsEaseFactor: $srsEaseFactor, ')
           ..write('srsIntervalDays: $srsIntervalDays, ')
@@ -1864,7 +1918,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
   @override
   int get hashCode => Object.hash(
       id,
+      sourceType,
       wordId,
+      noteId,
       kind,
       srsEaseFactor,
       srsIntervalDays,
@@ -1881,7 +1937,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
       identical(this, other) ||
       (other is CardRow &&
           other.id == this.id &&
+          other.sourceType == this.sourceType &&
           other.wordId == this.wordId &&
+          other.noteId == this.noteId &&
           other.kind == this.kind &&
           other.srsEaseFactor == this.srsEaseFactor &&
           other.srsIntervalDays == this.srsIntervalDays &&
@@ -1897,7 +1955,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
 
 class CardsCompanion extends UpdateCompanion<CardRow> {
   final Value<String> id;
-  final Value<String> wordId;
+  final Value<String> sourceType;
+  final Value<String?> wordId;
+  final Value<String?> noteId;
   final Value<String> kind;
   final Value<double> srsEaseFactor;
   final Value<int> srsIntervalDays;
@@ -1912,7 +1972,9 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
   final Value<int> rowid;
   const CardsCompanion({
     this.id = const Value.absent(),
+    this.sourceType = const Value.absent(),
     this.wordId = const Value.absent(),
+    this.noteId = const Value.absent(),
     this.kind = const Value.absent(),
     this.srsEaseFactor = const Value.absent(),
     this.srsIntervalDays = const Value.absent(),
@@ -1928,7 +1990,9 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
   });
   CardsCompanion.insert({
     required String id,
-    required String wordId,
+    this.sourceType = const Value.absent(),
+    this.wordId = const Value.absent(),
+    this.noteId = const Value.absent(),
     required String kind,
     this.srsEaseFactor = const Value.absent(),
     this.srsIntervalDays = const Value.absent(),
@@ -1942,14 +2006,15 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
     this.isDeleted = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
-        wordId = Value(wordId),
         kind = Value(kind),
         srsDueAt = Value(srsDueAt),
         createdAt = Value(createdAt),
         updatedAt = Value(updatedAt);
   static Insertable<CardRow> custom({
     Expression<String>? id,
+    Expression<String>? sourceType,
     Expression<String>? wordId,
+    Expression<String>? noteId,
     Expression<String>? kind,
     Expression<double>? srsEaseFactor,
     Expression<int>? srsIntervalDays,
@@ -1965,7 +2030,9 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (sourceType != null) 'source_type': sourceType,
       if (wordId != null) 'word_id': wordId,
+      if (noteId != null) 'note_id': noteId,
       if (kind != null) 'kind': kind,
       if (srsEaseFactor != null) 'srs_ease_factor': srsEaseFactor,
       if (srsIntervalDays != null) 'srs_interval_days': srsIntervalDays,
@@ -1983,7 +2050,9 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
 
   CardsCompanion copyWith(
       {Value<String>? id,
-      Value<String>? wordId,
+      Value<String>? sourceType,
+      Value<String?>? wordId,
+      Value<String?>? noteId,
       Value<String>? kind,
       Value<double>? srsEaseFactor,
       Value<int>? srsIntervalDays,
@@ -1998,7 +2067,9 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
       Value<int>? rowid}) {
     return CardsCompanion(
       id: id ?? this.id,
+      sourceType: sourceType ?? this.sourceType,
       wordId: wordId ?? this.wordId,
+      noteId: noteId ?? this.noteId,
       kind: kind ?? this.kind,
       srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
       srsIntervalDays: srsIntervalDays ?? this.srsIntervalDays,
@@ -2020,8 +2091,14 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
     if (wordId.present) {
       map['word_id'] = Variable<String>(wordId.value);
+    }
+    if (noteId.present) {
+      map['note_id'] = Variable<String>(noteId.value);
     }
     if (kind.present) {
       map['kind'] = Variable<String>(kind.value);
@@ -2066,7 +2143,9 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
   String toString() {
     return (StringBuffer('CardsCompanion(')
           ..write('id: $id, ')
+          ..write('sourceType: $sourceType, ')
           ..write('wordId: $wordId, ')
+          ..write('noteId: $noteId, ')
           ..write('kind: $kind, ')
           ..write('srsEaseFactor: $srsEaseFactor, ')
           ..write('srsIntervalDays: $srsIntervalDays, ')
@@ -2075,6 +2154,356 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
           ..write('srsDueAt: $srsDueAt, ')
           ..write('srsLastReviewedAt: $srsLastReviewedAt, ')
           ..write('srsLearningStep: $srsLearningStep, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ClozeNotesTable extends ClozeNotes
+    with TableInfo<$ClozeNotesTable, ClozeNoteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ClozeNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _wordBookIdMeta =
+      const VerificationMeta('wordBookId');
+  @override
+  late final GeneratedColumn<String> wordBookId = GeneratedColumn<String>(
+      'word_book_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+      'body', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, wordBookId, body, createdAt, updatedAt, isDeleted];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cloze_notes';
+  @override
+  VerificationContext validateIntegrity(Insertable<ClozeNoteRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('word_book_id')) {
+      context.handle(
+          _wordBookIdMeta,
+          wordBookId.isAcceptableOrUnknown(
+              data['word_book_id']!, _wordBookIdMeta));
+    } else if (isInserting) {
+      context.missing(_wordBookIdMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+          _bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ClozeNoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ClozeNoteRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      wordBookId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}word_book_id'])!,
+      body: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}body'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+    );
+  }
+
+  @override
+  $ClozeNotesTable createAlias(String alias) {
+    return $ClozeNotesTable(attachedDatabase, alias);
+  }
+}
+
+class ClozeNoteRow extends DataClass implements Insertable<ClozeNoteRow> {
+  final String id;
+  final String wordBookId;
+  final String body;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool isDeleted;
+  const ClozeNoteRow(
+      {required this.id,
+      required this.wordBookId,
+      required this.body,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.isDeleted});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['word_book_id'] = Variable<String>(wordBookId);
+    map['body'] = Variable<String>(body);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    return map;
+  }
+
+  ClozeNotesCompanion toCompanion(bool nullToAbsent) {
+    return ClozeNotesCompanion(
+      id: Value(id),
+      wordBookId: Value(wordBookId),
+      body: Value(body),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      isDeleted: Value(isDeleted),
+    );
+  }
+
+  factory ClozeNoteRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ClozeNoteRow(
+      id: serializer.fromJson<String>(json['id']),
+      wordBookId: serializer.fromJson<String>(json['wordBookId']),
+      body: serializer.fromJson<String>(json['body']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'wordBookId': serializer.toJson<String>(wordBookId),
+      'body': serializer.toJson<String>(body),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+    };
+  }
+
+  ClozeNoteRow copyWith(
+          {String? id,
+          String? wordBookId,
+          String? body,
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          bool? isDeleted}) =>
+      ClozeNoteRow(
+        id: id ?? this.id,
+        wordBookId: wordBookId ?? this.wordBookId,
+        body: body ?? this.body,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        isDeleted: isDeleted ?? this.isDeleted,
+      );
+  ClozeNoteRow copyWithCompanion(ClozeNotesCompanion data) {
+    return ClozeNoteRow(
+      id: data.id.present ? data.id.value : this.id,
+      wordBookId:
+          data.wordBookId.present ? data.wordBookId.value : this.wordBookId,
+      body: data.body.present ? data.body.value : this.body,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClozeNoteRow(')
+          ..write('id: $id, ')
+          ..write('wordBookId: $wordBookId, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, wordBookId, body, createdAt, updatedAt, isDeleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ClozeNoteRow &&
+          other.id == this.id &&
+          other.wordBookId == this.wordBookId &&
+          other.body == this.body &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.isDeleted == this.isDeleted);
+}
+
+class ClozeNotesCompanion extends UpdateCompanion<ClozeNoteRow> {
+  final Value<String> id;
+  final Value<String> wordBookId;
+  final Value<String> body;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> isDeleted;
+  final Value<int> rowid;
+  const ClozeNotesCompanion({
+    this.id = const Value.absent(),
+    this.wordBookId = const Value.absent(),
+    this.body = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ClozeNotesCompanion.insert({
+    required String id,
+    required String wordBookId,
+    required String body,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.isDeleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        wordBookId = Value(wordBookId),
+        body = Value(body),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<ClozeNoteRow> custom({
+    Expression<String>? id,
+    Expression<String>? wordBookId,
+    Expression<String>? body,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isDeleted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (wordBookId != null) 'word_book_id': wordBookId,
+      if (body != null) 'body': body,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ClozeNotesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? wordBookId,
+      Value<String>? body,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<bool>? isDeleted,
+      Value<int>? rowid}) {
+    return ClozeNotesCompanion(
+      id: id ?? this.id,
+      wordBookId: wordBookId ?? this.wordBookId,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (wordBookId.present) {
+      map['word_book_id'] = Variable<String>(wordBookId.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClozeNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('wordBookId: $wordBookId, ')
+          ..write('body: $body, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -3468,6 +3897,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WordBooksTable wordBooks = $WordBooksTable(this);
   late final $WordEntriesTable wordEntries = $WordEntriesTable(this);
   late final $CardsTable cards = $CardsTable(this);
+  late final $ClozeNotesTable clozeNotes = $ClozeNotesTable(this);
   late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $UserProgressTable userProgress = $UserProgressTable(this);
@@ -3480,6 +3910,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         wordBooks,
         wordEntries,
         cards,
+        clozeNotes,
         syncOutbox,
         syncState,
         userProgress,
@@ -4329,7 +4760,9 @@ typedef $$WordEntriesTableProcessedTableManager = ProcessedTableManager<
     PrefetchHooks Function({bool wordBookId})>;
 typedef $$CardsTableCreateCompanionBuilder = CardsCompanion Function({
   required String id,
-  required String wordId,
+  Value<String> sourceType,
+  Value<String?> wordId,
+  Value<String?> noteId,
   required String kind,
   Value<double> srsEaseFactor,
   Value<int> srsIntervalDays,
@@ -4345,7 +4778,9 @@ typedef $$CardsTableCreateCompanionBuilder = CardsCompanion Function({
 });
 typedef $$CardsTableUpdateCompanionBuilder = CardsCompanion Function({
   Value<String> id,
-  Value<String> wordId,
+  Value<String> sourceType,
+  Value<String?> wordId,
+  Value<String?> noteId,
   Value<String> kind,
   Value<double> srsEaseFactor,
   Value<int> srsIntervalDays,
@@ -4371,8 +4806,14 @@ class $$CardsTableFilterComposer extends Composer<_$AppDatabase, $CardsTable> {
   ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get sourceType => $composableBuilder(
+      column: $table.sourceType, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get wordId => $composableBuilder(
       column: $table.wordId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get noteId => $composableBuilder(
+      column: $table.noteId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get kind => $composableBuilder(
       column: $table.kind, builder: (column) => ColumnFilters(column));
@@ -4424,8 +4865,14 @@ class $$CardsTableOrderingComposer
   ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get sourceType => $composableBuilder(
+      column: $table.sourceType, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get wordId => $composableBuilder(
       column: $table.wordId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get noteId => $composableBuilder(
+      column: $table.noteId, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get kind => $composableBuilder(
       column: $table.kind, builder: (column) => ColumnOrderings(column));
@@ -4478,8 +4925,14 @@ class $$CardsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get sourceType => $composableBuilder(
+      column: $table.sourceType, builder: (column) => column);
+
   GeneratedColumn<String> get wordId =>
       $composableBuilder(column: $table.wordId, builder: (column) => column);
+
+  GeneratedColumn<String> get noteId =>
+      $composableBuilder(column: $table.noteId, builder: (column) => column);
 
   GeneratedColumn<String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
@@ -4539,7 +4992,9 @@ class $$CardsTableTableManager extends RootTableManager<
               $$CardsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
-            Value<String> wordId = const Value.absent(),
+            Value<String> sourceType = const Value.absent(),
+            Value<String?> wordId = const Value.absent(),
+            Value<String?> noteId = const Value.absent(),
             Value<String> kind = const Value.absent(),
             Value<double> srsEaseFactor = const Value.absent(),
             Value<int> srsIntervalDays = const Value.absent(),
@@ -4555,7 +5010,9 @@ class $$CardsTableTableManager extends RootTableManager<
           }) =>
               CardsCompanion(
             id: id,
+            sourceType: sourceType,
             wordId: wordId,
+            noteId: noteId,
             kind: kind,
             srsEaseFactor: srsEaseFactor,
             srsIntervalDays: srsIntervalDays,
@@ -4571,7 +5028,9 @@ class $$CardsTableTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             required String id,
-            required String wordId,
+            Value<String> sourceType = const Value.absent(),
+            Value<String?> wordId = const Value.absent(),
+            Value<String?> noteId = const Value.absent(),
             required String kind,
             Value<double> srsEaseFactor = const Value.absent(),
             Value<int> srsIntervalDays = const Value.absent(),
@@ -4587,7 +5046,9 @@ class $$CardsTableTableManager extends RootTableManager<
           }) =>
               CardsCompanion.insert(
             id: id,
+            sourceType: sourceType,
             wordId: wordId,
+            noteId: noteId,
             kind: kind,
             srsEaseFactor: srsEaseFactor,
             srsIntervalDays: srsIntervalDays,
@@ -4619,6 +5080,192 @@ typedef $$CardsTableProcessedTableManager = ProcessedTableManager<
     $$CardsTableUpdateCompanionBuilder,
     (CardRow, BaseReferences<_$AppDatabase, $CardsTable, CardRow>),
     CardRow,
+    PrefetchHooks Function()>;
+typedef $$ClozeNotesTableCreateCompanionBuilder = ClozeNotesCompanion Function({
+  required String id,
+  required String wordBookId,
+  required String body,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<bool> isDeleted,
+  Value<int> rowid,
+});
+typedef $$ClozeNotesTableUpdateCompanionBuilder = ClozeNotesCompanion Function({
+  Value<String> id,
+  Value<String> wordBookId,
+  Value<String> body,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<bool> isDeleted,
+  Value<int> rowid,
+});
+
+class $$ClozeNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $ClozeNotesTable> {
+  $$ClozeNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get wordBookId => $composableBuilder(
+      column: $table.wordBookId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+}
+
+class $$ClozeNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ClozeNotesTable> {
+  $$ClozeNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get wordBookId => $composableBuilder(
+      column: $table.wordBookId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ClozeNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ClozeNotesTable> {
+  $$ClozeNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get wordBookId => $composableBuilder(
+      column: $table.wordBookId, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+}
+
+class $$ClozeNotesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ClozeNotesTable,
+    ClozeNoteRow,
+    $$ClozeNotesTableFilterComposer,
+    $$ClozeNotesTableOrderingComposer,
+    $$ClozeNotesTableAnnotationComposer,
+    $$ClozeNotesTableCreateCompanionBuilder,
+    $$ClozeNotesTableUpdateCompanionBuilder,
+    (
+      ClozeNoteRow,
+      BaseReferences<_$AppDatabase, $ClozeNotesTable, ClozeNoteRow>
+    ),
+    ClozeNoteRow,
+    PrefetchHooks Function()> {
+  $$ClozeNotesTableTableManager(_$AppDatabase db, $ClozeNotesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ClozeNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ClozeNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ClozeNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> wordBookId = const Value.absent(),
+            Value<String> body = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ClozeNotesCompanion(
+            id: id,
+            wordBookId: wordBookId,
+            body: body,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            isDeleted: isDeleted,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String wordBookId,
+            required String body,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<bool> isDeleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ClozeNotesCompanion.insert(
+            id: id,
+            wordBookId: wordBookId,
+            body: body,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            isDeleted: isDeleted,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ClozeNotesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ClozeNotesTable,
+    ClozeNoteRow,
+    $$ClozeNotesTableFilterComposer,
+    $$ClozeNotesTableOrderingComposer,
+    $$ClozeNotesTableAnnotationComposer,
+    $$ClozeNotesTableCreateCompanionBuilder,
+    $$ClozeNotesTableUpdateCompanionBuilder,
+    (
+      ClozeNoteRow,
+      BaseReferences<_$AppDatabase, $ClozeNotesTable, ClozeNoteRow>
+    ),
+    ClozeNoteRow,
     PrefetchHooks Function()>;
 typedef $$SyncOutboxTableCreateCompanionBuilder = SyncOutboxCompanion Function({
   Value<int> id,
@@ -5358,6 +6005,8 @@ class $AppDatabaseManager {
       $$WordEntriesTableTableManager(_db, _db.wordEntries);
   $$CardsTableTableManager get cards =>
       $$CardsTableTableManager(_db, _db.cards);
+  $$ClozeNotesTableTableManager get clozeNotes =>
+      $$ClozeNotesTableTableManager(_db, _db.clozeNotes);
   $$SyncOutboxTableTableManager get syncOutbox =>
       $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
   $$SyncStateTableTableManager get syncState =>

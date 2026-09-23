@@ -246,6 +246,40 @@ void main() {
       expect(after, greaterThan(before));
     });
 
+    test('빈칸 노트와 그 카드는 서버에서 받아 적는다', () async {
+      // 노트·카드는 서버가 만들고 앱은 pull로 받는다. 로컬 저장이 되는지만 본다.
+      final now = DateTime.now().toUtc();
+      await db.into(db.clozeNotes).insert(
+            ClozeNotesCompanion.insert(
+              id: 'n1',
+              wordBookId: 'b1',
+              body: 'TCP는 {{c1::연결 지향}} 프로토콜이다',
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await db.into(db.cards).insert(
+            CardsCompanion.insert(
+              id: 'n1:c1',
+              sourceType: const Value('cloze'),
+              noteId: const Value('n1'),
+              kind: 'c1',
+              srsDueAt: now,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      final card = await (db.select(db.cards)
+            ..where((c) => c.id.equals('n1:c1')))
+          .getSingle();
+
+      // 빈칸 카드는 단어가 없다 — word_id가 nullable이어야 저장된다.
+      expect(card.wordId, isNull);
+      expect(card.noteId, 'n1');
+      expect(card.sourceType, 'cloze');
+    });
+
     test('단어를 지우면 카드도 빠진다', () async {
       final word = await seedWord();
 

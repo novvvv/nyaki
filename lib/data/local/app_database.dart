@@ -16,6 +16,7 @@ part 'app_database.g.dart';
     WordBooks,
     WordEntries,
     Cards,
+    ClozeNotes,
     SyncOutbox,
     SyncState,
     UserProgress,
@@ -28,7 +29,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -72,6 +73,20 @@ class AppDatabase extends _$AppDatabase {
             // 열빙어 잔액 캐시. Hub의 user_progress.capelin_balance 대응
             // (alembic 0008). 기본값 0이라 기존 row는 자동으로 채워진다.
             await migrator.addColumn(userProgress, userProgress.capelinBalance);
+          }
+          if (from < 10) {
+            // 빈칸 노트. Hub cloze_notes 대응(alembic 0013).
+            // 카드는 단어에서도 노트에서도 나오므로 출처를 표시한다.
+            await migrator.createTable(clozeNotes);
+            await migrator.addColumn(cards, cards.sourceType);
+            await migrator.addColumn(cards, cards.noteId);
+            // word_id를 nullable로 바꾼다 — 빈칸 카드는 단어가 아니라 노트를
+            // 가리키므로 null이 들어온다(서버 pull이 그렇게 내려준다).
+            // SQLite는 NOT NULL 해제를 테이블 재생성으로만 할 수 있고, Drift가
+            // 주는 수단이 TableMigration뿐이다. 실험적 API라는 경고가 나지만
+            // 대안이 없어 억제한다.
+            // ignore: experimental_member_use
+            await migrator.alterTable(TableMigration(cards));
           }
           if (from < 9) {
             // 카드. Hub cards 대응(alembic 0012).

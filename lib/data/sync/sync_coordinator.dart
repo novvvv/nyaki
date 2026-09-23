@@ -130,6 +130,10 @@ class SyncCoordinator {
             await _mergeWordBook(change['word_book'] as Map<String, dynamic>);
           case 'card':
             await _mergeCard(change['card'] as Map<String, dynamic>);
+          case 'cloze_note':
+            await _mergeClozeNote(
+              change['cloze_note'] as Map<String, dynamic>,
+            );
           default:
             await _mergeWord(change['word'] as Map<String, dynamic>);
         }
@@ -164,6 +168,30 @@ class SyncCoordinator {
         );
   }
 
+  /// 서버가 내려준 빈칸 노트를 로컬에 합친다.
+  ///
+  /// 카드는 노트에서 파생되지만 앱이 직접 만들지 않는다 — 서버가 카드 변경도
+  /// 함께 내려주므로 그대로 받아 적으면 된다.
+  Future<void> _mergeClozeNote(Map<String, dynamic> json) async {
+    final id = json['id'] as String;
+    final remoteUpdatedAt = DateTime.parse(json['updated_at'] as String);
+    final local = await (_db.select(_db.clozeNotes)
+          ..where((note) => note.id.equals(id)))
+        .getSingleOrNull();
+    if (local != null && !remoteUpdatedAt.isAfter(local.updatedAt)) return;
+
+    await _db.into(_db.clozeNotes).insertOnConflictUpdate(
+          ClozeNotesCompanion.insert(
+            id: id,
+            wordBookId: json['word_book_id'] as String,
+            body: json['text'] as String,
+            createdAt: DateTime.parse(json['created_at'] as String),
+            updatedAt: remoteUpdatedAt,
+            isDeleted: Value(json['is_deleted'] as bool? ?? false),
+          ),
+        );
+  }
+
   /// 서버가 내려준 카드를 로컬에 합친다. 충돌 규칙은 단어와 같다 —
   /// updated_at이 더 최신인 쪽이 이긴다.
   Future<void> _mergeCard(Map<String, dynamic> json) async {
@@ -177,7 +205,9 @@ class SyncCoordinator {
     await _db.into(_db.cards).insertOnConflictUpdate(
           CardsCompanion.insert(
             id: id,
-            wordId: json['word_id'] as String,
+            sourceType: Value(json['source_type'] as String? ?? 'word'),
+            wordId: Value(json['word_id'] as String?),
+            noteId: Value(json['note_id'] as String?),
             kind: json['kind'] as String,
             srsEaseFactor:
                 Value((json['srs_ease_factor'] as num?)?.toDouble() ?? 2.5),

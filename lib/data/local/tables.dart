@@ -49,10 +49,29 @@ class WordBooks extends Table {
 //
 // id는 `{wordId}:{kind}` 규칙이라 서버와 같은 값을 만든다(Hub cards, alembic 0012).
 // ===================================================== //
+@DataClassName('ClozeNoteRow')
+class ClozeNotes extends Table {
+  TextColumn get id => text()();
+  TextColumn get wordBookId => text()();
+  // `{{c1::답}}` 문법의 문장 한 덩이. 빈칸 번호마다 카드가 한 장씩 생긴다.
+  // 컬럼 이름이 `text`면 Drift의 text() 빌더와 충돌해서 body로 둔다.
+  TextColumn get body => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DataClassName('CardRow')
 class Cards extends Table {
   TextColumn get id => text()();
-  TextColumn get wordId => text()();
+  // 카드는 단어에서 나오기도 하고 빈칸 노트에서 나오기도 한다.
+  TextColumn get sourceType =>
+      text().withDefault(const Constant('word'))();
+  TextColumn get wordId => text().nullable()();
+  TextColumn get noteId => text().nullable()();
   // recognition(단어→뜻) · recall(뜻→단어) · cloze(예문 빈칸)
   TextColumn get kind => text()();
 

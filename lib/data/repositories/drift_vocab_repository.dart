@@ -561,7 +561,7 @@ class DriftVocabRepository implements VocabRepository {
         await _db.into(_db.cards).insert(
               CardsCompanion.insert(
                 id: cardIdFor(wordId, kind),
-                wordId: wordId,
+                wordId: Value(wordId),
                 kind: kind,
                 srsDueAt: word.srsDueAt,
                 createdAt: word.createdAt,

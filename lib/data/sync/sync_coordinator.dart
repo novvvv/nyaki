@@ -201,6 +201,8 @@ class SyncCoordinator {
                   ? DateTime.parse(json['srs_last_reviewed_at'] as String)
                   : null,
             ),
+            // 학습 단계. 구버전 Hub는 안 내려주므로 없으면 null = 단계 밖.
+            srsLearningStep: Value(json['srs_learning_step'] as int?),
             createdAt: DateTime.parse(json['created_at'] as String),
             updatedAt: remoteUpdatedAt,
             isDeleted: Value(json['is_deleted'] as bool),

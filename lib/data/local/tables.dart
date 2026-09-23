@@ -93,6 +93,10 @@ class WordEntries extends Table {
   DateTimeColumn get srsDueAt =>
       dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get srsLastReviewedAt => dateTime().nullable()();
+
+  //  srsLearningStep - 지금 몇 번째 학습 단계인지. null이면 학습 단계가 아니다.
+  //  Hub words.srs_learning_step 대응 (alembic 0011).
+  IntColumn get srsLearningStep => integer().nullable()();
   // =============================================================== //
 
   DateTimeColumn get createdAt => dateTime()();
@@ -124,6 +128,13 @@ class UserProgress extends Table {
   IntColumn get streakCount => integer().withDefault(const Constant(0))();
   DateTimeColumn get lastActiveDate => dateTime().nullable()();
   IntColumn get dailyReviewGoal => integer().nullable()();
+
+  //  복습 흐름 설정 캐시 — Hub user_progress 대응 (alembic 0011).
+  //  단계는 "1,10"처럼 분 단위를 쉼표로 이은 문자열. 서버가 내려준 값을 그대로 둔다.
+  //  앱이 오프라인에서 채점해도 웹과 같은 간격이 나오려면 이 값이 필요하다.
+  TextColumn get learningSteps => text().nullable()();
+  TextColumn get relearningSteps => text().nullable()();
+  IntColumn get graduatingIntervalDays => integer().nullable()();
   IntColumn get morningReviewCount =>
       integer().withDefault(const Constant(0))();
   IntColumn get eveningReviewCount =>

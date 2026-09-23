@@ -27,7 +27,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +71,24 @@ class AppDatabase extends _$AppDatabase {
             // 열빙어 잔액 캐시. Hub의 user_progress.capelin_balance 대응
             // (alembic 0008). 기본값 0이라 기존 row는 자동으로 채워진다.
             await migrator.addColumn(userProgress, userProgress.capelinBalance);
+          }
+          if (from < 8) {
+            // 학습 단계(분 단위). Hub words.srs_learning_step 대응 (alembic 0011).
+            // nullable이라 기존 단어는 전부 null = 단계 밖으로 시작한다.
+            await migrator.addColumn(
+              wordEntries,
+              wordEntries.srsLearningStep,
+            );
+            // 복습 흐름 설정 캐시. 서버가 진실이고 앱은 받아 적기만 한다.
+            await migrator.addColumn(userProgress, userProgress.learningSteps);
+            await migrator.addColumn(
+              userProgress,
+              userProgress.relearningSteps,
+            );
+            await migrator.addColumn(
+              userProgress,
+              userProgress.graduatingIntervalDays,
+            );
           }
         },
       );

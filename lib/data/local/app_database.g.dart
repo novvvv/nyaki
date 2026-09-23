@@ -485,6 +485,12 @@ class $WordEntriesTable extends WordEntries
   late final GeneratedColumn<DateTime> srsLastReviewedAt =
       GeneratedColumn<DateTime>('srs_last_reviewed_at', aliasedName, true,
           type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _srsLearningStepMeta =
+      const VerificationMeta('srsLearningStep');
+  @override
+  late final GeneratedColumn<int> srsLearningStep = GeneratedColumn<int>(
+      'srs_learning_step', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -527,6 +533,7 @@ class $WordEntriesTable extends WordEntries
         srsLapses,
         srsDueAt,
         srsLastReviewedAt,
+        srsLearningStep,
         createdAt,
         updatedAt,
         isDeleted
@@ -642,6 +649,12 @@ class $WordEntriesTable extends WordEntries
           srsLastReviewedAt.isAcceptableOrUnknown(
               data['srs_last_reviewed_at']!, _srsLastReviewedAtMeta));
     }
+    if (data.containsKey('srs_learning_step')) {
+      context.handle(
+          _srsLearningStepMeta,
+          srsLearningStep.isAcceptableOrUnknown(
+              data['srs_learning_step']!, _srsLearningStepMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -704,6 +717,8 @@ class $WordEntriesTable extends WordEntries
       srsLastReviewedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime,
           data['${effectivePrefix}srs_last_reviewed_at']),
+      srsLearningStep: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}srs_learning_step']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -738,6 +753,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
   final int srsLapses;
   final DateTime srsDueAt;
   final DateTime? srsLastReviewedAt;
+  final int? srsLearningStep;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -760,6 +776,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       required this.srsLapses,
       required this.srsDueAt,
       this.srsLastReviewedAt,
+      this.srsLearningStep,
       required this.createdAt,
       required this.updatedAt,
       required this.isDeleted});
@@ -795,6 +812,9 @@ class WordRow extends DataClass implements Insertable<WordRow> {
     map['srs_due_at'] = Variable<DateTime>(srsDueAt);
     if (!nullToAbsent || srsLastReviewedAt != null) {
       map['srs_last_reviewed_at'] = Variable<DateTime>(srsLastReviewedAt);
+    }
+    if (!nullToAbsent || srsLearningStep != null) {
+      map['srs_learning_step'] = Variable<int>(srsLearningStep);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -834,6 +854,9 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       srsLastReviewedAt: srsLastReviewedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(srsLastReviewedAt),
+      srsLearningStep: srsLearningStep == null && nullToAbsent
+          ? const Value.absent()
+          : Value(srsLearningStep),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isDeleted: Value(isDeleted),
@@ -864,6 +887,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       srsDueAt: serializer.fromJson<DateTime>(json['srsDueAt']),
       srsLastReviewedAt:
           serializer.fromJson<DateTime?>(json['srsLastReviewedAt']),
+      srsLearningStep: serializer.fromJson<int?>(json['srsLearningStep']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
@@ -891,6 +915,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       'srsLapses': serializer.toJson<int>(srsLapses),
       'srsDueAt': serializer.toJson<DateTime>(srsDueAt),
       'srsLastReviewedAt': serializer.toJson<DateTime?>(srsLastReviewedAt),
+      'srsLearningStep': serializer.toJson<int?>(srsLearningStep),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
@@ -916,6 +941,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           int? srsLapses,
           DateTime? srsDueAt,
           Value<DateTime?> srsLastReviewedAt = const Value.absent(),
+          Value<int?> srsLearningStep = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
           bool? isDeleted}) =>
@@ -942,6 +968,9 @@ class WordRow extends DataClass implements Insertable<WordRow> {
         srsLastReviewedAt: srsLastReviewedAt.present
             ? srsLastReviewedAt.value
             : this.srsLastReviewedAt,
+        srsLearningStep: srsLearningStep.present
+            ? srsLearningStep.value
+            : this.srsLearningStep,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted ?? this.isDeleted,
@@ -984,6 +1013,9 @@ class WordRow extends DataClass implements Insertable<WordRow> {
       srsLastReviewedAt: data.srsLastReviewedAt.present
           ? data.srsLastReviewedAt.value
           : this.srsLastReviewedAt,
+      srsLearningStep: data.srsLearningStep.present
+          ? data.srsLearningStep.value
+          : this.srsLearningStep,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
@@ -1011,6 +1043,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           ..write('srsLapses: $srsLapses, ')
           ..write('srsDueAt: $srsDueAt, ')
           ..write('srsLastReviewedAt: $srsLastReviewedAt, ')
+          ..write('srsLearningStep: $srsLearningStep, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted')
@@ -1038,6 +1071,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
         srsLapses,
         srsDueAt,
         srsLastReviewedAt,
+        srsLearningStep,
         createdAt,
         updatedAt,
         isDeleted
@@ -1064,6 +1098,7 @@ class WordRow extends DataClass implements Insertable<WordRow> {
           other.srsLapses == this.srsLapses &&
           other.srsDueAt == this.srsDueAt &&
           other.srsLastReviewedAt == this.srsLastReviewedAt &&
+          other.srsLearningStep == this.srsLearningStep &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isDeleted == this.isDeleted);
@@ -1088,6 +1123,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
   final Value<int> srsLapses;
   final Value<DateTime> srsDueAt;
   final Value<DateTime?> srsLastReviewedAt;
+  final Value<int?> srsLearningStep;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isDeleted;
@@ -1111,6 +1147,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     this.srsLapses = const Value.absent(),
     this.srsDueAt = const Value.absent(),
     this.srsLastReviewedAt = const Value.absent(),
+    this.srsLearningStep = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -1135,6 +1172,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     this.srsLapses = const Value.absent(),
     this.srsDueAt = const Value.absent(),
     this.srsLastReviewedAt = const Value.absent(),
+    this.srsLearningStep = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.isDeleted = const Value.absent(),
@@ -1165,6 +1203,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     Expression<int>? srsLapses,
     Expression<DateTime>? srsDueAt,
     Expression<DateTime>? srsLastReviewedAt,
+    Expression<int>? srsLearningStep,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isDeleted,
@@ -1189,6 +1228,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       if (srsLapses != null) 'srs_lapses': srsLapses,
       if (srsDueAt != null) 'srs_due_at': srsDueAt,
       if (srsLastReviewedAt != null) 'srs_last_reviewed_at': srsLastReviewedAt,
+      if (srsLearningStep != null) 'srs_learning_step': srsLearningStep,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isDeleted != null) 'is_deleted': isDeleted,
@@ -1215,6 +1255,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       Value<int>? srsLapses,
       Value<DateTime>? srsDueAt,
       Value<DateTime?>? srsLastReviewedAt,
+      Value<int?>? srsLearningStep,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<bool>? isDeleted,
@@ -1238,6 +1279,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
       srsLapses: srsLapses ?? this.srsLapses,
       srsDueAt: srsDueAt ?? this.srsDueAt,
       srsLastReviewedAt: srsLastReviewedAt ?? this.srsLastReviewedAt,
+      srsLearningStep: srsLearningStep ?? this.srsLearningStep,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -1302,6 +1344,9 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
     if (srsLastReviewedAt.present) {
       map['srs_last_reviewed_at'] = Variable<DateTime>(srsLastReviewedAt.value);
     }
+    if (srsLearningStep.present) {
+      map['srs_learning_step'] = Variable<int>(srsLearningStep.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1338,6 +1383,7 @@ class WordEntriesCompanion extends UpdateCompanion<WordRow> {
           ..write('srsLapses: $srsLapses, ')
           ..write('srsDueAt: $srsDueAt, ')
           ..write('srsLastReviewedAt: $srsLastReviewedAt, ')
+          ..write('srsLearningStep: $srsLearningStep, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -1926,6 +1972,24 @@ class $UserProgressTable extends UserProgress
   late final GeneratedColumn<int> dailyReviewGoal = GeneratedColumn<int>(
       'daily_review_goal', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _learningStepsMeta =
+      const VerificationMeta('learningSteps');
+  @override
+  late final GeneratedColumn<String> learningSteps = GeneratedColumn<String>(
+      'learning_steps', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _relearningStepsMeta =
+      const VerificationMeta('relearningSteps');
+  @override
+  late final GeneratedColumn<String> relearningSteps = GeneratedColumn<String>(
+      'relearning_steps', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _graduatingIntervalDaysMeta =
+      const VerificationMeta('graduatingIntervalDays');
+  @override
+  late final GeneratedColumn<int> graduatingIntervalDays = GeneratedColumn<int>(
+      'graduating_interval_days', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _morningReviewCountMeta =
       const VerificationMeta('morningReviewCount');
   @override
@@ -1950,6 +2014,9 @@ class $UserProgressTable extends UserProgress
         streakCount,
         lastActiveDate,
         dailyReviewGoal,
+        learningSteps,
+        relearningSteps,
+        graduatingIntervalDays,
         morningReviewCount,
         eveningReviewCount
       ];
@@ -1999,6 +2066,24 @@ class $UserProgressTable extends UserProgress
           dailyReviewGoal.isAcceptableOrUnknown(
               data['daily_review_goal']!, _dailyReviewGoalMeta));
     }
+    if (data.containsKey('learning_steps')) {
+      context.handle(
+          _learningStepsMeta,
+          learningSteps.isAcceptableOrUnknown(
+              data['learning_steps']!, _learningStepsMeta));
+    }
+    if (data.containsKey('relearning_steps')) {
+      context.handle(
+          _relearningStepsMeta,
+          relearningSteps.isAcceptableOrUnknown(
+              data['relearning_steps']!, _relearningStepsMeta));
+    }
+    if (data.containsKey('graduating_interval_days')) {
+      context.handle(
+          _graduatingIntervalDaysMeta,
+          graduatingIntervalDays.isAcceptableOrUnknown(
+              data['graduating_interval_days']!, _graduatingIntervalDaysMeta));
+    }
     if (data.containsKey('morning_review_count')) {
       context.handle(
           _morningReviewCountMeta,
@@ -2032,6 +2117,12 @@ class $UserProgressTable extends UserProgress
           DriftSqlType.dateTime, data['${effectivePrefix}last_active_date']),
       dailyReviewGoal: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}daily_review_goal']),
+      learningSteps: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}learning_steps']),
+      relearningSteps: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}relearning_steps']),
+      graduatingIntervalDays: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}graduating_interval_days']),
       morningReviewCount: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}morning_review_count'])!,
       eveningReviewCount: attachedDatabase.typeMapping.read(
@@ -2052,6 +2143,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
   final int streakCount;
   final DateTime? lastActiveDate;
   final int? dailyReviewGoal;
+  final String? learningSteps;
+  final String? relearningSteps;
+  final int? graduatingIntervalDays;
   final int morningReviewCount;
   final int eveningReviewCount;
   const UserProgressRow(
@@ -2061,6 +2155,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       required this.streakCount,
       this.lastActiveDate,
       this.dailyReviewGoal,
+      this.learningSteps,
+      this.relearningSteps,
+      this.graduatingIntervalDays,
       required this.morningReviewCount,
       required this.eveningReviewCount});
   @override
@@ -2075,6 +2172,15 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
     }
     if (!nullToAbsent || dailyReviewGoal != null) {
       map['daily_review_goal'] = Variable<int>(dailyReviewGoal);
+    }
+    if (!nullToAbsent || learningSteps != null) {
+      map['learning_steps'] = Variable<String>(learningSteps);
+    }
+    if (!nullToAbsent || relearningSteps != null) {
+      map['relearning_steps'] = Variable<String>(relearningSteps);
+    }
+    if (!nullToAbsent || graduatingIntervalDays != null) {
+      map['graduating_interval_days'] = Variable<int>(graduatingIntervalDays);
     }
     map['morning_review_count'] = Variable<int>(morningReviewCount);
     map['evening_review_count'] = Variable<int>(eveningReviewCount);
@@ -2093,6 +2199,15 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       dailyReviewGoal: dailyReviewGoal == null && nullToAbsent
           ? const Value.absent()
           : Value(dailyReviewGoal),
+      learningSteps: learningSteps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learningSteps),
+      relearningSteps: relearningSteps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relearningSteps),
+      graduatingIntervalDays: graduatingIntervalDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(graduatingIntervalDays),
       morningReviewCount: Value(morningReviewCount),
       eveningReviewCount: Value(eveningReviewCount),
     );
@@ -2108,6 +2223,10 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       streakCount: serializer.fromJson<int>(json['streakCount']),
       lastActiveDate: serializer.fromJson<DateTime?>(json['lastActiveDate']),
       dailyReviewGoal: serializer.fromJson<int?>(json['dailyReviewGoal']),
+      learningSteps: serializer.fromJson<String?>(json['learningSteps']),
+      relearningSteps: serializer.fromJson<String?>(json['relearningSteps']),
+      graduatingIntervalDays:
+          serializer.fromJson<int?>(json['graduatingIntervalDays']),
       morningReviewCount: serializer.fromJson<int>(json['morningReviewCount']),
       eveningReviewCount: serializer.fromJson<int>(json['eveningReviewCount']),
     );
@@ -2122,6 +2241,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       'streakCount': serializer.toJson<int>(streakCount),
       'lastActiveDate': serializer.toJson<DateTime?>(lastActiveDate),
       'dailyReviewGoal': serializer.toJson<int?>(dailyReviewGoal),
+      'learningSteps': serializer.toJson<String?>(learningSteps),
+      'relearningSteps': serializer.toJson<String?>(relearningSteps),
+      'graduatingIntervalDays': serializer.toJson<int?>(graduatingIntervalDays),
       'morningReviewCount': serializer.toJson<int>(morningReviewCount),
       'eveningReviewCount': serializer.toJson<int>(eveningReviewCount),
     };
@@ -2134,6 +2256,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
           int? streakCount,
           Value<DateTime?> lastActiveDate = const Value.absent(),
           Value<int?> dailyReviewGoal = const Value.absent(),
+          Value<String?> learningSteps = const Value.absent(),
+          Value<String?> relearningSteps = const Value.absent(),
+          Value<int?> graduatingIntervalDays = const Value.absent(),
           int? morningReviewCount,
           int? eveningReviewCount}) =>
       UserProgressRow(
@@ -2146,6 +2271,14 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
         dailyReviewGoal: dailyReviewGoal.present
             ? dailyReviewGoal.value
             : this.dailyReviewGoal,
+        learningSteps:
+            learningSteps.present ? learningSteps.value : this.learningSteps,
+        relearningSteps: relearningSteps.present
+            ? relearningSteps.value
+            : this.relearningSteps,
+        graduatingIntervalDays: graduatingIntervalDays.present
+            ? graduatingIntervalDays.value
+            : this.graduatingIntervalDays,
         morningReviewCount: morningReviewCount ?? this.morningReviewCount,
         eveningReviewCount: eveningReviewCount ?? this.eveningReviewCount,
       );
@@ -2166,6 +2299,15 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       dailyReviewGoal: data.dailyReviewGoal.present
           ? data.dailyReviewGoal.value
           : this.dailyReviewGoal,
+      learningSteps: data.learningSteps.present
+          ? data.learningSteps.value
+          : this.learningSteps,
+      relearningSteps: data.relearningSteps.present
+          ? data.relearningSteps.value
+          : this.relearningSteps,
+      graduatingIntervalDays: data.graduatingIntervalDays.present
+          ? data.graduatingIntervalDays.value
+          : this.graduatingIntervalDays,
       morningReviewCount: data.morningReviewCount.present
           ? data.morningReviewCount.value
           : this.morningReviewCount,
@@ -2184,6 +2326,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDate: $lastActiveDate, ')
           ..write('dailyReviewGoal: $dailyReviewGoal, ')
+          ..write('learningSteps: $learningSteps, ')
+          ..write('relearningSteps: $relearningSteps, ')
+          ..write('graduatingIntervalDays: $graduatingIntervalDays, ')
           ..write('morningReviewCount: $morningReviewCount, ')
           ..write('eveningReviewCount: $eveningReviewCount')
           ..write(')'))
@@ -2198,6 +2343,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
       streakCount,
       lastActiveDate,
       dailyReviewGoal,
+      learningSteps,
+      relearningSteps,
+      graduatingIntervalDays,
       morningReviewCount,
       eveningReviewCount);
   @override
@@ -2210,6 +2358,9 @@ class UserProgressRow extends DataClass implements Insertable<UserProgressRow> {
           other.streakCount == this.streakCount &&
           other.lastActiveDate == this.lastActiveDate &&
           other.dailyReviewGoal == this.dailyReviewGoal &&
+          other.learningSteps == this.learningSteps &&
+          other.relearningSteps == this.relearningSteps &&
+          other.graduatingIntervalDays == this.graduatingIntervalDays &&
           other.morningReviewCount == this.morningReviewCount &&
           other.eveningReviewCount == this.eveningReviewCount);
 }
@@ -2221,6 +2372,9 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
   final Value<int> streakCount;
   final Value<DateTime?> lastActiveDate;
   final Value<int?> dailyReviewGoal;
+  final Value<String?> learningSteps;
+  final Value<String?> relearningSteps;
+  final Value<int?> graduatingIntervalDays;
   final Value<int> morningReviewCount;
   final Value<int> eveningReviewCount;
   final Value<int> rowid;
@@ -2231,6 +2385,9 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     this.streakCount = const Value.absent(),
     this.lastActiveDate = const Value.absent(),
     this.dailyReviewGoal = const Value.absent(),
+    this.learningSteps = const Value.absent(),
+    this.relearningSteps = const Value.absent(),
+    this.graduatingIntervalDays = const Value.absent(),
     this.morningReviewCount = const Value.absent(),
     this.eveningReviewCount = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2242,6 +2399,9 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     this.streakCount = const Value.absent(),
     this.lastActiveDate = const Value.absent(),
     this.dailyReviewGoal = const Value.absent(),
+    this.learningSteps = const Value.absent(),
+    this.relearningSteps = const Value.absent(),
+    this.graduatingIntervalDays = const Value.absent(),
     this.morningReviewCount = const Value.absent(),
     this.eveningReviewCount = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2253,6 +2413,9 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     Expression<int>? streakCount,
     Expression<DateTime>? lastActiveDate,
     Expression<int>? dailyReviewGoal,
+    Expression<String>? learningSteps,
+    Expression<String>? relearningSteps,
+    Expression<int>? graduatingIntervalDays,
     Expression<int>? morningReviewCount,
     Expression<int>? eveningReviewCount,
     Expression<int>? rowid,
@@ -2264,6 +2427,10 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
       if (streakCount != null) 'streak_count': streakCount,
       if (lastActiveDate != null) 'last_active_date': lastActiveDate,
       if (dailyReviewGoal != null) 'daily_review_goal': dailyReviewGoal,
+      if (learningSteps != null) 'learning_steps': learningSteps,
+      if (relearningSteps != null) 'relearning_steps': relearningSteps,
+      if (graduatingIntervalDays != null)
+        'graduating_interval_days': graduatingIntervalDays,
       if (morningReviewCount != null)
         'morning_review_count': morningReviewCount,
       if (eveningReviewCount != null)
@@ -2279,6 +2446,9 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
       Value<int>? streakCount,
       Value<DateTime?>? lastActiveDate,
       Value<int?>? dailyReviewGoal,
+      Value<String?>? learningSteps,
+      Value<String?>? relearningSteps,
+      Value<int?>? graduatingIntervalDays,
       Value<int>? morningReviewCount,
       Value<int>? eveningReviewCount,
       Value<int>? rowid}) {
@@ -2289,6 +2459,10 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
       streakCount: streakCount ?? this.streakCount,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       dailyReviewGoal: dailyReviewGoal ?? this.dailyReviewGoal,
+      learningSteps: learningSteps ?? this.learningSteps,
+      relearningSteps: relearningSteps ?? this.relearningSteps,
+      graduatingIntervalDays:
+          graduatingIntervalDays ?? this.graduatingIntervalDays,
       morningReviewCount: morningReviewCount ?? this.morningReviewCount,
       eveningReviewCount: eveningReviewCount ?? this.eveningReviewCount,
       rowid: rowid ?? this.rowid,
@@ -2316,6 +2490,16 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
     if (dailyReviewGoal.present) {
       map['daily_review_goal'] = Variable<int>(dailyReviewGoal.value);
     }
+    if (learningSteps.present) {
+      map['learning_steps'] = Variable<String>(learningSteps.value);
+    }
+    if (relearningSteps.present) {
+      map['relearning_steps'] = Variable<String>(relearningSteps.value);
+    }
+    if (graduatingIntervalDays.present) {
+      map['graduating_interval_days'] =
+          Variable<int>(graduatingIntervalDays.value);
+    }
     if (morningReviewCount.present) {
       map['morning_review_count'] = Variable<int>(morningReviewCount.value);
     }
@@ -2337,6 +2521,9 @@ class UserProgressCompanion extends UpdateCompanion<UserProgressRow> {
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDate: $lastActiveDate, ')
           ..write('dailyReviewGoal: $dailyReviewGoal, ')
+          ..write('learningSteps: $learningSteps, ')
+          ..write('relearningSteps: $relearningSteps, ')
+          ..write('graduatingIntervalDays: $graduatingIntervalDays, ')
           ..write('morningReviewCount: $morningReviewCount, ')
           ..write('eveningReviewCount: $eveningReviewCount, ')
           ..write('rowid: $rowid')
@@ -2901,6 +3088,7 @@ typedef $$WordEntriesTableCreateCompanionBuilder = WordEntriesCompanion
   Value<int> srsLapses,
   Value<DateTime> srsDueAt,
   Value<DateTime?> srsLastReviewedAt,
+  Value<int?> srsLearningStep,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<bool> isDeleted,
@@ -2926,6 +3114,7 @@ typedef $$WordEntriesTableUpdateCompanionBuilder = WordEntriesCompanion
   Value<int> srsLapses,
   Value<DateTime> srsDueAt,
   Value<DateTime?> srsLastReviewedAt,
+  Value<int?> srsLearningStep,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
@@ -3015,6 +3204,10 @@ class $$WordEntriesTableFilterComposer
 
   ColumnFilters<DateTime> get srsLastReviewedAt => $composableBuilder(
       column: $table.srsLastReviewedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get srsLearningStep => $composableBuilder(
+      column: $table.srsLearningStep,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
@@ -3115,6 +3308,10 @@ class $$WordEntriesTableOrderingComposer
       column: $table.srsLastReviewedAt,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get srsLearningStep => $composableBuilder(
+      column: $table.srsLearningStep,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -3205,6 +3402,9 @@ class $$WordEntriesTableAnnotationComposer
   GeneratedColumn<DateTime> get srsLastReviewedAt => $composableBuilder(
       column: $table.srsLastReviewedAt, builder: (column) => column);
 
+  GeneratedColumn<int> get srsLearningStep => $composableBuilder(
+      column: $table.srsLearningStep, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -3276,6 +3476,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             Value<int> srsLapses = const Value.absent(),
             Value<DateTime> srsDueAt = const Value.absent(),
             Value<DateTime?> srsLastReviewedAt = const Value.absent(),
+            Value<int?> srsLearningStep = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -3300,6 +3501,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             srsLapses: srsLapses,
             srsDueAt: srsDueAt,
             srsLastReviewedAt: srsLastReviewedAt,
+            srsLearningStep: srsLearningStep,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -3324,6 +3526,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             Value<int> srsLapses = const Value.absent(),
             Value<DateTime> srsDueAt = const Value.absent(),
             Value<DateTime?> srsLastReviewedAt = const Value.absent(),
+            Value<int?> srsLearningStep = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<bool> isDeleted = const Value.absent(),
@@ -3348,6 +3551,7 @@ class $$WordEntriesTableTableManager extends RootTableManager<
             srsLapses: srsLapses,
             srsDueAt: srsDueAt,
             srsLastReviewedAt: srsLastReviewedAt,
+            srsLearningStep: srsLearningStep,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -3723,6 +3927,9 @@ typedef $$UserProgressTableCreateCompanionBuilder = UserProgressCompanion
   Value<int> streakCount,
   Value<DateTime?> lastActiveDate,
   Value<int?> dailyReviewGoal,
+  Value<String?> learningSteps,
+  Value<String?> relearningSteps,
+  Value<int?> graduatingIntervalDays,
   Value<int> morningReviewCount,
   Value<int> eveningReviewCount,
   Value<int> rowid,
@@ -3735,6 +3942,9 @@ typedef $$UserProgressTableUpdateCompanionBuilder = UserProgressCompanion
   Value<int> streakCount,
   Value<DateTime?> lastActiveDate,
   Value<int?> dailyReviewGoal,
+  Value<String?> learningSteps,
+  Value<String?> relearningSteps,
+  Value<int?> graduatingIntervalDays,
   Value<int> morningReviewCount,
   Value<int> eveningReviewCount,
   Value<int> rowid,
@@ -3768,6 +3978,17 @@ class $$UserProgressTableFilterComposer
 
   ColumnFilters<int> get dailyReviewGoal => $composableBuilder(
       column: $table.dailyReviewGoal,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get learningSteps => $composableBuilder(
+      column: $table.learningSteps, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get relearningSteps => $composableBuilder(
+      column: $table.relearningSteps,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get graduatingIntervalDays => $composableBuilder(
+      column: $table.graduatingIntervalDays,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get morningReviewCount => $composableBuilder(
@@ -3810,6 +4031,18 @@ class $$UserProgressTableOrderingComposer
       column: $table.dailyReviewGoal,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get learningSteps => $composableBuilder(
+      column: $table.learningSteps,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get relearningSteps => $composableBuilder(
+      column: $table.relearningSteps,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get graduatingIntervalDays => $composableBuilder(
+      column: $table.graduatingIntervalDays,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get morningReviewCount => $composableBuilder(
       column: $table.morningReviewCount,
       builder: (column) => ColumnOrderings(column));
@@ -3845,6 +4078,15 @@ class $$UserProgressTableAnnotationComposer
 
   GeneratedColumn<int> get dailyReviewGoal => $composableBuilder(
       column: $table.dailyReviewGoal, builder: (column) => column);
+
+  GeneratedColumn<String> get learningSteps => $composableBuilder(
+      column: $table.learningSteps, builder: (column) => column);
+
+  GeneratedColumn<String> get relearningSteps => $composableBuilder(
+      column: $table.relearningSteps, builder: (column) => column);
+
+  GeneratedColumn<int> get graduatingIntervalDays => $composableBuilder(
+      column: $table.graduatingIntervalDays, builder: (column) => column);
 
   GeneratedColumn<int> get morningReviewCount => $composableBuilder(
       column: $table.morningReviewCount, builder: (column) => column);
@@ -3885,6 +4127,9 @@ class $$UserProgressTableTableManager extends RootTableManager<
             Value<int> streakCount = const Value.absent(),
             Value<DateTime?> lastActiveDate = const Value.absent(),
             Value<int?> dailyReviewGoal = const Value.absent(),
+            Value<String?> learningSteps = const Value.absent(),
+            Value<String?> relearningSteps = const Value.absent(),
+            Value<int?> graduatingIntervalDays = const Value.absent(),
             Value<int> morningReviewCount = const Value.absent(),
             Value<int> eveningReviewCount = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -3896,6 +4141,9 @@ class $$UserProgressTableTableManager extends RootTableManager<
             streakCount: streakCount,
             lastActiveDate: lastActiveDate,
             dailyReviewGoal: dailyReviewGoal,
+            learningSteps: learningSteps,
+            relearningSteps: relearningSteps,
+            graduatingIntervalDays: graduatingIntervalDays,
             morningReviewCount: morningReviewCount,
             eveningReviewCount: eveningReviewCount,
             rowid: rowid,
@@ -3907,6 +4155,9 @@ class $$UserProgressTableTableManager extends RootTableManager<
             Value<int> streakCount = const Value.absent(),
             Value<DateTime?> lastActiveDate = const Value.absent(),
             Value<int?> dailyReviewGoal = const Value.absent(),
+            Value<String?> learningSteps = const Value.absent(),
+            Value<String?> relearningSteps = const Value.absent(),
+            Value<int?> graduatingIntervalDays = const Value.absent(),
             Value<int> morningReviewCount = const Value.absent(),
             Value<int> eveningReviewCount = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -3918,6 +4169,9 @@ class $$UserProgressTableTableManager extends RootTableManager<
             streakCount: streakCount,
             lastActiveDate: lastActiveDate,
             dailyReviewGoal: dailyReviewGoal,
+            learningSteps: learningSteps,
+            relearningSteps: relearningSteps,
+            graduatingIntervalDays: graduatingIntervalDays,
             morningReviewCount: morningReviewCount,
             eveningReviewCount: eveningReviewCount,
             rowid: rowid,

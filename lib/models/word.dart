@@ -24,6 +24,7 @@ class Word {
     this.srsLapses = 0,
     required this.srsDueAt,
     this.srsLastReviewedAt,
+    this.srsLearningStep,
     required this.createdAt,
     required this.updatedAt,
     this.isDeleted = false,
@@ -55,6 +56,9 @@ class Word {
   final int srsLapses;
   final DateTime srsDueAt;
   final DateTime? srsLastReviewedAt;
+
+  /// 지금 몇 번째 학습 단계인지. null이면 학습 단계가 아니다.
+  final int? srsLearningStep;
   // ========================================================= //
 
   final DateTime createdAt;
@@ -86,6 +90,7 @@ class Word {
     int? srsLapses,
     DateTime? srsDueAt,
     DateTime? srsLastReviewedAt,
+    int? srsLearningStep,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -109,6 +114,7 @@ class Word {
       srsLapses: srsLapses ?? this.srsLapses,
       srsDueAt: srsDueAt ?? this.srsDueAt,
       srsLastReviewedAt: srsLastReviewedAt ?? this.srsLastReviewedAt,
+      srsLearningStep: srsLearningStep ?? this.srsLearningStep,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,

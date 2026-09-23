@@ -325,6 +325,31 @@ class DriftVocabRepository implements VocabRepository {
   }
 
 
+  // ==================== ✨ _loadStepConfig ✨ ==================== //
+  // 로컬에 캐시된 복습 흐름 설정을 StepConfig로 읽는다.
+  // 서버 `/v1/progress`가 내려준 값을 ProgressRepository가 적어둔 것이다.
+  // 행이 없거나 값이 비어 있으면 단계 없음 = 기존 동작.
+  // ============================================================== //
+  Future<StepConfig> _loadStepConfig() async {
+    final row = await _db.select(_db.userProgress).getSingleOrNull();
+    if (row == null) return defaultStepConfig;
+
+    List<int> parse(String? raw) {
+      if (raw == null || raw.isEmpty) return const [];
+      return raw
+          .split(RegExp(r'[,\s]+'))
+          .map((chunk) => int.tryParse(chunk.trim()) ?? 0)
+          .where((minutes) => minutes > 0)
+          .toList(growable: false);
+    }
+
+    return StepConfig(
+      learningSteps: parse(row.learningSteps),
+      relearningSteps: parse(row.relearningSteps),
+      graduatingIntervalDays: row.graduatingIntervalDays ?? 1,
+    );
+  }
+
   // ==================== ✨ gradeWord ✨ ==================== //
   // Feature.
   //   - 지금 보고 있는 단어 1개를 SM-2 로직을 통해 채점하여, 저장하는 함수이다.
@@ -352,12 +377,17 @@ class DriftVocabRepository implements VocabRepository {
       lapses: row.srsLapses,
       dueAt: row.srsDueAt,
       lastReviewedAt: row.srsLastReviewedAt,
+      learningStep: row.srsLearningStep,
     );
+
+    // 복습 흐름 설정은 서버가 진실이고 앱은 캐시를 읽는다.
+    // 캐시가 없으면(로그인 전·구버전 Hub) 단계 없이 예전 방식으로 돈다.
+    final config = await _loadStepConfig();
 
     final now = DateTime.now();
     final result = grade == ReviewGrade.again
-        ? gradeAgain(state, now)
-        : gradeGood(state, now);
+        ? gradeAgain(state, now, config)
+        : gradeGood(state, now, config);
 
     await _db.transaction(() async {
       await (_db.update(_db.wordEntries)..where((w) => w.id.equals(wordId)))
@@ -369,6 +399,7 @@ class DriftVocabRepository implements VocabRepository {
           srsLapses: Value(result.state.lapses),
           srsDueAt: Value(result.state.dueAt),
           srsLastReviewedAt: Value(result.state.lastReviewedAt),
+          srsLearningStep: Value(result.state.learningStep),
           memorizationStatus: Value(result.memorizationStatus.name),
           updatedAt: Value(now),
         ),
@@ -495,6 +526,7 @@ class DriftVocabRepository implements VocabRepository {
               'srs_due_at': row.srsDueAt.toUtc().toIso8601String(),
               'srs_last_reviewed_at':
                   row.srsLastReviewedAt?.toUtc().toIso8601String(),
+              'srs_learning_step': row.srsLearningStep,
               'created_at': row.createdAt.toUtc().toIso8601String(),
               'updated_at': row.updatedAt.toUtc().toIso8601String(),
               'is_deleted': row.isDeleted,

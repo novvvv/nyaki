@@ -24,6 +24,7 @@ class Sm2State {
     required this.lapses,
     required this.dueAt,
     this.lastReviewedAt,
+    this.learningStep,
   });
 
   final double easeFactor;
@@ -32,7 +33,57 @@ class Sm2State {
   final int lapses;
   final DateTime dueAt;
   final DateTime? lastReviewedAt;
+
+  /// 지금 몇 번째 학습 단계인지. null이면 학습 단계가 아니다(새 카드이거나 복습 카드).
+  /// 서버 `api/app/vocab/srs.py`의 `learning_step`과 같은 값이다.
+  final int? learningStep;
+
+  Sm2State copyWith({
+    double? easeFactor,
+    int? intervalDays,
+    int? repetitions,
+    int? lapses,
+    DateTime? dueAt,
+    DateTime? lastReviewedAt,
+    int? learningStep,
+    bool clearLearningStep = false,
+  }) {
+    return Sm2State(
+      easeFactor: easeFactor ?? this.easeFactor,
+      intervalDays: intervalDays ?? this.intervalDays,
+      repetitions: repetitions ?? this.repetitions,
+      lapses: lapses ?? this.lapses,
+      dueAt: dueAt ?? this.dueAt,
+      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
+      learningStep:
+          clearLearningStep ? null : (learningStep ?? this.learningStep),
+    );
+  }
 }
+
+// ======================== ✨ StepConfig Class ✨ ======================== //
+// 복습 흐름 설정 — 안키의 Learning steps / Relearning steps / Graduating interval.
+//
+// 서버(`/v1/progress`)가 내려주는 값을 그대로 담는다. 비어 있으면 학습 단계 없이
+// 바로 일 단위로 간다(2026-09 이전 동작과 동일).
+//
+// **서버 `api/app/vocab/srs.py`와 같은 답을 내야 한다.** 같은 단어를 앱과 웹에서
+// 채점했을 때 다음 복습일이 달라지면 사용자가 바로 알아챈다.
+// ======================================================================= //
+
+class StepConfig {
+  const StepConfig({
+    this.learningSteps = const [],
+    this.relearningSteps = const [],
+    this.graduatingIntervalDays = 1,
+  });
+
+  final List<int> learningSteps;
+  final List<int> relearningSteps;
+  final int graduatingIntervalDays;
+}
+
+const StepConfig defaultStepConfig = StepConfig();
 
 // ======================== ✨ Sm2GradeResult Class ✨ ======================== // 
 //  - state : 갱신된 SRS 상태 
@@ -78,19 +129,48 @@ const Duration relearningStep = Duration.zero;
 //    현재 ease에서 0.20을 깎은 뒤, 소수 둘째자리로 정리 (_roundHalfUp2) 후 1.3보다 낮아지면 1.3으로 고정한다.
 // ======================================================================== //
 
-Sm2GradeResult gradeAgain(Sm2State state, DateTime now) {
+// 졸업해서 일 단위 복습에 올라간 카드인가.
+// 학습 단계 중이면(learningStep != null) 아직 아니고, 간격이 잡혀 있으면 맞다.
+bool _isReviewCard(Sm2State state) =>
+    state.learningStep == null &&
+    (state.intervalDays > 0 || state.repetitions > 0);
+
+// 이 카드가 탈 단계 목록.
+// 졸업했다가 틀린 카드는 재학습 단계를, 아직 졸업 전인 카드는 학습 단계를 쓴다.
+// lapses로 가르는데, gradeAgain이 복습 카드의 실패만 세므로 lapses > 0은
+// "졸업한 적이 있다"와 같은 뜻이다. 서버 `_steps_for`와 같은 규칙.
+List<int> _stepsFor(Sm2State state, StepConfig config) =>
+    state.lapses > 0 ? config.relearningSteps : config.learningSteps;
+
+Sm2GradeResult gradeAgain(
+  Sm2State state,
+  DateTime now, [
+  StepConfig config = defaultStepConfig,
+]) {
 
   final nowUtc = now.toUtc(); // 채점 시각 통일
   final ease = math.max(1.3, _roundHalfUp2(state.easeFactor - 0.20));
 
-  final nextState = Sm2State(
+  // lapses는 **복습 카드가 틀렸을 때만** 올린다. 안키와 같은 정의이고,
+  // 위 _stepsFor의 판별 근거이기도 하다. 서버와 반드시 같아야 한다.
+  final lapses = _isReviewCard(state) ? state.lapses + 1 : state.lapses;
+
+  final failed = Sm2State(
     easeFactor: ease,
     intervalDays: 0,
     repetitions: 0,
-    lapses: state.lapses + 1,
-    dueAt: nowUtc.add(relearningStep),
+    lapses: lapses,
+    dueAt: nowUtc,
     lastReviewedAt: nowUtc,
   );
+
+  final steps = _stepsFor(failed, config);
+  final nextState = steps.isNotEmpty
+      ? failed.copyWith(
+          dueAt: nowUtc.add(Duration(minutes: steps.first)),
+          learningStep: 0,
+        )
+      : failed.copyWith(dueAt: nowUtc.add(relearningStep));
 
   return Sm2GradeResult(
     state: nextState,
@@ -110,8 +190,51 @@ Sm2GradeResult gradeAgain(Sm2State state, DateTime now) {
 // - repetitions가 2 이상이 되면 memorizationStatus가 memorized로 바뀜 (그 전까지 unmemorized)
 // ======================================================================== //
 
-Sm2GradeResult gradeGood(Sm2State state, DateTime now) {
+// 학습 단계를 다 통과했다 — 복습 카드로 올린다.
+Sm2GradeResult _graduate(Sm2State state, DateTime nowUtc, StepConfig config) {
+  final interval = math.max(1, config.graduatingIntervalDays);
+  return Sm2GradeResult(
+    state: Sm2State(
+      easeFactor: state.easeFactor,
+      intervalDays: interval,
+      repetitions: 1,
+      lapses: state.lapses,
+      dueAt: nowUtc.add(Duration(days: interval)),
+      lastReviewedAt: nowUtc,
+    ),
+    memorizationStatus: WordMemorizationStatus.unmemorized,
+  );
+}
+
+Sm2GradeResult gradeGood(
+  Sm2State state,
+  DateTime now, [
+  StepConfig config = defaultStepConfig,
+]) {
   final nowUtc = now.toUtc();
+
+  final steps = _stepsFor(state, config);
+  final inLearning = state.learningStep != null;
+  // 아직 한 번도 채점 안 한 카드도 단계가 있으면 학습 카드로 시작한다.
+  final startingLearning =
+      !inLearning && state.lastReviewedAt == null && steps.isNotEmpty;
+
+  if (steps.isNotEmpty && (inLearning || startingLearning)) {
+    final current = inLearning ? state.learningStep! : 0;
+    final nextStep = current + 1;
+    if (nextStep >= steps.length) {
+      return _graduate(state, nowUtc, config);
+    }
+
+    return Sm2GradeResult(
+      state: state.copyWith(
+        dueAt: nowUtc.add(Duration(minutes: steps[nextStep])),
+        lastReviewedAt: nowUtc,
+        learningStep: nextStep,
+      ),
+      memorizationStatus: WordMemorizationStatus.unmemorized,
+    );
+  }
 
   final int interval;
   if (state.repetitions == 0) {

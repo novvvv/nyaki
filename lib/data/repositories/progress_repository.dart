@@ -85,6 +85,18 @@ class ProgressRepository {
     final capelinBalance = (payload['capelin_balance'] as int?) ?? 0;
     final completedQuestIds =
         (payload['completed_today'] as List<dynamic>).cast<String>();
+
+    // 복습 흐름 설정. 구버전 Hub는 안 내려주므로 없으면 null로 두고,
+    // 그 경우 채점은 단계 없이 예전 방식으로 돈다.
+    String? stepsOf(String key) {
+      final value = payload[key];
+      if (value is! List) return null;
+      return value.cast<int>().join(',');
+    }
+
+    final learningSteps = stepsOf('learning_steps');
+    final relearningSteps = stepsOf('relearning_steps');
+    final graduatingIntervalDays = payload['graduating_interval_days'] as int?;
     final today = _todayLocal();
 
     // 🔑 transaction 🔑
@@ -96,6 +108,9 @@ class ProgressRepository {
               userId: userId,
               churuBalance: Value(churuBalance),
               capelinBalance: Value(capelinBalance),
+              learningSteps: Value(learningSteps),
+              relearningSteps: Value(relearningSteps),
+              graduatingIntervalDays: Value(graduatingIntervalDays),
             ),
           );
 

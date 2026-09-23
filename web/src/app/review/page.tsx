@@ -505,11 +505,12 @@ export default function ReviewPage() {
               <SubtleButton
                 key={book.id}
                 onClick={() => toggleBook(book.id)}
-                disabled={n === 0}
                 aria-pressed={on}
                 className={cn(
                   "px-3.5 py-1.5 text-xs",
-                  on && n > 0 && "border-ink bg-ink text-cream hover:text-cream",
+                  // 0개여도 누를 수 있어야 한다 — 막아두면 고장처럼 보인다.
+                  n === 0 && "opacity-50",
+                  on && "border-ink bg-ink text-cream hover:text-cream",
                 )}
               >
                 <span className="max-w-[9rem] truncate">{book.title}</span>

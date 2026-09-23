@@ -1,5 +1,12 @@
 """하루 한도 — 안키의 "새 카드/일", "최대 복습량/일".
 
+**기본은 한도 없음이다.** 기본으로 걸어두니 "방금 추가한 단어를 오늘 못 푸는"
+일이 생겼다. 조절이 필요한 사람이 켜는 기능으로 둔다.
+
+**한도는 단어장별로 적용한다**(안키의 덱별 한도). 전역으로 걸면 먼저 만든
+단어장이 몫을 다 가져가고, 방금 단어를 넣은 단어장은 0개가 된다.
+
+
 단어를 만들면 srs_due_at = created_at이라 그 순간 전부 복습 대상이 된다.
 팩으로 300개를 받으면 300개가 오늘 due로 잡힌다. 한도는 그중 오늘 몫만
 꺼내 쓰게 한다.
@@ -75,15 +82,66 @@ def _add_words(client: TestClient, count: int, prefix: str) -> list[str]:
     return ids
 
 
-def test_new_cards_are_capped_by_daily_limit() -> None:
-    """팩으로 30개를 담아도 오늘 나오는 건 한도만큼이다."""
+def test_no_limit_by_default() -> None:
+    """기본은 한도 없음 — 방금 추가한 단어를 바로 풀 수 있어야 한다."""
+    client = _client("firebase-user-limit-none")
+    _add_words(client, 30, "none")
+
+    assert len(client.get("/v1/review/due?limit=200").json()["words"]) == 30
+
+    app.dependency_overrides.clear()
+
+
+def test_new_cards_are_capped_when_the_limit_is_set() -> None:
+    """팩으로 30개를 담아도 한도를 켜면 그만큼만 나온다."""
     client = _client("firebase-user-limit-new")
+    client.put("/v1/progress/settings", json={"daily_new_limit": 10})
     _add_words(client, 30, "new")
 
     words = client.get("/v1/review/due?limit=200").json()["words"]
-    assert len(words) == 10  # 기본 신규 한도
+    assert len(words) == 10
 
     assert client.get("/v1/review/due/count").json()["total"] == 10
+
+    app.dependency_overrides.clear()
+
+
+def test_limit_applies_per_book() -> None:
+    """단어장마다 몫이 따로다 — 전역이면 먼저 만든 쪽이 다 가져간다."""
+    client = _client("firebase-user-limit-per-book")
+    client.put("/v1/progress/settings", json={"daily_new_limit": 2})
+    _add_words(client, 5, "a")
+
+    # 두 번째 단어장을 만들고 단어를 넣는다.
+    now = datetime.now(timezone.utc).isoformat()
+    client.put(
+        "/v1/word-books/second",
+        json={
+            "id": "second",
+            "title": "둘째",
+            "created_at": now,
+            "updated_at": now,
+            "is_deleted": False,
+        },
+    )
+    created = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    for i in range(3):
+        client.put(
+            f"/v1/word-books/second/words/b{i}",
+            json={
+                "id": f"b{i}",
+                "word_book_id": "second",
+                "term": f"b{i}",
+                "meaning": "뜻",
+                "created_at": created,
+                "updated_at": created,
+                "is_deleted": False,
+            },
+        )
+
+    counts = client.get("/v1/review/due/count").json()["by_book"]
+    assert counts[BOOK] == 2
+    assert counts["second"] == 2
 
     app.dependency_overrides.clear()
 
@@ -91,6 +149,7 @@ def test_new_cards_are_capped_by_daily_limit() -> None:
 def test_new_cards_come_in_insertion_order() -> None:
     """앞 단원부터 나가야 한다 — 안키의 Insertion order = Sequential."""
     client = _client("firebase-user-limit-order")
+    client.put("/v1/progress/settings", json={"daily_new_limit": 10})
     _add_words(client, 12, "seq")
 
     words = client.get("/v1/review/due?limit=200").json()["words"]
@@ -115,6 +174,7 @@ def test_limit_can_be_changed_and_is_reported() -> None:
 def test_grading_new_cards_consumes_today_quota() -> None:
     """오늘 10개를 배우면 그날은 더 안 나온다. 채점 기록으로 센다."""
     client = _client("firebase-user-limit-consume")
+    client.put("/v1/progress/settings", json={"daily_new_limit": 10})
     _add_words(client, 30, "con")
 
     words = client.get("/v1/review/due?limit=200").json()["words"]
@@ -145,6 +205,7 @@ def test_grading_new_cards_consumes_today_quota() -> None:
 def test_review_cards_are_not_limited_by_the_new_card_limit() -> None:
     """복습은 신규 한도와 무관하다. 밀린 복습까지 막으면 간격 반복이 깨진다."""
     client = _client("firebase-user-limit-review")
+    client.put("/v1/progress/settings", json={"daily_new_limit": 10})
     words = _add_words(client, 5, "rev")
 
     # 5개를 '모름'으로 채점 → 즉시 다시 due가 되고, 이제 복습 카드다.

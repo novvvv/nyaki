@@ -130,7 +130,7 @@ function DailyLimits() {
       <div className="divide-y divide-taupe/25">
         <Row
           label="하루에 새로 배울 단어"
-          value="팩을 담아도 이 개수만큼만 새로 나옵니다"
+          value="단어장마다 따로 적용됩니다. 9999면 제한 없음"
           action={
             <TextInput
               type="number"
@@ -146,7 +146,7 @@ function DailyLimits() {
         />
         <Row
           label="하루 복습 상한"
-          value="밀린 복습이 너무 많을 때만 줄이세요"
+          value="밀린 복습이 너무 많을 때만 줄이세요. 9999면 제한 없음"
           action={
             <TextInput
               type="number"

@@ -36,6 +36,22 @@ SM-2는 **Dart와 Python 두 곳에 구현**돼 있다. 두 구현이 어긋나�
 | 공용 UI 계약 | — | `widget_test.dart` | `ui.test.tsx` |
 | 복습 세션 흐름 | — | — | `app/review/page.test.tsx` |
 
+## CI
+
+GitHub Actions가 푸시·PR마다 세 곳을 전부 돌린다(`.github/workflows/ci.yml`).
+배포(`deploy-api.yml`)는 서버 테스트를 `needs`로 걸어 **통과해야만** 진행된다.
+
+서버 테스트는 CI에서 **Postgres로** 돌고 `alembic upgrade head`를 실제로 실행한다.
+`downgrade -1 → upgrade`로 되돌릴 수 있는지도 본다.
+
+> **왜 이렇게까지 하나** — 2026-09-24에 마이그레이션 백필 SQL의 콜론이 바인드
+> 파라미터로 해석돼 컨테이너가 기동하지 못하고 운영이 8분간 내려갔다. 그때
+> 테스트 69개는 전부 통과한 상태였다. 테스트는 `create_all`로 스키마를 만들어
+> **마이그레이션 파일을 한 줄도 타지 않기 때문이다.** 배포도 초록불이었는데,
+> 외부 헬스체크가 `API_HEALTH_URL` 시크릿이 없으면 건너뛰도록 돼 있었다.
+> 지금은 서버 안에서 `localhost:8000/health`를 직접 확인하고, 안 뜨면 기동
+> 로그를 출력하며 실패한다.
+
 ## 원칙
 
 **계산을 먼저 덮는다.** 암기율·복습 간격·단계 진행처럼 틀려도 화면에는

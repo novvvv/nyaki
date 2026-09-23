@@ -64,21 +64,26 @@ def upgrade() -> None:
     )
 
     # 기존 단어 → recognition 카드 1장. 복습 일정을 그대로 가져간다.
+    #
+    # `:recognition`을 SQL 문자열에 직접 쓰면 SQLAlchemy가 콜론을 바인드 파라미터로
+    # 읽어 "A value is required for bind parameter" 로 죽는다. 값으로 넘긴다.
     op.execute(
-        """
-        INSERT INTO cards (
-            id, user_id, word_id, kind,
-            srs_ease_factor, srs_interval_days, srs_repetitions, srs_lapses,
-            srs_due_at, srs_last_reviewed_at, srs_learning_step,
-            created_at, updated_at, is_deleted
-        )
-        SELECT
-            id || ':recognition', user_id, id, 'recognition',
-            srs_ease_factor, srs_interval_days, srs_repetitions, srs_lapses,
-            srs_due_at, srs_last_reviewed_at, srs_learning_step,
-            created_at, updated_at, is_deleted
-        FROM words
-        """
+        sa.text(
+            """
+            INSERT INTO cards (
+                id, user_id, word_id, kind,
+                srs_ease_factor, srs_interval_days, srs_repetitions, srs_lapses,
+                srs_due_at, srs_last_reviewed_at, srs_learning_step,
+                created_at, updated_at, is_deleted
+            )
+            SELECT
+                id || :suffix, user_id, id, :kind,
+                srs_ease_factor, srs_interval_days, srs_repetitions, srs_lapses,
+                srs_due_at, srs_last_reviewed_at, srs_learning_step,
+                created_at, updated_at, is_deleted
+            FROM words
+            """
+        ).bindparams(suffix=":recognition", kind="recognition")
     )
 
 
@@ -86,7 +91,11 @@ def upgrade() -> None:
     op.add_column(
         "review_logs", sa.Column("card_id", sa.String(length=120), nullable=True)
     )
-    op.execute("UPDATE review_logs SET card_id = word_id || ':recognition'")
+    op.execute(
+        sa.text("UPDATE review_logs SET card_id = word_id || :suffix").bindparams(
+            suffix=":recognition"
+        )
+    )
 
 
 def downgrade() -> None:

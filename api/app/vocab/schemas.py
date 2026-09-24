@@ -74,6 +74,17 @@ class WordBookSummaryResponse(BaseModel):
     mastery_rate: int
 
 
+class DailyAddedResponse(BaseModel):
+    """하루치 추가 개수. 단어와 빈칸 노트를 합친 수다.
+
+    개수가 0인 날은 아예 오지 않는다 — 빈 날짜를 메우는 일은 "오늘"이 며칠인지
+    아는 클라이언트가 한다.
+    """
+
+    date: str  # YYYY-MM-DD, 요청한 시차 기준
+    count: int
+
+
 class ClozeNotePayload(BaseModel):
     """빈칸 노트. 텍스트 한 덩이에 `{{cN::답}}`으로 빈칸을 찍는다."""
 

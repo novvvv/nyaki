@@ -200,6 +200,32 @@ export async function fetchBookSummaries(
   );
 }
 
+export interface DailyAdded {
+  /** YYYY-MM-DD, 보낸 시차 기준 */
+  date: string;
+  count: number;
+}
+
+/**
+ * 날짜별 추가 개수. 단어와 빈칸 노트를 합친 수다.
+ *
+ * 항목을 전부 받아와서 세지 않는 이유는 차트에 필요한 게 날짜와 개수뿐이라서다 —
+ * 빈칸 노트를 받아오면 문장 전체가 딸려 온다.
+ *
+ * 시차를 보내는 이유: 저장은 UTC지만 "며칠에 추가했나"는 로컬 날짜다.
+ * getTimezoneOffset()은 KST에서 -540을 주므로 부호를 뒤집어 보낸다.
+ */
+export async function fetchDailyAdded(
+  token: string,
+  days?: number,
+): Promise<DailyAdded[]> {
+  const params = new URLSearchParams({
+    tz_offset: String(-new Date().getTimezoneOffset()),
+  });
+  if (days !== undefined) params.set("days", String(days));
+  return request<DailyAdded[]>(`/v1/stats/daily-added?${params}`, token);
+}
+
 export async function fetchClozeNotes(
   token: string,
   wordBookId: string,

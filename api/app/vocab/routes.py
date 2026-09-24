@@ -17,6 +17,7 @@ from ..models import (
 )
 from .schemas import (
     CardResponse,
+    DailyAddedResponse,
     ClozeFaceResponse,
     ClozeNotePayload,
     ClozeNoteResponse,
@@ -41,6 +42,7 @@ from .schemas import (
 from .srs import Sm2State, preview
 from .services import (
     apply_review_grades,
+    daily_added_counts,
     delete_word,
     delete_word_book,
     book_summaries,
@@ -180,6 +182,27 @@ def get_word_book_summaries(
     return [
         WordBookSummaryResponse(word_book_id=book_id, **summary)
         for book_id, summary in book_summaries(session, user_id).items()
+    ]
+
+
+@router.get("/stats/daily-added", response_model=list[DailyAddedResponse])
+def get_daily_added(
+    days: int | None = Query(default=None, ge=1, le=3650),
+    tz_offset: int = Query(default=0, ge=-720, le=840),
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[DailyAddedResponse]:
+    """날짜별 추가 개수. 단어와 빈칸 노트를 함께 센다.
+
+    클라이언트가 항목을 전부 받아와서 세면 빈칸 노트의 문장까지 실어 나르게 된다 —
+    차트에 필요한 것은 날짜와 개수뿐이다.
+
+    tz_offset은 UTC 기준 분 단위 시차(KST면 540)다. 저장은 UTC지만 "며칠에
+    추가했나"는 로컬 날짜라, 이 값이 없으면 자정 무렵 항목이 하루씩 어긋난다.
+    """
+    return [
+        DailyAddedResponse(date=date, count=count)
+        for date, count in daily_added_counts(session, user_id, days, tz_offset)
     ]
 
 

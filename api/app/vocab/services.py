@@ -395,6 +395,57 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
     return summaries
 
 
+def daily_added_counts(
+    session: Session,
+    user_id: str,
+    days: int | None = None,
+    tz_offset_minutes: int = 0,
+) -> list[tuple[str, int]]:
+    """날짜별로 추가한 항목 수. 단어와 빈칸 노트를 함께 센다.
+
+    **날짜 묶기를 SQL에 맡기지 않는다** — 테스트는 SQLite, 운영은 Postgres라
+    날짜 함수 문법이 다르고 그 차이는 테스트에서 안 잡힌다(마이그레이션 0012 사고).
+
+    저장은 UTC지만 사용자에게 "며칠에 추가했나"는 **로컬 날짜**다. 그래서 분 단위
+    시차를 받아 더한 뒤 자른다. 자정 무렵 추가한 항목이 하루씩 어긋나는 것을 막는다.
+
+    개수가 0인 날은 보내지 않는다 — 빈 날짜 채우기는 "오늘"을 아는 클라이언트 몫이다.
+    """
+    offset = timedelta(minutes=tz_offset_minutes)
+
+    created: list[datetime] = []
+    created.extend(
+        session.scalars(
+            select(WordModel.created_at).where(
+                WordModel.user_id == user_id, WordModel.is_deleted.is_(False)
+            )
+        )
+    )
+    created.extend(
+        session.scalars(
+            select(ClozeNoteModel.created_at).where(
+                ClozeNoteModel.user_id == user_id,
+                ClozeNoteModel.is_deleted.is_(False),
+            )
+        )
+    )
+
+    floor = None
+    if days is not None:
+        today_local = (utc_now() + offset).date()
+        floor = today_local - timedelta(days=days - 1)
+
+    counts: dict[str, int] = {}
+    for value in created:
+        local_date = (_as_utc(value) + offset).date()
+        if floor is not None and local_date < floor:
+            continue
+        key = local_date.isoformat()
+        counts[key] = counts.get(key, 0) + 1
+
+    return sorted(counts.items())
+
+
 def upsert_card(
     session: Session, user_id: str, payload: "CardPayload"
 ) -> tuple[CardModel, int | None]:

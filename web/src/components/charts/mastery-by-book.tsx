@@ -73,7 +73,7 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
             const y = i * ROW_HEIGHT + ROW_HEIGHT / 2;
             return (
               <g key={row.id}>
-                <title>{`${row.title} — ${row.rate}% (${row.wordCount}개)`}</title>
+                <title>{`${row.title} — ${row.rate}% (${row.itemCount}개)`}</title>
 
                 <text
                   x={LABEL_WIDTH - 12}
@@ -119,7 +119,7 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
                   dominantBaseline="middle"
                   className="fill-umber/42 text-[11px] tabular-nums"
                 >
-                  {row.wordCount}개
+                  {row.itemCount}개
                 </text>
               </g>
             );

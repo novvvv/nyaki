@@ -96,13 +96,12 @@ def _due(client: TestClient) -> list[dict]:
 
 
 def test_one_note_makes_one_card_per_blank() -> None:
-    """빈칸 두 개면 카드 두 장. 단, 한 세션에는 한 장만 나온다 —
-    c1의 앞면이 c2의 답을 그대로 보여주기 때문이다(형제 카드 규칙)."""
+    """빈칸 두 개면 카드 두 장, 그리고 둘 다 같은 세션에 나온다."""
     client = _client("firebase-user-cloze-basic")
     _put_note(client, "n1", TEXT)
 
     cards = _due(client)
-    assert len(cards) == 1
+    assert sorted(card["kind"] for card in cards) == ["c1", "c2"]
     assert all(card["source_type"] == "cloze" for card in cards)
     assert all(card["word"] is None for card in cards)
 
@@ -150,9 +149,8 @@ def test_adding_a_blank_adds_a_card() -> None:
     assert [card["kind"] for card in _due(client)] == ["c1"]
 
     _put_note(client, "n1", "{{c1::하나}}와 {{c2::둘}}")
-    # 카드는 둘이지만 형제라 한 세션에는 하나만 나온다.
-    assert len(_due(client)) == 1
-    assert client.get("/v1/review/due/count").json()["total"] == 1
+    assert sorted(card["kind"] for card in _due(client)) == ["c1", "c2"]
+    assert client.get("/v1/review/due/count").json()["total"] == 2
 
     app.dependency_overrides.clear()
 
@@ -246,8 +244,8 @@ def test_word_cards_no_longer_have_a_cloze_kind() -> None:
     app.dependency_overrides.clear()
 
 
-def test_different_notes_are_not_siblings() -> None:
-    """형제 규칙은 같은 노트 안에서만이다 — 노트가 다르면 둘 다 나온다."""
+def test_different_notes_each_bring_their_own_card() -> None:
+    """노트가 다르면 각자 카드를 낸다 — 출처 키가 섞이지 않는지 본다."""
     client = _client("firebase-user-cloze-two-notes")
     _put_note(client, "n1", "{{c1::하나}}")
     _put_note(client, "n2", "{{c1::둘}}")

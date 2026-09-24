@@ -243,7 +243,7 @@ def get_review_due(
     session: Session = Depends(get_session),
     user_id: str = Depends(get_current_user_id),
 ) -> ReviewDueResponse:
-    """오늘 낼 카드. 하루 한도와 형제 카드 규칙이 이미 적용된 목록이다."""
+    """오늘 낼 카드. 하루 한도가 이미 적용된 목록이다."""
     cards = select_due_cards(session, user_id, limit)
     config = load_step_config(session, user_id)
     now = utc_now()

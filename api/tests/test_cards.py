@@ -6,7 +6,7 @@
 여기서 지키는 것
 - 단어장이 고른 종류대로 카드가 생기고 사라진다
 - 카드마다 복습 일정이 따로 간다
-- 같은 단어의 형제 카드가 한 세션에 같이 나오지 않는다
+- 같은 단어의 형제 카드도 한 세션에 같이 나온다(안키 기본값과 같다)
 - card_id 없이 보낸 채점(앱)은 recognition 카드로 간다
 """
 
@@ -102,23 +102,23 @@ def test_two_kinds_make_two_cards() -> None:
     client = _client("firebase-user-card-two", card_kinds="recognition,recall")
     _add_word(client, "w1")
 
-    kinds = {card["kind"] for card in _due(client)}
-    # 형제 카드는 한 세션에 하나만 나오므로 출제는 1장이다.
-    assert len(_due(client)) == 1
-    assert kinds <= {"recognition", "recall"}
+    cards = _due(client)
+    # 한 단어가 두 장이 되고, 둘 다 오늘 나온다.
+    assert len(cards) == 2
+    assert {card["kind"] for card in cards} == {"recognition", "recall"}
 
 
-def test_sibling_cards_do_not_appear_in_the_same_session() -> None:
-    """같은 단어의 다른 방향이 연달아 나오면 답을 이미 봐서 채점이 무의미하다."""
+def test_sibling_cards_appear_in_the_same_session() -> None:
+    """형제 카드를 따로 미루지 않는다 — 안키도 기본값은 묻지 않는 것이다."""
     client = _client("firebase-user-card-sibling", card_kinds="recognition,recall")
     _add_word(client, "w1")
     _add_word(client, "w2")
 
     cards = _due(client)
-    word_ids = [card["word"]["id"] for card in cards]
+    ids = [card["id"] for card in cards]
 
-    assert len(word_ids) == 2
-    assert len(set(word_ids)) == 2  # 단어당 한 장씩
+    assert len(ids) == 4  # 단어 둘 × 종류 둘
+    assert set(ids) == {"w1:recognition", "w1:recall", "w2:recognition", "w2:recall"}
 
 
 def test_each_card_keeps_its_own_schedule() -> None:
@@ -208,7 +208,7 @@ def test_count_matches_what_is_served() -> None:
 
     counted = client.get("/v1/review/due/count").json()
     assert counted["total"] == len(_due(client))
-    assert counted["by_book"] == {BOOK: 5}
+    assert counted["by_book"] == {BOOK: 10}  # 단어 다섯 × 종류 둘
 
 
 # ==================== 동기화 ====================

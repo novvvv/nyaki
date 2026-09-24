@@ -54,9 +54,11 @@ function Row({
           </span>
         ) : null}
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-umber/60">
-        {item.secondary}
-      </span>
+      {item.secondary ? (
+        <span className="min-w-0 flex-1 truncate text-sm text-umber/60">
+          {item.secondary}
+        </span>
+      ) : null}
     </>
   );
 
@@ -90,10 +92,6 @@ function Row({
 /** 목록에 보여줄 한 줄 — 빈칸은 답을 괄호로 감싼다. */
 function clozePreview(text: string): string {
   return text.replaceAll(/\{\{c\d+::(.+?)(?:::.+?)?\}\}/g, "[ $1 ]");
-}
-
-function clozeCount(text: string): number {
-  return new Set([...text.matchAll(/\{\{c(\d+)::/g)].map((m) => m[1])).size;
 }
 
 export default function WordBookDetailPage() {
@@ -183,7 +181,8 @@ export default function WordBookDetailPage() {
       kind: "cloze" as const,
       createdAt: note.createdAt,
       primary: clozePreview(note.text),
-      secondary: `빈칸 ${clozeCount(note.text)}`,
+      secondary: "",
+      href: `/word-books/${book.id}/cloze-notes/${note.id}`,
       bookmarked: false,
     })),
   ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));

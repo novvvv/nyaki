@@ -80,7 +80,10 @@ describe("단어장 상세", () => {
         screen.getByText("TCP는 [ 연결 지향 ] 프로토콜이다"),
       ).toBeInTheDocument(),
     );
-    expect(screen.getByText("빈칸 1")).toBeInTheDocument();
+    // 줄을 누르면 수정 화면으로 간다 — 단어와 같다.
+    expect(
+      screen.getByRole("link", { name: /TCP는 \[ 연결 지향 \]/ }),
+    ).toHaveAttribute("href", "/word-books/b1/cloze-notes/n1");
   });
 
   it("개수와 암기율은 서버가 센 값을 쓴다", async () => {

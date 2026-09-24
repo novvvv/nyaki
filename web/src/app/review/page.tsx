@@ -77,6 +77,14 @@ function ClozeText({
   );
 }
 
+/** 빈칸 문장의 글자 수. 크기를 정하는 데 쓴다. */
+function clozeLength(card: DueCard): number {
+  return (card.cloze?.segments ?? []).reduce(
+    (sum, segment) => sum + segment.text.length,
+    0,
+  );
+}
+
 /** 진행 줄에 붙는 종류 표시. 기본 카드에는 붙이지 않는다. */
 function kindLabel(card: DueCard): string | null {
   if (card.sourceType === "cloze") return "빈칸";
@@ -354,8 +362,17 @@ export default function ReviewPage() {
           <p
             className={cn(
               "font-semibold tracking-tight text-ink",
-              // 빈칸은 문장 한 덩이라 단어와 같은 크기로 두면 넘친다.
-              current.cloze ? "text-2xl leading-relaxed" : "text-4xl",
+              // 줄바꿈을 적은 대로 살린다. 빈칸 노트는 여러 줄로 쓰는 일이 많다.
+              "whitespace-pre-wrap",
+              // 길이에 따라 크기를 줄인다 — 문단을 단어와 같은 크기로 두면
+              // 화면을 넘긴다.
+              current.cloze
+                ? clozeLength(current) > 160
+                  ? "text-base leading-loose"
+                  : clozeLength(current) > 60
+                    ? "text-lg leading-relaxed"
+                    : "text-2xl leading-relaxed"
+                : "text-4xl",
             )}
           >
             {current.cloze ? (

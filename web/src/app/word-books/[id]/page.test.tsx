@@ -16,6 +16,7 @@ const fetchClozeNotes = vi.fn();
 const removeClozeNote = vi.fn();
 const deleteWord = vi.fn();
 const refresh = vi.fn();
+const patchSummary = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   fetchClozeNotes: (...args: unknown[]) => fetchClozeNotes(...args),
@@ -45,6 +46,7 @@ vi.mock("@/lib/vocab-store", () => ({
     deleteWord: (...args: unknown[]) => deleteWord(...args),
     deleteWordBook: vi.fn(),
     updateWordBook: vi.fn(),
+    patchSummary: (...args: unknown[]) => patchSummary(...args),
     refresh: (...args: unknown[]) => refresh(...args),
   }),
   activeWords: (value: WordBook) => value.words.filter((w) => !w.isDeleted),
@@ -129,7 +131,9 @@ describe("삭제", () => {
         "n1",
       ),
     );
-    // 개수·암기율은 서버가 세므로 지운 뒤 다시 받아야 한다.
+    // 응답을 기다리는 동안 숫자가 그대로면 안 된다 — 먼저 하나 빼고,
+    expect(patchSummary).toHaveBeenCalledWith("b1", -1);
+    // 그다음 서버 값으로 맞춘다.
     expect(refresh).toHaveBeenCalled();
   });
 

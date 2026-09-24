@@ -36,6 +36,11 @@ interface VocabContextValue {
    * 암기율은 단어의 srs_*만 읽어 빈칸 카드를 무시했다.
    */
   summaries: Record<string, BookSummary>;
+  /**
+   * 집계를 임시로 보정한다. 서버 응답을 기다리는 동안 지운 항목이 계속 세어져
+   * 보이는 것을 막는 용도다 — 곧바로 refresh()로 실제 값이 덮어쓴다.
+   */
+  patchSummary: (bookId: string, itemDelta: number) => void;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -106,6 +111,20 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     setWordBooks((prev) => [created, ...prev]);
     return created;
   }, [getToken]);
+
+  const patchSummary = useCallback((bookId: string, itemDelta: number) => {
+    setSummaries((prev) => {
+      const current = prev[bookId];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [bookId]: {
+          ...current,
+          itemCount: Math.max(0, current.itemCount + itemDelta),
+        },
+      };
+    });
+  }, []);
 
   const updateWordBook = useCallback(
     async (id: string, input: WordBookInput) => {
@@ -216,6 +235,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     () => ({
       wordBooks,
       summaries,
+      patchSummary,
       loading,
       error,
       refresh,
@@ -230,6 +250,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     [
       wordBooks,
       summaries,
+      patchSummary,
       loading,
       error,
       refresh,

@@ -63,17 +63,20 @@ function Row({
   );
 
   return (
-    <div className="group flex items-baseline gap-6">
+    <div className="group flex min-w-0 items-baseline gap-6">
       {/* 빈칸 노트는 아직 상세 화면이 없다 — 링크 없이 줄만 보여준다. */}
       {item.href ? (
         <Link
           href={item.href}
-          className="flex flex-1 items-baseline gap-6 py-3.5 transition-colors"
+          // min-w-0이 없으면 flex 자식이 내용보다 작아지지 못해 truncate가 안 먹는다.
+          className="flex min-w-0 flex-1 items-baseline gap-6 py-3.5 transition-colors"
         >
           {body}
         </Link>
       ) : (
-        <div className="flex flex-1 items-baseline gap-6 py-3.5">{body}</div>
+        <div className="flex min-w-0 flex-1 items-baseline gap-6 py-3.5">
+          {body}
+        </div>
       )}
 
       <button
@@ -90,16 +93,31 @@ function Row({
 }
 
 /** 목록에 보여줄 한 줄 — 빈칸은 답을 괄호로 감싼다. */
+const PREVIEW_LIMIT = 80;
+
+/** 목록 한 줄 미리보기 — 빈칸은 답을 괄호로 감싸고, 줄바꿈은 공백으로 편다. */
 function clozePreview(text: string): string {
-  return text.replaceAll(/\{\{c\d+::(.+?)(?:::.+?)?\}\}/g, "[ $1 ]");
+  const flat = text
+    .replaceAll(/\{\{c\d+::(.+?)(?:::.+?)?\}\}/g, "[ $1 ]")
+    .replaceAll(/\s+/g, " ")
+    .trim();
+  return flat.length > PREVIEW_LIMIT
+    ? `${flat.slice(0, PREVIEW_LIMIT)}…`
+    : flat;
 }
 
 export default function WordBookDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { getWordBook, deleteWordBook, deleteWord, summaries, refresh } =
-    useVocab();
+  const {
+    getWordBook,
+    deleteWordBook,
+    deleteWord,
+    summaries,
+    patchSummary,
+    refresh,
+  } = useVocab();
   const { getToken } = useAuth();
   const [clozeNotes, setClozeNotes] = useState<ClozeNote[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -212,7 +230,10 @@ export default function WordBookDetailPage() {
         await removeClozeNote(token, params.id, item.id);
         setClozeNotes((prev) => prev.filter((note) => note.id !== item.id));
       }
-      // 개수·암기율은 서버가 센다 — 지운 뒤 다시 받아야 숫자가 맞는다.
+
+      // 숫자는 서버가 세지만, 응답을 기다리는 동안 지운 항목이 계속 세어져
+      // 보인다. 먼저 하나 빼두고 그다음 서버 값으로 맞춘다.
+      patchSummary(params.id, -1);
       await refresh();
     } catch (reason) {
       window.alert(

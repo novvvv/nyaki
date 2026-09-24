@@ -118,7 +118,9 @@ export default function ReviewPage() {
   const { wordBooks } = useVocab();
 
   const [phase, setPhase] = useState<Phase>("setup");
-  const [countText, setCountText] = useState("20");
+  // 출제 개수. null은 "아직 안 건드림" = 고를 수 있는 걸 전부 낸다는 뜻이다.
+  // 예전에는 "20"으로 고정해둬서 단어장을 더 켜도 20에 머물러 있었다.
+  const [countText, setCountText] = useState<string | null>(null);
   const [queue, setQueue] = useState<DueCard[]>([]);
   // 진행 표시는 **카드 수** 기준이다. 학습 단계 때문에 한 카드가 세션 안에서
   // 여러 번 나오는데, 그때마다 분모가 늘면 "풀수록 늘어나는" 화면이 된다.
@@ -175,15 +177,21 @@ export default function ReviewPage() {
   const picked = (due ?? []).filter((card) => isSelected(card.wordBookId));
   const limit = Math.max(1, Math.min(picked.length, MAX_COUNT));
 
-  const parsed = Number.parseInt(countText, 10);
-  const size = Number.isNaN(parsed) ? 0 : Math.min(Math.max(parsed, 1), limit);
+  const parsed = countText === null ? NaN : Number.parseInt(countText, 10);
+  const size =
+    countText === null
+      ? limit
+      : Number.isNaN(parsed)
+        ? 0
+        : Math.min(Math.max(parsed, 1), limit);
 
   // 화면에 보이는 값은 **항상** 상한 안이다.
   //
   // 예전에는 "상한이 바뀔 때만" 입력값을 내렸는데, 처음부터 상한이 1인 채로
   // 기본값 20이 나중에 채워지는 순서라 보정이 걸리지 않았다. 1개뿐인데 20이
   // 적혀 있고 새로고침해야 고쳐지는 이유가 이것이었다.
-  const countValue = Number.isNaN(parsed) ? countText : String(size || 1);
+  const countValue =
+    countText !== null && Number.isNaN(parsed) ? countText : String(size || 1);
 
   const flush = useCallback(async () => {
     if (sent.current || pending.current.length === 0) return;

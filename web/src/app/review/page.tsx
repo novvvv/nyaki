@@ -652,14 +652,23 @@ export default function ReviewPage() {
                   onClick={() => toggleBook(book.id)}
                   aria-pressed={on}
                   className={cn(
-                    "flex w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-xs transition",
+                    "flex w-full items-baseline gap-3 border-l-2 py-1.5 pl-3 text-left text-xs transition",
+                    // 켜진 줄은 왼쪽 선과 글자 대비로 드러낸다.
+                    // 체크박스·배경색을 쓰면 화면이 시끄러워진다.
                     on
-                      ? "font-medium text-ink"
-                      : "text-ink/30 hover:text-ink/55",
+                      ? "border-ink text-ink"
+                      : "border-transparent text-ink/25 hover:text-ink/50",
                   )}
                 >
-                  <span className="min-w-0 truncate">{book.title}</span>
-                  <span className="shrink-0 tabular-nums opacity-60">{n}</span>
+                  <span className="min-w-0 flex-1 truncate">{book.title}</span>
+                  <span
+                    className={cn(
+                      "shrink-0 tabular-nums",
+                      on ? "text-ink/40" : "text-ink/20",
+                    )}
+                  >
+                    {n}
+                  </span>
                 </button>
               </li>
             );

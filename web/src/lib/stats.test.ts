@@ -117,9 +117,13 @@ describe("fillDailyCounts — 빈 날짜 메우기", () => {
   });
 
   it("오늘까지 range일을 채우고, 값 없는 날은 0으로 둔다", () => {
-    const rows = fillDailyCounts([{ date: "2026-09-21", count: 4 }], 3);
+    const rows = fillDailyCounts([{ date: "2026-09-21", count: 4 }], 7);
 
     expect(rows).toEqual([
+      { date: "2026-09-17", count: 0 },
+      { date: "2026-09-18", count: 0 },
+      { date: "2026-09-19", count: 0 },
+      { date: "2026-09-20", count: 0 },
       { date: "2026-09-21", count: 4 },
       { date: "2026-09-22", count: 0 },
       { date: "2026-09-23", count: 0 },
@@ -132,13 +136,12 @@ describe("fillDailyCounts — 빈 날짜 메우기", () => {
         { date: "2026-08-01", count: 9 },
         { date: "2026-09-23", count: 1 },
       ],
-      2,
+      7,
     );
 
-    expect(rows).toEqual([
-      { date: "2026-09-22", count: 0 },
-      { date: "2026-09-23", count: 1 },
-    ]);
+    expect(rows).toHaveLength(7);
+    expect(rows.at(0)).toEqual({ date: "2026-09-17", count: 0 });
+    expect(rows.at(-1)).toEqual({ date: "2026-09-23", count: 1 });
   });
 
   it("'all'이면 가장 오래된 날부터 오늘까지", () => {

@@ -13,6 +13,7 @@ import {
 import { WordForm } from "@/components/word-form";
 import { putClozeNote } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { useVocab } from "@/lib/vocab-store";
 import { newId } from "@/lib/utils";
 
 /**
@@ -62,6 +63,7 @@ function ClozeForm() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { getToken } = useAuth();
+  const { syncSummaries } = useVocab();
 
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -80,6 +82,8 @@ function ClozeForm() {
       const token = await getToken();
       if (!token) throw new Error("로그인이 필요합니다.");
       await putClozeNote(token, params.id, newId("cloze"), text);
+      // 목록의 개수·암기율은 서버가 센다 — 추가한 뒤 다시 받아야 맞는다.
+      await syncSummaries();
       router.push(`/word-books/${params.id}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "저장하지 못했어요.");

@@ -378,6 +378,8 @@ export interface DueCard {
   /** 단어 카드는 recognition·recall, 빈칸 카드는 c1·c2 … */
   kind: string;
   sourceType: "word" | "cloze";
+  /** 이 카드가 속한 단어장. 빈칸 카드는 단어가 없어 서버가 알려준다. */
+  wordBookId: string;
   /** 단어 카드면 채워진다. */
   word?: Word;
   /** 빈칸 카드면 채워진다. */
@@ -399,6 +401,7 @@ export async function fetchDueWords(
       id: string;
       kind: string;
       source_type: "word" | "cloze";
+      word_book_id: string;
       word: ApiWord | null;
       cloze: {
         note_id: string;
@@ -413,6 +416,7 @@ export async function fetchDueWords(
       id: card.id,
       kind: card.kind,
       sourceType: card.source_type ?? "word",
+      wordBookId: card.word_book_id ?? card.word?.word_book_id ?? "",
       word: card.word ? toWord(card.word) : undefined,
       cloze: card.cloze
         ? {

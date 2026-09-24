@@ -172,11 +172,7 @@ export default function ReviewPage() {
 
   // 슬라이더 상한. 실제로 출제할 수 있는 건 받아둔 목록(최대 200) 안에서
   // 선택한 단어장에 속한 것까지다.
-  // 빈칸 카드는 단어가 없어 단어장을 화면에서 가릴 수 없다 — 항상 포함한다.
-  // (서버가 단어장별 개수는 노트 기준으로 세어 내려준다)
-  const picked = (due ?? []).filter(
-    (card) => !card.word || isSelected(card.word.wordBookId),
-  );
+  const picked = (due ?? []).filter((card) => isSelected(card.wordBookId));
   const limit = Math.max(1, Math.min(picked.length, MAX_COUNT));
 
   const parsed = Number.parseInt(countText, 10);
@@ -652,19 +648,19 @@ export default function ReviewPage() {
                   onClick={() => toggleBook(book.id)}
                   aria-pressed={on}
                   className={cn(
-                    "flex w-full items-baseline gap-3 border-l-2 py-1.5 pl-3 text-left text-xs transition",
-                    // 켜진 줄은 왼쪽 선과 글자 대비로 드러낸다.
-                    // 체크박스·배경색을 쓰면 화면이 시끄러워진다.
+                    "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-xs transition",
+                    // 켜진 줄은 행 전체를 Obsidian으로 채운다.
+                    // 디자인 토큰의 "선택은 Obsidian 채움" 규칙 그대로다.
                     on
-                      ? "border-ink text-ink"
-                      : "border-transparent text-ink/25 hover:text-ink/50",
+                      ? "bg-ink text-cream"
+                      : "text-ink/35 hover:text-ink/60",
                   )}
                 >
                   <span className="min-w-0 flex-1 truncate">{book.title}</span>
                   <span
                     className={cn(
                       "shrink-0 tabular-nums",
-                      on ? "text-ink/40" : "text-ink/20",
+                      on ? "text-cream/55" : "text-ink/25",
                     )}
                   >
                     {n}

@@ -70,6 +70,7 @@ function dueWords(
       id: `${word.id}:${kind}`,
       kind,
       sourceType: "word" as const,
+      wordBookId: word.wordBookId,
       word,
       preview: { againSeconds: 60, goodSeconds: 600 },
     })),
@@ -186,6 +187,7 @@ describe("복습 세션", () => {
           id: "n1:c1",
           kind: "c1",
           sourceType: "cloze" as const,
+          wordBookId: "b1",
           cloze: {
             noteId: "n1",
             segments: [
@@ -231,6 +233,35 @@ describe("복습 세션", () => {
 });
 
 describe("시작 화면 — 단어장 선택", () => {
+  it("고르지 않은 단어장의 빈칸 카드는 세지 않는다", async () => {
+    // 빈칸 카드는 단어가 없어서, 예전에는 어느 단어장을 골라도 항상 포함됐다.
+    fetchDueWords.mockResolvedValue({
+      cards: [
+        {
+          id: "n9:c1",
+          kind: "c1",
+          sourceType: "cloze" as const,
+          wordBookId: "b2",
+          cloze: {
+            noteId: "n9",
+            segments: [{ text: "다른 단어장", blank: false }],
+          },
+          preview: { againSeconds: 60, goodSeconds: 600 },
+        },
+      ],
+    });
+    fetchDueCounts.mockResolvedValue({ total: 0, byBook: { b1: 0, b2: 1 } });
+    window.localStorage.setItem("nyaki.review.books", JSON.stringify(["b1"]));
+
+    const { default: ReviewPage } = await import("./page");
+    render(<ReviewPage />);
+
+    // b1만 골랐으니 b2의 빈칸 카드로는 시작할 수 없다.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /시작하기/ })).toBeDisabled(),
+    );
+  });
+
   beforeEach(() => {
     window.localStorage.clear();
   });

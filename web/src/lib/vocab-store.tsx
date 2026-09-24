@@ -41,6 +41,8 @@ interface VocabContextValue {
    * 보이는 것을 막는 용도다 — 곧바로 refresh()로 실제 값이 덮어쓴다.
    */
   patchSummary: (bookId: string, itemDelta: number) => void;
+  /** 항목이 바뀐 뒤 집계를 다시 받는다. */
+  syncSummaries: () => Promise<void>;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -112,6 +114,22 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     return created;
   }, [getToken]);
 
+  /**
+   * 집계만 다시 받는다.
+   *
+   * 단어를 추가·삭제해도 개수가 그대로였다 — 목록은 스토어의 집계를 읽는데
+   * 그 값은 처음 한 번만 받아왔기 때문이다. 항목이 바뀌는 곳마다 부른다.
+   */
+  const syncSummaries = useCallback(async () => {
+    const token = await getToken();
+    if (!token) return;
+    try {
+      setSummaries(await fetchBookSummaries(token));
+    } catch {
+      // 숫자가 잠깐 낡는 것보다 화면이 멈추는 게 나쁘다.
+    }
+  }, [getToken]);
+
   const patchSummary = useCallback((bookId: string, itemDelta: number) => {
     setSummaries((prev) => {
       const current = prev[bookId];
@@ -161,8 +179,11 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     // 처리하니 매번 호출해도 안전).
     void completeQuest(token, "add_word").catch(() => {});
 
+    // 항목 수·암기율은 서버가 센다 — 추가한 뒤 다시 받아야 목록 숫자가 맞는다.
+    await syncSummaries();
+
     return created;
-  }, [getToken]);
+  }, [getToken, syncSummaries]);
 
   const updateWord = useCallback(
     async (wordBookId: string, wordId: string, input: WordInput) => {
@@ -198,9 +219,10 @@ export function VocabProvider({ children }: { children: ReactNode }) {
           };
         }),
       );
+      await syncSummaries();
       return updated;
     },
-    [getToken, wordBooks],
+    [getToken, syncSummaries, wordBooks],
   );
 
   const deleteWord = useCallback(async (wordBookId: string, wordId: string) => {
@@ -222,7 +244,8 @@ export function VocabProvider({ children }: { children: ReactNode }) {
         };
       }),
     );
-  }, [getToken]);
+    await syncSummaries();
+  }, [getToken, syncSummaries]);
 
   const deleteWordBook = useCallback(async (wordBookId: string) => {
     const token = await getToken();
@@ -236,6 +259,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       wordBooks,
       summaries,
       patchSummary,
+      syncSummaries,
       loading,
       error,
       refresh,
@@ -251,6 +275,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       wordBooks,
       summaries,
       patchSummary,
+      syncSummaries,
       loading,
       error,
       refresh,

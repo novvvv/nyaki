@@ -47,6 +47,7 @@ vi.mock("@/lib/vocab-store", () => ({
     deleteWordBook: vi.fn(),
     updateWordBook: vi.fn(),
     patchSummary: (...args: unknown[]) => patchSummary(...args),
+    syncSummaries: vi.fn(),
     refresh: (...args: unknown[]) => refresh(...args),
   }),
   activeWords: (value: WordBook) => value.words.filter((w) => !w.isDeleted),

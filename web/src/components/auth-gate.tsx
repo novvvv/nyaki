@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 // import { PricingSection } from "@/components/pricing-section"; // 플랜 섹션 일단 주석처리
@@ -32,22 +33,11 @@ function LandingScreen({
 }
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { ready, user, configured, signIn } = useAuth();
-  const [signingIn, setSigningIn] = useState(false);
+  const { ready, user, configured } = useAuth();
+  const pathname = usePathname();
 
-  async function handleSignIn() {
-    if (signingIn) return;
-    setSigningIn(true);
-    try {
-      await signIn();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "로그인에 실패했어요.";
-      window.alert(message);
-    } finally {
-      setSigningIn(false);
-    }
-  }
+  // 로그인 화면은 문 안쪽이 아니다 — 여기서 막으면 로그인하러 갈 수가 없다.
+  if (pathname === "/login") return <>{children}</>;
 
   if (!ready) {
     return <LandingScreen message="로그인 상태를 확인하고 있습니다." />;
@@ -62,14 +52,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!user) {
     return (
       <LandingScreen>
-        <button
-          type="button"
-          disabled={signingIn}
-          onClick={() => void handleSignIn()}
-          className="text-sm text-ink/40 transition hover:text-ink/70 disabled:opacity-45"
+        {/* 팝업을 바로 띄우지 않는다 — 로그인 화면에 이메일 가입도 있다. */}
+        <Link
+          href={`/login?next=${encodeURIComponent(pathname)}`}
+          className="text-sm text-ink/40 transition hover:text-ink/70"
         >
-          {signingIn ? "로그인 중…" : "Google로 계속하기"}
-        </button>
+          로그인
+        </Link>
       </LandingScreen>
     );
   }

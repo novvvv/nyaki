@@ -20,28 +20,20 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function AccountArea() {
-  const { user, signIn, signOutUser } = useAuth();
-
-  async function handleSignIn() {
-    try {
-      await signIn();
-    } catch (error) {
-      window.alert(
-        error instanceof Error ? error.message : "로그인에 실패했어요.",
-      );
-    }
-  }
+function AccountArea({ pathname }: { pathname: string }) {
+  const { user, signOutUser } = useAuth();
 
   if (!user) {
+    // 여기서 곧바로 Google 팝업을 띄우면 이메일 로그인·회원가입으로 갈 길이 없다.
+    // 로그인 화면으로 보내고, 끝나면 보던 자리로 되돌린다.
+    const next = pathname.startsWith("/login") ? "/" : pathname;
     return (
-      <button
-        type="button"
-        onClick={() => void handleSignIn()}
+      <Link
+        href={`/login?next=${encodeURIComponent(next)}`}
         className="text-xs text-ink/45 transition hover:text-ink"
       >
         로그인
-      </button>
+      </Link>
     );
   }
 
@@ -77,7 +69,7 @@ export function SiteHeader() {
         </Link>
 
         <div className="flex items-center gap-4">
-          <AccountArea />
+          <AccountArea pathname={pathname} />
         </div>
       </div>
 

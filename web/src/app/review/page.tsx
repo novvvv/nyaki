@@ -178,13 +178,12 @@ export default function ReviewPage() {
   const parsed = Number.parseInt(countText, 10);
   const size = Number.isNaN(parsed) ? 0 : Math.min(Math.max(parsed, 1), limit);
 
-  // 선택이 바뀌어 상한이 내려가면 입력값도 따라 내린다 — 2개뿐인데 20이
-  // 적혀 있으면 무슨 숫자인지 알 수 없다. (렌더 중 상태 조정 패턴)
-  const [lastLimit, setLastLimit] = useState(limit);
-  if (lastLimit !== limit) {
-    setLastLimit(limit);
-    if (!Number.isNaN(parsed) && parsed > limit) setCountText(String(limit));
-  }
+  // 화면에 보이는 값은 **항상** 상한 안이다.
+  //
+  // 예전에는 "상한이 바뀔 때만" 입력값을 내렸는데, 처음부터 상한이 1인 채로
+  // 기본값 20이 나중에 채워지는 순서라 보정이 걸리지 않았다. 1개뿐인데 20이
+  // 적혀 있고 새로고침해야 고쳐지는 이유가 이것이었다.
+  const countValue = Number.isNaN(parsed) ? countText : String(size || 1);
 
   const flush = useCallback(async () => {
     if (sent.current || pending.current.length === 0) return;
@@ -286,12 +285,6 @@ export default function ReviewPage() {
         const cards = dueResult.cards;
         setDue(cards);
         setCounts(dueCounts);
-        // 기본값 20이 due 개수보다 크면 개수에 맞춘다.
-        setCountText((prev) => {
-          const n = Number.parseInt(prev, 10);
-          const wanted = Number.isNaN(n) ? 20 : n;
-          return String(Math.max(1, Math.min(wanted, cards.length)));
-        });
       } catch (reason) {
         if (cancelled) return;
         setError(
@@ -591,7 +584,7 @@ export default function ReviewPage() {
             inputMode="numeric"
             min={1}
             max={limit}
-            value={countText}
+            value={countValue}
             onChange={(e) => setCountText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") void start();

@@ -311,3 +311,21 @@ describe("시작 화면 — 단어장 선택", () => {
     );
   });
 });
+
+describe("출제 개수", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("고른 단어장의 개수보다 큰 값은 보이지 않는다", async () => {
+    // 기본값 20이 남아 있어도, 1개뿐이면 1로 보여야 한다.
+    fetchDueWords.mockResolvedValue(dueWords([word("w1", "cat")]));
+    fetchDueCounts.mockResolvedValue({ total: 1, byBook: { b1: 1 } });
+
+    const { default: ReviewPage } = await import("./page");
+    render(<ReviewPage />);
+
+    const input = await screen.findByLabelText("출제할 단어 개수");
+    await waitFor(() => expect(input).toHaveValue(1));
+  });
+});

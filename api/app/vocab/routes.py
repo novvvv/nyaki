@@ -305,6 +305,7 @@ def get_review_due(
                     id=card.id,
                     kind=card.kind,
                     source_type="cloze",
+                    word_book_id=note.word_book_id,
                     cloze=ClozeFaceResponse(
                         note_id=note.id,
                         front=front,
@@ -327,6 +328,7 @@ def get_review_due(
                 id=card.id,
                 kind=card.kind,
                 source_type="word",
+                word_book_id=word.word_book_id,
                 word=word_payload,
                 preview=preview_value,
             )

@@ -343,3 +343,14 @@ def test_cloze_segments_mark_the_asked_blank() -> None:
     assert [s["blank"] for s in segments] == [False, True, False, False, False]
 
     app.dependency_overrides.clear()
+
+
+def test_due_cards_carry_their_word_book() -> None:
+    """빈칸 카드는 단어가 없다 — 단어장으로 거르려면 서버가 알려줘야 한다."""
+    client = _client("firebase-user-cloze-book-id")
+    _put_note(client, "n1", "{{c1::하나}}")
+
+    card = _due(client)[0]
+    assert card["word_book_id"] == BOOK
+
+    app.dependency_overrides.clear()

@@ -163,6 +163,9 @@ class DueCardResponse(BaseModel):
     id: str
     kind: str
     source_type: str = "word"
+    # 이 카드가 속한 단어장. 빈칸 카드는 단어가 없어 클라이언트가 알아낼 방법이
+    # 없다 — 단어장으로 거르려면 서버가 알려줘야 한다.
+    word_book_id: str = ""
     # 단어 카드면 word가, 빈칸 카드면 cloze가 채워진다.
     word: WordResponse | None = None
     cloze: "ClozeFaceResponse | None" = None

@@ -11,7 +11,7 @@ import {
   PrimaryLink,
 } from "@/components/ui";
 import { useAuth } from "@/components/auth-provider";
-import { fetchClozeNotes } from "@/lib/api-client";
+import { fetchClozeNotes, removeClozeNote } from "@/lib/api-client";
 import type { ClozeNote } from "@/lib/types";
 import { WORD_PAGE_SIZE as PAGE_SIZE } from "@/lib/constants";
 import { activeWords, useVocab } from "@/lib/vocab-store";
@@ -30,7 +30,17 @@ interface Item {
   bookmarked: boolean;
 }
 
-function Row({ index, item }: { index: number; item: Item }) {
+function Row({
+  index,
+  item,
+  onDelete,
+  deleting,
+}: {
+  index: number;
+  item: Item;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
   const body = (
     <>
       <span className="w-7 shrink-0 text-right text-xs tabular-nums text-umber/35">
@@ -50,16 +60,30 @@ function Row({ index, item }: { index: number; item: Item }) {
     </>
   );
 
-  // 빈칸 노트는 아직 상세 화면이 없다 — 링크 없이 줄만 보여준다.
-  return item.href ? (
-    <Link
-      href={item.href}
-      className="group flex items-baseline gap-6 py-3.5 transition-colors"
-    >
-      {body}
-    </Link>
-  ) : (
-    <div className="flex items-baseline gap-6 py-3.5">{body}</div>
+  return (
+    <div className="group flex items-baseline gap-6">
+      {/* 빈칸 노트는 아직 상세 화면이 없다 — 링크 없이 줄만 보여준다. */}
+      {item.href ? (
+        <Link
+          href={item.href}
+          className="flex flex-1 items-baseline gap-6 py-3.5 transition-colors"
+        >
+          {body}
+        </Link>
+      ) : (
+        <div className="flex flex-1 items-baseline gap-6 py-3.5">{body}</div>
+      )}
+
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={deleting}
+        aria-label={`${item.primary} 삭제`}
+        className="shrink-0 px-1 text-xs text-ink/0 transition group-hover:text-ink/30 hover:!text-red-600 focus-visible:text-ink/40 disabled:opacity-40"
+      >
+        ✕
+      </button>
+    </div>
   );
 }
 
@@ -76,9 +100,11 @@ export default function WordBookDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { getWordBook, deleteWordBook, summaries } = useVocab();
+  const { getWordBook, deleteWordBook, deleteWord, summaries, refresh } =
+    useVocab();
   const { getToken } = useAuth();
   const [clozeNotes, setClozeNotes] = useState<ClozeNote[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   // 단어 추가 직후 새 단어가 있는 페이지로 바로 오도록, URL의 ?page=를 초기값으로 쓴다.
   const [page, setPage] = useState(() => {
@@ -170,6 +196,33 @@ export default function WordBookDetailPage() {
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   );
+
+  const handleDeleteItem = async (item: Item) => {
+    if (deletingId) return;
+    const label = item.kind === "word" ? "단어" : "빈칸 노트";
+    if (!window.confirm(`이 ${label}를 삭제할까요?\n${item.primary}`)) return;
+
+    setDeletingId(item.id);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+
+      if (item.kind === "word") {
+        await deleteWord(params.id, item.id);
+      } else {
+        await removeClozeNote(token, params.id, item.id);
+        setClozeNotes((prev) => prev.filter((note) => note.id !== item.id));
+      }
+      // 개수·암기율은 서버가 센다 — 지운 뒤 다시 받아야 숫자가 맞는다.
+      await refresh();
+    } catch (reason) {
+      window.alert(
+        reason instanceof Error ? reason.message : "삭제하지 못했어요.",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleDeleteBook = async () => {
     if (
@@ -278,6 +331,8 @@ export default function WordBookDetailPage() {
                     <Row
                       index={(currentPage - 1) * PAGE_SIZE + index + 1}
                       item={item}
+                      deleting={deletingId === item.id}
+                      onDelete={() => void handleDeleteItem(item)}
                     />
                   </li>
                 ))}

@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ClozeNote, WordBook } from "@/lib/types";
@@ -12,9 +13,13 @@ import type { ClozeNote, WordBook } from "@/lib/types";
  */
 
 const fetchClozeNotes = vi.fn();
+const removeClozeNote = vi.fn();
+const deleteWord = vi.fn();
+const refresh = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   fetchClozeNotes: (...args: unknown[]) => fetchClozeNotes(...args),
+  removeClozeNote: (...args: unknown[]) => removeClozeNote(...args),
 }));
 
 vi.mock("@/components/auth-provider", () => ({
@@ -37,8 +42,10 @@ vi.mock("@/lib/vocab-store", () => ({
   useVocab: () => ({
     getWordBook: () => book,
     summaries,
+    deleteWord: (...args: unknown[]) => deleteWord(...args),
     deleteWordBook: vi.fn(),
     updateWordBook: vi.fn(),
+    refresh: (...args: unknown[]) => refresh(...args),
   }),
   activeWords: (value: WordBook) => value.words.filter((w) => !w.isDeleted),
 }));
@@ -95,5 +102,47 @@ describe("단어장 상세", () => {
     await waitFor(() =>
       expect(screen.getByText("아직 비어 있습니다")).toBeInTheDocument(),
     );
+  });
+});
+
+describe("삭제", () => {
+  it("목록에서 빈칸 노트를 지운다", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    removeClozeNote.mockResolvedValue(undefined);
+
+    const { default: Page } = await import("./page");
+    render(<Page />);
+
+    const button = await screen.findByRole("button", {
+      name: "TCP는 [ 연결 지향 ] 프로토콜이다 삭제",
+    });
+    await user.click(button);
+
+    await waitFor(() =>
+      expect(removeClozeNote).toHaveBeenCalledWith(
+        "test-token",
+        "b1",
+        "n1",
+      ),
+    );
+    // 개수·암기율은 서버가 세므로 지운 뒤 다시 받아야 한다.
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("확인을 취소하면 아무 일도 없다", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    const { default: Page } = await import("./page");
+    render(<Page />);
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "TCP는 [ 연결 지향 ] 프로토콜이다 삭제",
+      }),
+    );
+
+    expect(removeClozeNote).not.toHaveBeenCalled();
   });
 });

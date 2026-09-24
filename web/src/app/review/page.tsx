@@ -77,6 +77,27 @@ function ClozeText({
   );
 }
 
+const SELECTION_KEY = "nyaki.review.books";
+
+/** 마지막으로 고른 단어장. 브라우저에만 남는 편의값이라 실패는 무시한다. */
+function loadSelection(): string[] | null {
+  try {
+    const raw = window.localStorage.getItem(SELECTION_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSelection(ids: string[]) {
+  try {
+    window.localStorage.setItem(SELECTION_KEY, JSON.stringify(ids));
+  } catch {
+    // 사생활 보호 모드 등에서 막힐 수 있다. 저장 못 해도 동작에는 지장 없다.
+  }
+}
+
 /** 빈칸 문장의 글자 수. 크기를 정하는 데 쓴다. */
 function clozeLength(card: DueCard): number {
   return (card.cloze?.segments ?? []).reduce(
@@ -115,7 +136,11 @@ export default function ReviewPage() {
   // 개수 전용 엔드포인트를 따로 부른다.
   const [counts, setCounts] = useState<DueCounts>();
   // 선택한 단어장. undefined면 "아직 안 정함" = 전체를 뜻한다.
-  const [selectedBookIds, setSelectedBookIds] = useState<string[]>();
+  // 마지막 선택을 기억한다. 매번 같은 단어장을 고르는 사람이 대부분이다.
+  // 초기값으로 읽는다 — 이펙트에서 setState하면 렌더가 두 번 돈다.
+  const [selectedBookIds, setSelectedBookIds] = useState<string[] | undefined>(
+    () => loadSelection() ?? undefined,
+  );
 
   // 채점 결과는 세션이 끝날 때 한 번에 보낸다. 카드마다 보내면 30장에 30요청이
   // 되고, 매번 단어 전체를 재전송하게 된다. docs/WEB-REVIEW-PLAN.md 1절.
@@ -127,7 +152,14 @@ export default function ReviewPage() {
 
   // 단어장이 하나뿐이면 고를 이유가 없어 선택 줄을 숨긴다.
   const showBookPicker = wordBooks.length > 1;
-  const selected = selectedBookIds ?? wordBooks.map((book) => book.id);
+  // 아직 아무것도 안 고른 상태면 **오늘 낼 게 있는 단어장**만 켠다.
+  // 0개짜리를 켜놔도 할 수 있는 게 없어 혼란만 준다.
+  const selected = (
+    selectedBookIds ??
+    wordBooks
+      .filter((book) => (counts?.byBook[book.id] ?? 0) > 0)
+      .map((book) => book.id)
+  ).filter((id) => wordBooks.some((book) => book.id === id));
   const isSelected = (bookId: string) =>
     !showBookPicker || selected.includes(bookId);
 
@@ -149,6 +181,14 @@ export default function ReviewPage() {
 
   const parsed = Number.parseInt(countText, 10);
   const size = Number.isNaN(parsed) ? 0 : Math.min(Math.max(parsed, 1), limit);
+
+  // 선택이 바뀌어 상한이 내려가면 입력값도 따라 내린다 — 2개뿐인데 20이
+  // 적혀 있으면 무슨 숫자인지 알 수 없다. (렌더 중 상태 조정 패턴)
+  const [lastLimit, setLastLimit] = useState(limit);
+  if (lastLimit !== limit) {
+    setLastLimit(limit);
+    if (!Number.isNaN(parsed) && parsed > limit) setCountText(String(limit));
+  }
 
   const flush = useCallback(async () => {
     if (sent.current || pending.current.length === 0) return;
@@ -281,10 +321,12 @@ export default function ReviewPage() {
 
   function toggleBook(bookId: string) {
     setSelectedBookIds((prev) => {
-      const base = prev ?? wordBooks.map((book) => book.id);
-      return base.includes(bookId)
+      const base = prev ?? selected;
+      const next = base.includes(bookId)
         ? base.filter((id) => id !== bookId)
         : [...base, bookId];
+      saveSelection(next);
+      return next;
     });
   }
 
@@ -515,108 +557,115 @@ export default function ReviewPage() {
     <main
       className={cn(
         SCREEN,
-        "mx-auto flex w-full max-w-xl flex-col items-center justify-center px-6 py-14 text-center",
+        "mx-auto grid w-full max-w-3xl items-center gap-12 px-6 py-14",
+        // 넓으면 왼쪽에 시작 흐름, 오른쪽에 단어장 목록. 좁으면 위아래로 쌓인다.
+        showBookPicker ? "sm:grid-cols-[1fr_14rem]" : "max-w-xl",
       )}
     >
-      <p aria-hidden className="text-lg text-ink/75">
-        /ᐠ .⑅.ᐟ\ﾉ
-      </p>
+      <div className="flex flex-col items-center text-center">
+        <p aria-hidden className="text-lg text-ink/75">
+          /ᐠ .⑅.ᐟ\ﾉ
+        </p>
 
-      <h1 className="mt-5 flex items-center justify-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
-        {/* 픽셀 폰트는 한자·한글이 없다 — 이 가나 문구에만 쓴다 */}
-        <span className="font-pixel text-xl">テスト</span>
-        <span>테스트</span>
-      </h1>
+        <h1 className="mt-5 flex items-center justify-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
+          {/* 픽셀 폰트는 한자·한글이 없다 — 이 가나 문구에만 쓴다 */}
+          <span className="font-pixel text-xl">テスト</span>
+          <span>테스트</span>
+        </h1>
 
-      <p className="mt-3 text-sm text-ink/40">
-        {loading ? (
-          "단어를 세는 중이냥"
-        ) : dueCount === 0 ? (
-          "오늘은 복습할 단어가 없다냥"
-        ) : (
-          <>
-            복습할 때가 된 단어{" "}
-            <span className="font-semibold tabular-nums text-ink">
-              {dueCount}
-            </span>
-            개가 기다리는 중이냥
-          </>
-        )}
-      </p>
+        <p className="mt-3 text-sm text-ink/40">
+          {loading ? (
+            "단어를 세는 중이냥"
+          ) : dueCount === 0 ? (
+            "오늘은 복습할 단어가 없다냥"
+          ) : (
+            <>
+              복습할 때가 된 단어{" "}
+              <span className="font-semibold tabular-nums text-ink">
+                {dueCount}
+              </span>
+              개가 기다리는 중이냥
+            </>
+          )}
+        </p>
 
+        <div className="mt-12 flex items-end justify-center gap-2">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={limit}
+            value={countText}
+            onChange={(e) => setCountText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void start();
+            }}
+            aria-label="출제할 단어 개수"
+            className="w-24 border-b border-taupe/60 bg-transparent pb-1.5 text-center text-4xl font-semibold tabular-nums text-ink outline-none transition focus:border-ink"
+          />
+          <span className="pb-2.5 text-sm text-ink/35">개</span>
+        </div>
+
+        <input
+          type="range"
+          min={1}
+          max={limit}
+          value={size || 1}
+          onChange={(e) => setCountText(e.target.value)}
+          aria-label="출제할 단어 개수 조절"
+          className="mt-8 h-1 w-full max-w-xs cursor-pointer accent-ink"
+        />
+
+        <SubtleButton
+          onClick={() => setShuffle((prev) => !prev)}
+          aria-pressed={shuffle}
+          className={cn(
+            "mt-8 px-3.5 py-1.5 text-xs",
+            shuffle && "border-ink bg-ink text-cream hover:text-cream",
+          )}
+        >
+          {shuffle ? "랜덤 섞기 ON" : "랜덤 섞기"}
+        </SubtleButton>
+
+        {error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null}
+
+        <PrimaryButton
+          onClick={start}
+          disabled={!due || size < 1 || loading || picked.length === 0}
+          className="mt-10 gap-2 px-7 py-2.5"
+        >
+          {loading ? "불러오는 중…" : "시작하기"}
+          {loading ? null : <span aria-hidden>→</span>}
+        </PrimaryButton>
+      </div>
+
+      {/* 단어장 — 칩을 늘어놓으면 개수가 늘수록 줄이 접힌다. 세로 목록이 읽기 쉽다. */}
       {showBookPicker ? (
-        <div className="mt-8 flex max-w-lg flex-wrap items-center justify-center gap-2">
+        <ul className="flex flex-col gap-0.5 sm:border-l sm:border-taupe/30 sm:pl-6">
           {wordBooks.map((book) => {
             const n = counts?.byBook[book.id] ?? 0;
             const on = selected.includes(book.id);
             return (
-              <SubtleButton
-                key={book.id}
-                onClick={() => toggleBook(book.id)}
-                aria-pressed={on}
-                className={cn(
-                  "px-3.5 py-1.5 text-xs",
-                  // 0개여도 누를 수 있어야 한다 — 막아두면 고장처럼 보인다.
-                  n === 0 && "opacity-50",
-                  on && "border-ink bg-ink text-cream hover:text-cream",
-                )}
-              >
-                <span className="max-w-[9rem] truncate">{book.title}</span>
-                <span className="ml-1.5 tabular-nums opacity-60">{n}</span>
-              </SubtleButton>
+              <li key={book.id}>
+                <button
+                  type="button"
+                  onClick={() => toggleBook(book.id)}
+                  aria-pressed={on}
+                  className={cn(
+                    "flex w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-xs transition",
+                    on
+                      ? "font-medium text-ink"
+                      : "text-ink/30 hover:text-ink/55",
+                  )}
+                >
+                  <span className="min-w-0 truncate">{book.title}</span>
+                  <span className="shrink-0 tabular-nums opacity-60">{n}</span>
+                </button>
+              </li>
             );
           })}
-        </div>
+        </ul>
       ) : null}
-
-      <div className="mt-12 flex items-end justify-center gap-2">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={limit}
-          value={countText}
-          onChange={(e) => setCountText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void start();
-          }}
-          aria-label="출제할 단어 개수"
-          className="w-28 border-b border-taupe/60 bg-transparent pb-1.5 text-center text-4xl font-semibold tabular-nums text-ink outline-none transition focus:border-ink"
-        />
-        <span className="pb-2.5 text-sm text-ink/35">개</span>
-      </div>
-
-      <input
-        type="range"
-        min={1}
-        max={limit}
-        value={size || 1}
-        onChange={(e) => setCountText(e.target.value)}
-        aria-label="출제할 단어 개수 조절"
-        className="mt-9 h-1 w-full max-w-xs cursor-pointer accent-ink"
-      />
-
-      <SubtleButton
-        onClick={() => setShuffle((prev) => !prev)}
-        aria-pressed={shuffle}
-        className={cn(
-          "mt-9 px-3.5 py-1.5 text-xs",
-          shuffle && "border-ink bg-ink text-cream hover:text-cream",
-        )}
-      >
-        {shuffle ? "랜덤 섞기 ON" : "랜덤 섞기"}
-      </SubtleButton>
-
-      {error ? <p className="mt-8 text-sm text-red-700">{error}</p> : null}
-
-      <PrimaryButton
-        onClick={start}
-        disabled={!due || size < 1 || loading || picked.length === 0}
-        className="mt-12 gap-2 px-7 py-2.5"
-      >
-        {loading ? "불러오는 중…" : "시작하기"}
-        {loading ? null : <span aria-hidden>→</span>}
-      </PrimaryButton>
     </main>
   );
 }

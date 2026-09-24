@@ -33,7 +33,12 @@ vi.mock("@/components/auth-provider", () => ({
 }));
 
 vi.mock("@/lib/vocab-store", () => ({
-  useVocab: () => ({ wordBooks: [{ id: "b1", title: "냐키", words: [] }] }),
+  useVocab: () => ({
+    wordBooks: [
+      { id: "b1", title: "냐키", words: [] },
+      { id: "b2", title: "비어있음", words: [] },
+    ],
+  }),
 }));
 
 const NOW = "2026-09-24T00:00:00.000Z";
@@ -221,6 +226,57 @@ describe("복습 세션", () => {
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /시작하기/ })).toBeDisabled(),
+    );
+  });
+});
+
+describe("시작 화면 — 단어장 선택", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("오늘 낼 게 없는 단어장은 기본으로 꺼져 있다", async () => {
+    fetchDueCounts.mockResolvedValue({ total: 2, byBook: { b1: 2, b2: 0 } });
+
+    const { default: ReviewPage } = await import("./page");
+    render(<ReviewPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /냐키/ })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+    expect(screen.getByRole("button", { name: /비어있음/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("고른 단어장을 기억한다", async () => {
+    fetchDueCounts.mockResolvedValue({ total: 2, byBook: { b1: 2, b2: 1 } });
+
+    const user = userEvent.setup();
+    const { default: ReviewPage } = await import("./page");
+    const view = render(<ReviewPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /냐키/ })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: /냐키/ }));
+
+    expect(window.localStorage.getItem("nyaki.review.books")).toBe(
+      JSON.stringify(["b2"]),
+    );
+
+    // 다시 들어와도 그대로다.
+    view.unmount();
+    render(<ReviewPage />);
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /냐키/ })[0]).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      ),
     );
   });
 });

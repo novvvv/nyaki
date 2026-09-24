@@ -15,6 +15,7 @@ import { useAuth } from "@/components/auth-provider";
 
 import {
   completeQuest,
+  fetchBookSummaries,
   listBooks,
   putBook,
   putWord,
@@ -22,11 +23,19 @@ import {
   removeWordBook,
 } from "./api-client";
 
+import type { BookSummary } from "./api-client";
 import type { Word, WordBook, WordBookInput, WordInput } from "./types";
 import { newId } from "./utils";
 
 interface VocabContextValue {
   wordBooks: WordBook[];
+  /**
+   * 단어장별 집계(항목 수·카드 수·암기율). **서버가 센 값이다.**
+   *
+   * 화면마다 각자 세다가 숫자가 갈렸다 — 목록은 단어만 세어 빈칸 노트가 빠졌고,
+   * 암기율은 단어의 srs_*만 읽어 빈칸 카드를 무시했다.
+   */
+  summaries: Record<string, BookSummary>;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -48,6 +57,7 @@ const VocabContext = createContext<VocabContextValue | null>(null);
 export function VocabProvider({ children }: { children: ReactNode }) {
   const { user, getToken } = useAuth();
   const [wordBooks, setWordBooks] = useState<WordBook[]>([]);
+  const [summaries, setSummaries] = useState<Record<string, BookSummary>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +69,12 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
-      setWordBooks(await listBooks(token));
+      const [books, bookSummaries] = await Promise.all([
+        listBooks(token),
+        fetchBookSummaries(token),
+      ]);
+      setWordBooks(books);
+      setSummaries(bookSummaries);
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "목록을 불러오지 못했어요.");
@@ -200,6 +215,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       wordBooks,
+      summaries,
       loading,
       error,
       refresh,
@@ -213,6 +229,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     }),
     [
       wordBooks,
+      summaries,
       loading,
       error,
       refresh,

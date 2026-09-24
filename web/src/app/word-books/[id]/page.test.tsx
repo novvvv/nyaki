@@ -12,11 +12,9 @@ import type { ClozeNote, WordBook } from "@/lib/types";
  */
 
 const fetchClozeNotes = vi.fn();
-const fetchBookSummaries = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   fetchClozeNotes: (...args: unknown[]) => fetchClozeNotes(...args),
-  fetchBookSummaries: (...args: unknown[]) => fetchBookSummaries(...args),
 }));
 
 vi.mock("@/components/auth-provider", () => ({
@@ -31,9 +29,14 @@ const book: WordBook = {
   words: [],
 };
 
+const summaries: Record<string, unknown> = {
+  b1: { wordBookId: "b1", itemCount: 1, cardCount: 1, masteryRate: 20 },
+};
+
 vi.mock("@/lib/vocab-store", () => ({
   useVocab: () => ({
     getWordBook: () => book,
+    summaries,
     deleteWordBook: vi.fn(),
     updateWordBook: vi.fn(),
   }),
@@ -57,9 +60,6 @@ const note: ClozeNote = {
 beforeEach(() => {
   vi.clearAllMocks();
   fetchClozeNotes.mockResolvedValue([note]);
-  fetchBookSummaries.mockResolvedValue({
-    b1: { wordBookId: "b1", itemCount: 1, cardCount: 1, masteryRate: 20 },
-  });
 });
 
 describe("단어장 상세", () => {
@@ -88,7 +88,6 @@ describe("단어장 상세", () => {
 
   it("단어도 노트도 없으면 빈 상태", async () => {
     fetchClozeNotes.mockResolvedValue([]);
-    fetchBookSummaries.mockResolvedValue({});
 
     const { default: Page } = await import("./page");
     render(<Page />);

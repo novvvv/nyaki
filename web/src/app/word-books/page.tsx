@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { EmptyState, PageHeader } from "@/components/ui";
-import { bookMeta, useVocab } from "@/lib/vocab-store";
+import { useVocab } from "@/lib/vocab-store";
 
 function NewBookLink() {
   return (
@@ -17,7 +17,7 @@ function NewBookLink() {
 }
 
 export default function WordBooksPage() {
-  const { wordBooks, loading, error } = useVocab();
+  const { wordBooks, summaries, loading, error } = useVocab();
 
   return (
     <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
@@ -36,7 +36,8 @@ export default function WordBooksPage() {
       ) : (
         <ul className="divide-y divide-taupe/25 border-t border-taupe/25">
           {wordBooks.map((book) => {
-            const meta = bookMeta(book);
+            // 숫자는 서버가 센 값을 쓴다 — 빈칸 노트도 항목으로 잡힌다.
+            const summary = summaries[book.id];
             return (
               <li key={book.id}>
                 <Link
@@ -56,7 +57,7 @@ export default function WordBooksPage() {
 
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="text-xs tabular-nums text-umber/45">
-                      {meta.count}개
+                      {summary?.itemCount ?? 0}개
                     </span>
                   </div>
                 </Link>

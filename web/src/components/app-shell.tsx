@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { bookMeta, useVocab } from "@/lib/vocab-store";
+import { useVocab } from "@/lib/vocab-store";
 
 function SidebarItem({
   href,
@@ -33,7 +33,7 @@ function SidebarItem({
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { wordBooks, loading } = useVocab();
+  const { wordBooks, summaries, loading } = useVocab();
   const showSidebar = pathname !== "/word-books/overview";
 
   return (
@@ -52,13 +52,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ) : (
               wordBooks.map((book) => {
                 const href = `/word-books/${book.id}`;
-                const meta = bookMeta(book);
                 return (
                   <SidebarItem
                     key={book.id}
                     href={href}
                     label={book.title}
-                    meta={`${meta.count}`}
+                    meta={`${summaries[book.id]?.itemCount ?? 0}`}
                     active={pathname === href || pathname.startsWith(`${href}/`)}
                   />
                 );

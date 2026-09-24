@@ -11,11 +11,7 @@ import {
   PrimaryLink,
 } from "@/components/ui";
 import { useAuth } from "@/components/auth-provider";
-import {
-  fetchBookSummaries,
-  fetchClozeNotes,
-  type BookSummary,
-} from "@/lib/api-client";
+import { fetchClozeNotes } from "@/lib/api-client";
 import type { ClozeNote } from "@/lib/types";
 import { WORD_PAGE_SIZE as PAGE_SIZE } from "@/lib/constants";
 import { activeWords, useVocab } from "@/lib/vocab-store";
@@ -80,10 +76,9 @@ export default function WordBookDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { getWordBook, deleteWordBook } = useVocab();
+  const { getWordBook, deleteWordBook, summaries } = useVocab();
   const { getToken } = useAuth();
   const [clozeNotes, setClozeNotes] = useState<ClozeNote[]>([]);
-  const [summary, setSummary] = useState<BookSummary>();
   const [deleting, setDeleting] = useState(false);
   // 단어 추가 직후 새 단어가 있는 페이지로 바로 오도록, URL의 ?page=를 초기값으로 쓴다.
   const [page, setPage] = useState(() => {
@@ -93,6 +88,7 @@ export default function WordBookDetailPage() {
   const [pagedBookId, setPagedBookId] = useState(params.id);
   const [filter, setFilter] = useState<WordFilter>("all");
   const book = getWordBook(params.id);
+  const summary = summaries[params.id];
 
   // 빈칸 노트는 단어와 저장소가 달라 따로 받아온다.
   useEffect(() => {
@@ -101,13 +97,8 @@ export default function WordBookDetailPage() {
       try {
         const token = await getToken();
         if (!token) return;
-        const [notes, summaries] = await Promise.all([
-          fetchClozeNotes(token, params.id),
-          fetchBookSummaries(token),
-        ]);
-        if (cancelled) return;
-        setClozeNotes(notes);
-        setSummary(summaries[params.id]);
+        const notes = await fetchClozeNotes(token, params.id);
+        if (!cancelled) setClozeNotes(notes);
       } catch {
         // 목록을 못 받아도 단어 화면은 그대로 쓸 수 있다.
       }

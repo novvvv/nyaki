@@ -4,12 +4,14 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
-import { PageHeader, PrimaryButton, SubtleButton, TextArea } from "@/components/ui";
+import { ClozeEditor } from "@/components/cloze-editor";
+import { PageHeader, PrimaryButton, SubtleButton } from "@/components/ui";
 import {
   fetchClozeNotes,
   putClozeNote,
   removeClozeNote,
 } from "@/lib/api-client";
+import { countBlanks } from "@/lib/cloze";
 import { useVocab } from "@/lib/vocab-store";
 
 /** 빈칸 노트 수정. 단어와 마찬가지로 목록에서 눌러 들어온다. */
@@ -55,7 +57,7 @@ export default function ClozeNotePage() {
   }, [load]);
 
   // 노트 하나가 카드 한 장이다 — 이 수는 카드 수가 아니라 가려질 자리의 수다.
-  const blanks = [...text.matchAll(/\{\{c(\d+)::/g)].length;
+  const blanks = countBlanks(text);
 
   async function save() {
     if (saving || blanks === 0) return;
@@ -90,30 +92,21 @@ export default function ClozeNotePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-8 py-14 lg:px-12">
+    <main className="mx-auto w-full max-w-5xl px-8 py-14 lg:px-12">
       <PageHeader
         title="빈칸"
-        description="가릴 부분을 {{c1::답}} 으로 감쌉니다. 빈칸이 여럿이어도 한 번에 묻습니다."
+        description="가릴 부분을 끌어서 고르고 빈칸을 누릅니다. 빈칸이 여럿이어도 한 번에 묻습니다."
       />
 
       {loading ? (
         <p className="text-sm text-umber/40">불러오는 중…</p>
       ) : (
         <>
-          <TextArea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={8}
-            aria-label="빈칸 문장"
-            className="w-full text-base"
-          />
+          <ClozeEditor value={text} onChange={setText} />
 
           {error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null}
 
           <div className="mt-8 flex items-center justify-end gap-3">
-            <span className="text-xs text-umber/45">
-              {blanks === 0 ? "빈칸을 하나 이상" : `빈칸 ${blanks}개`}
-            </span>
             <SubtleButton
               className="py-1.5 text-xs text-umber/45 hover:text-red-600"
               disabled={saving}

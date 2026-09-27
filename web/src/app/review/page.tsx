@@ -16,6 +16,7 @@ import {
   type ReviewGrade,
   type ReviewGradeItem,
 } from "@/lib/api-client";
+import { parseInline } from "@/lib/cloze";
 import { formatDelay, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
@@ -66,13 +67,44 @@ function ClozeText({
               revealed ? "font-semibold text-ink" : "text-ink/25",
             )}
           >
-            {revealed ? segment.text : segment.hint ? ` ${segment.hint} ` : "　　　"}
+            {revealed ? (
+              <Marked text={segment.text} />
+            ) : segment.hint ? (
+              ` ${segment.hint} `
+            ) : (
+              "　　　"
+            )}
           </span>
         ) : (
-          <span key={index}>{segment.text}</span>
+          <Marked key={index} text={segment.text} />
         ),
       )}
     </span>
+  );
+}
+
+/**
+ * 굵게·형광 마커를 푼다.
+ *
+ * 서버는 `{{cN::}}`만 보고 문장을 자르므로 `**굵게**`는 조각 안의 글자로 그대로
+ * 온다. 여기서 안 풀면 시험 화면에 별표가 그대로 보인다. 편집 화면의 미리보기와
+ * 같은 파서를 쓴다.
+ */
+function Marked({ text }: { text: string }) {
+  return (
+    <>
+      {parseInline(text).map((token, index) => (
+        <span
+          key={index}
+          className={cn(
+            token.bold && "font-semibold",
+            token.highlight && "bg-[#FDF3B0]",
+          )}
+        >
+          {token.text}
+        </span>
+      ))}
+    </>
   );
 }
 

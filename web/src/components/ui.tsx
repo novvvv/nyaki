@@ -126,11 +126,13 @@ export function TextInput({
   );
 }
 
+// ref까지 받는다 — 편집기가 커서 위치를 읽고 옮겨야 한다.
+// React 19부터 함수 컴포넌트도 ref를 일반 prop으로 받는다(forwardRef 불필요).
 export function TextArea({
   className = "",
   rows = 3,
   ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: React.ComponentPropsWithRef<"textarea">) {
   return (
     <textarea
       rows={rows}

@@ -5,6 +5,18 @@ import Link from "next/link";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { useVocab } from "@/lib/vocab-store";
 
+/** 새 폴더. 단어장과 같은 모양의 별도 화면으로 보낸다. */
+function NewFolderLink() {
+  return (
+    <Link
+      href="/word-books/folders/new"
+      className="inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-taupe/40 px-3 py-1.5 text-sm text-umber/65 transition hover:border-taupe/70 hover:text-ink"
+    >
+      새 폴더
+    </Link>
+  );
+}
+
 function NewBookLink() {
   return (
     <Link
@@ -21,7 +33,15 @@ export default function WordBooksPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
-      <PageHeader title="단어장" actions={<NewBookLink />} />
+      <PageHeader
+        title="단어장"
+        actions={
+          <div className="flex items-center gap-2">
+            <NewFolderLink />
+            <NewBookLink />
+          </div>
+        }
+      />
 
       {error ? <p className="mb-6 text-sm text-red-700">{error}</p> : null}
 

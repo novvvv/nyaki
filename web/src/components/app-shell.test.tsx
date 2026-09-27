@@ -12,7 +12,6 @@ import type { Folder, WordBook } from "@/lib/types";
  * **폴더를 지울 때 무엇이 함께 지워진다고 알려주는지**다.
  */
 
-const createFolder = vi.fn();
 const renameFolder = vi.fn();
 const deleteFolder = vi.fn();
 
@@ -32,7 +31,6 @@ vi.mock("@/lib/vocab-store", () => ({
     reorderWordBooks: vi.fn(),
     reorderFolders: vi.fn(),
     moveWordBook: vi.fn(),
-    createFolder,
     renameFolder,
     deleteFolder,
   }),
@@ -124,21 +122,4 @@ describe("사이드바", () => {
     );
   });
 
-  it("이름을 비우면 폴더를 만들지 않는다", async () => {
-    vi.stubGlobal("prompt", vi.fn().mockReturnValue("   "));
-
-    render(<AppShell>본문</AppShell>);
-    await userEvent.click(screen.getByRole("button", { name: "폴더 만들기" }));
-
-    expect(createFolder).not.toHaveBeenCalled();
-  });
-
-  it("이름을 적으면 앞뒤 공백을 떼고 만든다", async () => {
-    vi.stubGlobal("prompt", vi.fn().mockReturnValue("  일본어  "));
-
-    render(<AppShell>본문</AppShell>);
-    await userEvent.click(screen.getByRole("button", { name: "폴더 만들기" }));
-
-    expect(createFolder).toHaveBeenCalledWith("일본어");
-  });
 });

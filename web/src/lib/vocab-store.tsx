@@ -40,7 +40,7 @@ interface VocabContextValue {
   renameFolder: (id: string, title: string) => Promise<void>;
   /** 폴더와 **그 안의 단어장까지** 지운다. 화면이 미리 알려준 뒤에 부른다. */
   deleteFolder: (id: string) => Promise<void>;
-  reorderFolders: (from: number, to: number) => Promise<void>;
+  reorderFolders: (activeId: string, overId: string) => Promise<void>;
   /** 단어장을 폴더에 넣거나(id) 폴더 밖으로 꺼낸다(null). */
   moveWordBook: (bookId: string, folderId: string | null) => Promise<void>;
   /**
@@ -63,8 +63,13 @@ interface VocabContextValue {
   getWordBook: (id: string) => WordBook | undefined;
   createWordBook: (input: WordBookInput) => Promise<WordBook>;
   updateWordBook: (id: string, input: WordBookInput) => Promise<WordBook>;
-  /** 단어장 순서를 바꾼다. 화면은 즉시, 서버는 옮긴 것만 저장한다. */
-  reorderWordBooks: (from: number, to: number) => Promise<void>;
+  /**
+   * 단어장 순서를 바꾼다 — [activeId]를 [overId] 자리로.
+   *
+   * 자리 계산은 **같은 폴더 안 형제들** 사이에서 한다. 평평한 배열로 계산하면
+   * 화면에서 옆에 있지도 않은 단어장 사이 값을 잡아 제자리로 돌아온다.
+   */
+  reorderWordBooks: (activeId: string, overId: string) => Promise<void>;
   createWord: (wordBookId: string, input: WordInput) => Promise<Word>;
   updateWord: (
     wordBookId: string,
@@ -183,14 +188,43 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     [getToken, wordBooks],
   );
 
+  /** sortOrder 순으로 정렬. 폴더 구분은 화면이 하고, 배열은 한 줄로 둔다. */
+  const sortedBooks = useCallback(
+    (books: WordBook[]) =>
+      [...books].sort(
+        (a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity),
+      ),
+    [],
+  );
+
   const reorderWordBooks = useCallback(
-    async (from: number, to: number) => {
-      const { items, changed } = reorder(wordBooks, from, to);
+    async (activeId: string, overId: string) => {
+      const active = wordBooks.find((book) => book.id === activeId);
+      if (!active) return;
+
+      // 같은 폴더 안에서만 자리를 잰다.
+      const siblings = wordBooks.filter(
+        (book) => (book.folderId ?? null) === (active.folderId ?? null),
+      );
+      const from = siblings.findIndex((book) => book.id === activeId);
+      const to = siblings.findIndex((book) => book.id === overId);
+      if (from < 0 || to < 0) return;
+
+      const { changed } = reorder(siblings, from, to);
       if (changed.length === 0) return;
+
+      const orders = new Map(changed.map((row) => [row.id, row.sortOrder]));
+      const next = sortedBooks(
+        wordBooks.map((book) =>
+          orders.has(book.id)
+            ? { ...book, sortOrder: orders.get(book.id)! }
+            : book,
+        ),
+      );
 
       // 먼저 화면부터 옮긴다. 저장을 기다리면 손을 뗀 카드가 제자리로
       // 돌아갔다가 다시 움직이는 것처럼 보인다.
-      setWordBooks(items);
+      setWordBooks(next);
 
       const token = await getToken();
       if (!token) return;
@@ -198,7 +232,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       try {
         await Promise.all(
           changed.map((row) => {
-            const book = items.find((value) => value.id === row.id)!;
+            const book = next.find((value) => value.id === row.id)!;
             return putBook(
               token,
               book.id,
@@ -219,7 +253,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
         await refresh();
       }
     },
-    [getToken, refresh, wordBooks],
+    [getToken, refresh, sortedBooks, wordBooks],
   );
 
   const createFolder = useCallback(
@@ -260,7 +294,11 @@ export function VocabProvider({ children }: { children: ReactNode }) {
   );
 
   const reorderFolders = useCallback(
-    async (from: number, to: number) => {
+    async (activeId: string, overId: string) => {
+      const from = folders.findIndex((folder) => folder.id === activeId);
+      const to = folders.findIndex((folder) => folder.id === overId);
+      if (from < 0 || to < 0) return;
+
       const { items, changed } = reorder(folders, from, to);
       if (changed.length === 0) return;
 
@@ -295,9 +333,22 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       const current = wordBooks.find((book) => book.id === bookId);
       if (!current) return;
 
+      // 옮긴 자리의 맨 뒤에 붙인다. 자리를 안 주면 예전 값이 그대로 남아
+      // 새 폴더 한가운데 끼어든다.
+      const tail = wordBooks
+        .filter(
+          (book) => book.id !== bookId && (book.folderId ?? null) === folderId,
+        )
+        .reduce((max, book) => Math.max(max, book.sortOrder ?? 0), 0);
+      const sortOrder = tail + 1;
+
       setWordBooks((prev) =>
-        prev.map((book) =>
-          book.id === bookId ? { ...book, folderId: folderId ?? undefined } : book,
+        sortedBooks(
+          prev.map((book) =>
+            book.id === bookId
+              ? { ...book, folderId: folderId ?? undefined, sortOrder }
+              : book,
+          ),
         ),
       );
 
@@ -309,6 +360,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
             title: current.title,
             description: current.description,
             folderId,
+            sortOrder,
           },
           current.createdAt,
         );
@@ -319,7 +371,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
         await refresh();
       }
     },
-    [getToken, refresh, wordBooks],
+    [getToken, refresh, sortedBooks, wordBooks],
   );
 
   const createWord = useCallback(async (wordBookId: string, input: WordInput) => {

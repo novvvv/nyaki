@@ -8,6 +8,7 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
@@ -48,13 +49,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     reorderWordBooks,
     reorderFolders,
     moveWordBook,
-    createFolder,
     renameFolder,
     deleteFolder,
   } = useVocab();
 
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const showSidebar = pathname !== "/word-books/overview";
+
+  /**
+   * 끌고 있는 것에 맞는 후보만 남긴다.
+   *
+   * 폴더 줄은 소속 단어장을 품고 있어서 사각형이 크다. 그대로 두면 단어장 위로
+   * 끌어도 **폴더 쪽이 더 가깝다**고 잡혀 순서 바꾸기가 안 됐다. 그래서
+   * 단어장을 끌 때는 폴더 껍데기를 후보에서 빼고, 폴더를 끌 때는 폴더만 본다.
+   */
+  const collision: CollisionDetection = (args) => {
+    const type = args.active.data.current?.type;
+    const keep =
+      type === "folder"
+        ? (value: string | undefined) => value === "folder"
+        : (value: string | undefined) => value !== "folder";
+
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter((container) =>
+        keep(container.data.current?.type as string | undefined),
+      ),
+    });
+  };
 
   // 8px은 끌기 시작으로 본다. 이게 없으면 클릭이 드래그로 잡혀 링크가 안 열린다.
   const sensors = useSensors(
@@ -65,11 +87,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const loose = wordBooks.filter((book) => !book.folderId);
   const booksIn = (folderId: string) =>
     wordBooks.filter((book) => book.folderId === folderId);
-
-  async function handleNewFolder() {
-    const title = window.prompt("폴더 이름");
-    if (title?.trim()) await createFolder(title.trim());
-  }
 
   async function handleRename(folder: Folder) {
     const title = window.prompt("폴더 이름", folder.title);
@@ -92,62 +109,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!over || active.id === over.id) return;
 
     const activeType = active.data.current?.type as "folder" | "book" | undefined;
-    const overType = over.data.current?.type as
-      | "folder"
-      | "book"
-      | "root"
+    const overData = over.data.current as
+      | { type?: "folder" | "folder-drop" | "book" | "root"; folderId?: string }
       | undefined;
 
     if (activeType === "folder") {
-      if (overType !== "folder") return;
-      const from = folders.findIndex((f) => f.id === active.id);
-      const to = folders.findIndex((f) => f.id === over.id);
-      void reorderFolders(from, to);
+      if (overData?.type !== "folder") return;
+      void reorderFolders(String(active.id), String(over.id));
       return;
     }
 
-    // 폴더 행이나 "폴더 밖" 영역 위에 떨어뜨리면 자리를 옮긴다.
-    if (overType === "folder" || overType === "root") {
-      const target = overType === "folder" ? String(over.id) : null;
-      const book = wordBooks.find((value) => value.id === active.id);
-      if (book && (book.folderId ?? null) !== target) {
-        void moveWordBook(String(active.id), target);
+    const book = wordBooks.find((value) => value.id === active.id);
+    if (!book) return;
+
+    // 폴더 머리줄이나 "폴더 밖" 영역 위에 떨어뜨리면 자리를 옮긴다.
+    if (overData?.type === "folder-drop" || overData?.type === "root") {
+      const target =
+        overData.type === "folder-drop" ? (overData.folderId ?? null) : null;
+      if ((book.folderId ?? null) !== target) {
+        void moveWordBook(book.id, target);
       }
       return;
     }
 
     // 단어장 위에 떨어뜨렸다. 같은 자리면 순서만, 다른 자리면 옮긴다.
     const overBook = wordBooks.find((value) => value.id === over.id);
-    const activeBook = wordBooks.find((value) => value.id === active.id);
-    if (!overBook || !activeBook) return;
+    if (!overBook) return;
 
-    if ((activeBook.folderId ?? null) !== (overBook.folderId ?? null)) {
-      void moveWordBook(activeBook.id, overBook.folderId ?? null);
+    if ((book.folderId ?? null) !== (overBook.folderId ?? null)) {
+      void moveWordBook(book.id, overBook.folderId ?? null);
       return;
     }
 
-    const from = wordBooks.findIndex((value) => value.id === active.id);
-    const to = wordBooks.findIndex((value) => value.id === over.id);
-    void reorderWordBooks(from, to);
+    void reorderWordBooks(book.id, overBook.id);
   }
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-8.5rem)] w-full max-w-7xl">
       {showSidebar ? (
         <aside className="hidden w-52 shrink-0 border-r border-taupe/30 py-14 pl-6 pr-3 lg:block">
-          <div className="mb-2 flex items-center justify-between px-2.5">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-ink/35">
-              단어장
-            </p>
-            <button
-              type="button"
-              onClick={() => void handleNewFolder()}
-              aria-label="폴더 만들기"
-              className="text-sm leading-none text-ink/30 transition hover:text-ink"
-            >
-              +
-            </button>
-          </div>
+          {/* 폴더 만들기는 "단어장" 화면 헤더에 있다 — 여기 구석의 `+`는
+              글자 하나짜리라 눈에 안 띄었다. */}
+          <p className="mb-2 px-2.5 text-[11px] font-medium uppercase tracking-wider text-ink/35">
+            단어장
+          </p>
 
           {loading ? (
             <p className="px-2.5 py-1.5 text-xs text-ink/35">불러오는 중…</p>
@@ -156,7 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ) : (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCenter}
+              collisionDetection={collision}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleDragEnd}
             >
@@ -230,10 +235,14 @@ function FolderRow({
     transform,
     transition,
     isDragging,
-    // 단어장을 이 폴더 위로 끌어오면 여기로 들어간다. useSortable이 이미 드롭
-    // 대상을 등록하므로 같은 id로 useDroppable을 또 부르면 충돌한다.
-    isOver,
   } = useSortable({ id: folder.id, data: { type: "folder" } });
+
+  // 단어장을 받는 곳은 **머리줄뿐**이다. 폴더 전체(소속 단어장 포함)를 드롭
+  // 영역으로 두면 안쪽 단어장 위로 끌어도 폴더가 먼저 잡힌다.
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: `drop:${folder.id}`,
+    data: { type: "folder-drop", folderId: folder.id },
+  });
 
   return (
     <div
@@ -242,9 +251,10 @@ function FolderRow({
       className={cn(isDragging && "z-10 opacity-80")}
     >
       <div
+        ref={setDropRef}
         className={cn(
           "group relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm transition",
-          isOver ? "bg-subtle" : "hover:bg-subtle/70",
+          isOver ? "bg-subtle ring-1 ring-ink/15" : "hover:bg-subtle/70",
         )}
       >
         <button

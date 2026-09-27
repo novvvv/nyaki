@@ -681,9 +681,11 @@ def _consumed_today(session: Session, user_id: str) -> tuple[int, int]:
 
 
 def _parse_steps(raw: str | None) -> tuple[int, ...]:
-    """"1,10" → (1, 10). 공백·쉼표 아무거나 허용하고 잘못된 값은 버린다.
+    """"0,10" → (0, 10). 공백·쉼표 아무거나 허용하고 잘못된 값은 버린다.
 
-    설정 화면에서 손으로 치는 값이라 관대하게 읽는다. 0 이하는 의미가 없어 뺀다.
+    설정 화면에서 손으로 치는 값이라 관대하게 읽는다. 음수만 버리고 **0은 남긴다** —
+    0은 "즉시"라는 뜻이고, 모름을 누른 카드를 기다리지 않고 다음 세션에 바로
+    내보내는 데 쓴다.
     """
     if not raw:
         return ()
@@ -693,14 +695,22 @@ def _parse_steps(raw: str | None) -> tuple[int, ...]:
             minutes = int(chunk)
         except ValueError:
             continue
-        if minutes > 0:
+        if minutes >= 0:
             out.append(minutes)
     return tuple(out)
 
 
-# 안키 기본값과 같다. 컬럼이 null이면(= 한 번도 설정한 적 없으면) 이 값을 쓴다.
-DEFAULT_LEARNING_STEPS = (1, 10)
-DEFAULT_RELEARNING_STEPS = (10,)
+# 컬럼이 null이면(= 한 번도 설정한 적 없으면) 이 값을 쓴다.
+#
+# 안키 기본값은 `1m 10m`인데 첫 단계를 0으로 바꿨다. 안키는 모름을 누른 카드를
+# 같은 세션의 큐 뒤로 돌려보내서 1분이 "순서"로 쓰이지만, 우리는 채점한 카드를
+# 세션에서 빼기 때문에 1분이 그대로 "대기 시간"이 된다. 틀린 걸 바로 다시 보려고
+# 테스트를 다시 시작해도 1분 동안 안 나왔다.
+#
+# 0은 모름에만 걸린다 — 알고있음은 언제나 **다음** 단계를 쓰므로 새 카드를 맞히면
+# 10분, 그다음은 졸업이다.
+DEFAULT_LEARNING_STEPS = (0, 10)
+DEFAULT_RELEARNING_STEPS = (0,)
 
 
 def steps_or_default(raw: str | None, default: tuple[int, ...]) -> tuple[int, ...]:

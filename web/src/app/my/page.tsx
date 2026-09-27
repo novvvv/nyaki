@@ -168,13 +168,13 @@ function DailyLimits() {
       <div className="divide-y divide-taupe/25">
         <Field
           title="학습 단계"
-          hint="새 단어를 다시 보여줄 간격 · 쉼표로 여러 개"
+          hint="새 단어를 다시 보여줄 간격 · 0은 즉시"
         >
           <div className="flex items-center gap-2.5">
             <TextInput
               value={learningText}
               onChange={(e) => setLearningText(e.target.value)}
-              placeholder="1, 10"
+              placeholder="0, 10"
               aria-label="학습 단계(분)"
               className="w-40 py-2 text-base"
             />
@@ -187,7 +187,7 @@ function DailyLimits() {
             <TextInput
               value={relearningText}
               onChange={(e) => setRelearningText(e.target.value)}
-              placeholder="10"
+              placeholder="0"
               aria-label="재학습 단계(분)"
               className="w-40 py-2 text-base"
             />
@@ -216,8 +216,12 @@ function DailyLimits() {
         <p className="text-xs font-medium text-ink/55">추천</p>
         <dl className="mt-2 space-y-1.5 text-xs text-umber/55">
           <div className="flex gap-2">
+            <dt className="w-20 shrink-0 text-ink/45">기본</dt>
+            <dd>0분 · 10분 — 틀린 건 바로 다시 나옵니다</dd>
+          </div>
+          <div className="flex gap-2">
             <dt className="w-20 shrink-0 text-ink/45">안키 기본</dt>
-            <dd>1분 · 10분 — 대부분 이걸 씁니다</dd>
+            <dd>1분 · 10분 — 틀린 건 1분 뒤부터</dd>
           </div>
           <div className="flex gap-2">
             <dt className="w-20 shrink-0 text-ink/45">빨리 넘기기</dt>

@@ -338,10 +338,13 @@ class DriftVocabRepository implements VocabRepository {
 
     List<int> parse(String? raw) {
       if (raw == null || raw.isEmpty) return const [];
+      // 서버 `_parse_steps`와 같은 규칙이다 — 음수만 버리고 0은 남긴다.
+      // 0은 "즉시"라는 뜻이고, 모름을 누른 카드를 기다리지 않고 바로 낸다.
+      // 두 구현이 갈리면 기기마다 다음 복습일이 달라진다.
       return raw
           .split(RegExp(r'[,\s]+'))
-          .map((chunk) => int.tryParse(chunk.trim()) ?? 0)
-          .where((minutes) => minutes > 0)
+          .map((chunk) => int.tryParse(chunk.trim()) ?? -1)
+          .where((minutes) => minutes >= 0)
           .toList(growable: false);
     }
 

@@ -71,6 +71,10 @@ def _grade(client: TestClient, word_id: str, value: str, log_id: str) -> None:
     assert body["applied"] == 1, body
 
 
+def _due(client: TestClient) -> list[dict]:
+    return client.get("/v1/review/due?limit=9999").json()["cards"]
+
+
 def _word(client: TestClient, word_id: str) -> dict:
     words = client.get(f"/v1/word-books/{BOOK}/words").json()
     return next(w for w in words if w["id"] == word_id)
@@ -99,13 +103,18 @@ def test_settings_round_trip() -> None:
     app.dependency_overrides.clear()
 
 
-def test_default_is_anki_like() -> None:
-    """설정을 건드린 적 없으면 안키 기본값(1m 10m / 10m)이 적용된다."""
+def test_default_puts_again_at_once() -> None:
+    """설정을 건드린 적 없으면 `0m 10m` / `0m`이다.
+
+    안키 기본값은 `1m 10m`이지만 안키는 모름을 누른 카드를 같은 세션의 큐 뒤로
+    돌려보내서 1분이 "순서"로 쓰인다. 우리는 채점한 카드를 세션에서 빼므로 그
+    1분이 그대로 대기 시간이 된다 — 틀린 걸 바로 다시 보려 해도 안 나왔다.
+    """
     client = _client("firebase-user-steps-default")
 
     body = client.get("/v1/progress").json()
-    assert body["learning_steps"] == [1, 10]
-    assert body["relearning_steps"] == [10]
+    assert body["learning_steps"] == [0, 10]
+    assert body["relearning_steps"] == [0]
 
     _add_word(client, "default-word")
     _grade(client, "default-word", "good", "log-default-1")
@@ -262,5 +271,33 @@ def test_previews_follow_the_steps_setting() -> None:
     # 단계를 끄면 모름 = 즉시, 외움 = 1일
     assert preview["again_seconds"] == 0
     assert preview["good_seconds"] == 86400
+
+    app.dependency_overrides.clear()
+
+
+def test_again_comes_back_at_once_by_default() -> None:
+    """모름을 누르면 기다리지 않는다 — 다음 테스트에서 바로 나온다."""
+    client = _client("firebase-user-steps-again-now")
+    _add_word(client, "again-now")
+
+    _grade(client, "again-now", "again", "log-again-now")
+
+    # 0분이므로 지금 당장 출제 대상이다.
+    assert "again-now" in [card["word"]["id"] for card in _due(client)]
+
+    app.dependency_overrides.clear()
+
+
+def test_good_never_uses_the_zero_step() -> None:
+    """0은 모름에만 걸린다 — 외움은 언제나 **다음** 단계를 쓴다."""
+    client = _client("firebase-user-steps-good-skips-zero")
+    _add_word(client, "good-word")
+
+    _grade(client, "good-word", "good", "log-good-1")
+
+    word = _word(client, "good-word")
+    assert word["srs_learning_step"] == 1  # 10분 단계
+    # 10분 뒤라 지금은 안 나온다.
+    assert "good-word" not in [card["word"]["id"] for card in _due(client)]
 
     app.dependency_overrides.clear()

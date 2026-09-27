@@ -1,6 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { formatDelay, shuffled } from "./review";
+import {
+  formatDelay,
+  loadShowDelays,
+  saveShowDelays,
+  shuffled,
+} from "./review";
 
 describe("formatDelay — 채점 버튼에 띄울 간격", () => {
   it("30초 이하는 '즉시'로 본다 (단계를 끈 경우의 모름)", () => {
@@ -48,5 +53,41 @@ describe("shuffled — 랜덤 섞기", () => {
     const spy = vi.spyOn(Math, "random").mockReturnValue(0);
     expect(shuffled([1, 2, 3])).not.toEqual([1, 2, 3]);
     spy.mockRestore();
+  });
+});
+
+describe("loadShowDelays — 다음 복습 시각 표시", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("기본은 꺼짐 — 간격이 보이면 답 대신 간격을 보고 고르게 된다", () => {
+    expect(loadShowDelays()).toBe(false);
+  });
+
+  it("켜두면 다음에 들어와도 켜져 있다", () => {
+    saveShowDelays(true);
+    expect(loadShowDelays()).toBe(true);
+
+    saveShowDelays(false);
+    expect(loadShowDelays()).toBe(false);
+  });
+
+  it("localStorage가 막혀 있어도 꺼짐으로 읽고 넘어간다", () => {
+    // 사생활 보호 모드에서는 접근 자체가 throw할 수 있다.
+    vi.stubGlobal("localStorage", {
+      getItem() {
+        throw new Error("blocked");
+      },
+      setItem() {
+        throw new Error("blocked");
+      },
+    });
+
+    expect(loadShowDelays()).toBe(false);
+    expect(() => saveShowDelays(true)).not.toThrow();
   });
 });

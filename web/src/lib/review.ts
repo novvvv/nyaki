@@ -24,3 +24,29 @@ export function shuffled<T>(items: T[]): T[] {
   }
   return copy;
 }
+
+const DELAY_HINT_KEY = "nyaki.review.showDelays";
+
+/**
+ * 채점 버튼 위에 "즉시 / 10분"을 띄울지.
+ *
+ * **기본은 꺼짐.** 다음에 언제 나오는지가 보이면 답을 떠올리는 대신 간격이 긴
+ * 쪽을 고르게 된다. 필요한 사람만 마이페이지에서 켠다.
+ *
+ * 기기마다 다른 화면 설정이라 서버에 두지 않았다. 브라우저에만 남는다.
+ */
+export function loadShowDelays(): boolean {
+  try {
+    return window.localStorage.getItem(DELAY_HINT_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
+export function saveShowDelays(on: boolean) {
+  try {
+    window.localStorage.setItem(DELAY_HINT_KEY, on ? "on" : "off");
+  } catch {
+    // 사생활 보호 모드 등에서 막힐 수 있다. 기억 못 해도 동작에는 지장 없다.
+  }
+}

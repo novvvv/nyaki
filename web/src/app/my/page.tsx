@@ -9,7 +9,37 @@ import {
   updateSettings,
   type Progress,
 } from "@/lib/api-client";
+import { loadShowDelays, saveShowDelays } from "@/lib/review";
+import { cn } from "@/lib/utils";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
+
+/**
+ * 다음 복습 시각을 보여줄지.
+ *
+ * 저장 버튼이 없다 — 서버가 아니라 이 브라우저에만 남는 화면 설정이라 누르는
+ * 즉시 반영된다. 기본은 꺼짐이다.
+ */
+function DelayHintToggle() {
+  // 초기값으로 읽는다 — 이펙트에서 읽으면 꺼짐이 한 프레임 보인다.
+  const [on, setOn] = useState(loadShowDelays);
+
+  return (
+    <SubtleButton
+      aria-pressed={on}
+      onClick={() => {
+        const next = !on;
+        setOn(next);
+        saveShowDelays(next);
+      }}
+      className={cn(
+        "px-3.5 py-1.5 text-xs",
+        on && "border-ink bg-ink text-cream hover:text-cream",
+      )}
+    >
+      {on ? "켜짐" : "꺼짐"}
+    </SubtleButton>
+  );
+}
 
 /** 설정 한 덩어리 — 제목·한 줄 설명 위, 입력 아래. */
 function Field({
@@ -209,6 +239,13 @@ function DailyLimits() {
             />
             <span className="text-sm text-umber/45">일</span>
           </div>
+        </Field>
+
+        <Field
+          title="다음 복습 시각 표시"
+          hint="채점 버튼 위에 즉시 · 10분처럼 띄웁니다"
+        >
+          <DelayHintToggle />
         </Field>
       </div>
 

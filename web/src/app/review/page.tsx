@@ -17,7 +17,7 @@ import {
   type ReviewGradeItem,
 } from "@/lib/api-client";
 import { parseInline } from "@/lib/cloze";
-import { formatDelay, shuffled } from "@/lib/review";
+import { formatDelay, loadShowDelays, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
@@ -167,6 +167,9 @@ export default function ReviewPage() {
   // 복습 주기가 돌아온 카드. 시작 화면의 상한이자 그대로 세션의 출제 목록이 된다.
   const [due, setDue] = useState<DueCard[]>();
   const [shuffle, setShuffle] = useState(false);
+  // 채점 버튼 위의 "즉시 / 10분" 표시. 마이페이지에서 켠 사람만 본다.
+  // 초기값으로 읽는다 — 이펙트에서 읽으면 한 프레임 보였다가 사라진다.
+  const [showDelays] = useState(loadShowDelays);
   // 단어장별 due 개수. /review/due(최대 200개)의 길이로 세면 201개부터 틀려서
   // 개수 전용 엔드포인트를 따로 부른다.
   const [counts, setCounts] = useState<DueCounts>();
@@ -485,10 +488,12 @@ export default function ReviewPage() {
         </button>
 
         {/* 안키가 버튼 위에 <1m / <10m를 띄우는 것과 같다. 계산은 서버가 한다. */}
-        <div className="mb-1.5 grid grid-cols-2 gap-2.5 text-center text-[11px] tabular-nums text-ink/35">
-          <span>{delays.again}</span>
-          <span>{delays.good}</span>
-        </div>
+        {showDelays ? (
+          <div className="mb-1.5 grid grid-cols-2 gap-2.5 text-center text-[11px] tabular-nums text-ink/35">
+            <span>{delays.again}</span>
+            <span>{delays.good}</span>
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-2.5">
           <button

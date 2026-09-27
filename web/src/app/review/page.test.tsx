@@ -88,6 +88,8 @@ async function startSession(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // 앞 테스트가 켜둔 화면 설정(단어장 선택·간격 표시)이 넘어오지 않게.
+  window.localStorage.clear();
   fetchDueWords.mockResolvedValue(
     dueWords([word("w1", "cat"), word("w2", "nap")]),
   );
@@ -145,7 +147,17 @@ describe("복습 세션", () => {
     ]);
   });
 
-  it("버튼 위에 서버가 준 예상 간격을 띄운다", async () => {
+  it("예상 간격은 기본으로 감춘다 — 답 대신 간격을 보고 고르게 된다", async () => {
+    const user = userEvent.setup();
+    await startSession(user);
+
+    expect(screen.queryByText("1분")).not.toBeInTheDocument();
+    expect(screen.queryByText("10분")).not.toBeInTheDocument();
+  });
+
+  it("마이페이지에서 켜두면 버튼 위에 서버가 준 예상 간격을 띄운다", async () => {
+    window.localStorage.setItem("nyaki.review.showDelays", "on");
+
     const user = userEvent.setup();
     await startSession(user);
 

@@ -1,5 +1,4 @@
 import type {
-  CardKind,
   ClozeNote,
   Word,
   WordBook,
@@ -12,7 +11,6 @@ const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:800
 type ApiWordBook = {
   id: string;
   title: string;
-  card_kinds: string | null;
   description: string | null;
   created_at: string;
   updated_at: string;
@@ -46,21 +44,8 @@ function toWordBook(value: ApiWordBook): WordBook {
     description: value.description ?? undefined,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
-    cardKinds: parseCardKinds(value.card_kinds),
     words: [],
   };
-}
-
-/** "recognition,recall" → ["recognition", "recall"]. 모르는 값은 버린다. */
-function parseCardKinds(raw: string | null | undefined): CardKind[] {
-  if (!raw) return ["recognition"];
-  const kinds = raw
-    .split(/[,\s]+/)
-    .map((chunk) => chunk.trim())
-    .filter((chunk): chunk is CardKind =>
-      chunk === "recognition" || chunk === "recall" || chunk === "cloze",
-    );
-  return kinds.length > 0 ? kinds : ["recognition"];
 }
 
 function toWord(value: ApiWord): Word {
@@ -137,8 +122,6 @@ export async function putBook(
       id,
       title: input.title.trim(),
       description: input.description?.trim() || null,
-      // 안 보내면 서버가 기존 값을 유지한다(exclude_unset).
-      ...(input.cardKinds ? { card_kinds: input.cardKinds.join(",") } : {}),
       created_at: createdAt,
       updated_at: timestamp,
       is_deleted: false,

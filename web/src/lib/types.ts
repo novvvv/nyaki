@@ -29,26 +29,9 @@ export interface Word {
   isDeleted: boolean;
 }
 
-/**
- * 카드 종류 — 안키의 카드 템플릿에 해당한다.
- * recognition 単語→뜻 · recall 뜻→単語 · cloze 예문 빈칸
- */
-/**
- * 단어에서 나오는 카드 종류. 빈칸은 여기 없다 — 단어의 파생물이 아니라
- * 별개 노트 타입이다(ClozeNote).
- */
-export type CardKind = "recognition" | "recall";
-
-export const CARD_KIND_LABELS: Record<CardKind, string> = {
-  recognition: "단어 → 뜻",
-  recall: "뜻 → 단어",
-};
-
 export interface WordBook {
   id: string;
   title: string;
-  /** 이 단어장이 만드는 카드 종류. 비어 있으면 recognition 하나. */
-  cardKinds?: CardKind[];
   description?: string;
   createdAt: string;
   updatedAt: string;
@@ -82,6 +65,4 @@ export interface ClozeNote {
 export interface WordBookInput {
   title: string;
   description?: string;
-  /** 만들 카드 종류. 생략하면 서버가 기존 값을 유지한다. */
-  cardKinds?: CardKind[];
 }

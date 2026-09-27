@@ -18,7 +18,6 @@ import {
 } from "@/lib/api-client";
 import { formatDelay, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
-import { CARD_KIND_LABELS } from "@/lib/types";
 import { useVocab } from "@/lib/vocab-store";
 
 type Phase = "setup" | "session" | "done";
@@ -109,7 +108,9 @@ function clozeLength(card: DueCard): number {
 /** 진행 줄에 붙는 종류 표시. 기본 카드에는 붙이지 않는다. */
 function kindLabel(card: DueCard): string | null {
   if (card.sourceType === "cloze") return "빈칸";
-  if (card.kind === "recall") return CARD_KIND_LABELS.recall;
+  // recall은 더 이상 만들 수 없지만, 예전에 켜뒀던 단어장의 카드가 서버에 남아
+  // 있을 수 있다. 오면 제대로 그린다.
+  if (card.kind === "recall") return "뜻 → 단어";
   return null;
 }
 

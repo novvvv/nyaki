@@ -8,6 +8,31 @@ from sqlalchemy.types import JSON
 from ..core.database import Base
 
 
+class FolderModel(Base):
+    """단어장을 담는 폴더. 단어장의 상위 개념이고 **한 단계뿐**이다.
+
+    폴더 안에 폴더를 넣지 않는다 — 트리 이동과 순환 참조 방지가 붙는데,
+    개인 단어장 몇십 개를 정리하는 데 그만한 구조가 필요하지 않다.
+
+    단어장은 폴더에 **안 속해도 된다**(word_books.folder_id가 null). 기존
+    단어장을 전부 어딘가에 넣도록 강제하지 않기 위해서다.
+    """
+
+    __tablename__ = "folders"
+    __table_args__ = (
+        Index("ix_folders_user_updated", "user_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    # 단어장과 같은 규칙 — 작을수록 위, 실수라 옮긴 행 하나만 쓴다.
+    sort_order: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
 class WordBookModel(Base):
     __tablename__ = "word_books"
     __table_args__ = (
@@ -24,6 +49,8 @@ class WordBookModel(Base):
     card_kinds: Mapped[str | None] = mapped_column(String(120), nullable=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 담긴 폴더. null이면 폴더 밖이다 — 어디에도 안 속한 단어장을 허용한다.
+    folder_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     # 사용자가 직접 정한 순서. 작을수록 위다.
     #
     # 실수인 이유는 **옮긴 행 하나만 쓰기 위해서**다. 3번과 4번 사이로 끌어다

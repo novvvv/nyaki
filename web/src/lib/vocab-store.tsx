@@ -17,6 +17,9 @@ import {
   completeQuest,
   fetchBookSummaries,
   listBooks,
+  listFolders,
+  putFolder,
+  removeFolder,
   putBook,
   putWord,
   removeWord,
@@ -24,12 +27,22 @@ import {
 } from "./api-client";
 
 import type { BookSummary } from "./api-client";
+import type { Folder } from "./types";
 import { reorder } from "./sort-order";
 import type { Word, WordBook, WordBookInput, WordInput } from "./types";
 import { newId } from "./utils";
 
 interface VocabContextValue {
   wordBooks: WordBook[];
+  /** 단어장을 담는 폴더. 한 단계뿐이고, 폴더 밖 단어장도 있다. */
+  folders: Folder[];
+  createFolder: (title: string) => Promise<Folder>;
+  renameFolder: (id: string, title: string) => Promise<void>;
+  /** 폴더와 **그 안의 단어장까지** 지운다. 화면이 미리 알려준 뒤에 부른다. */
+  deleteFolder: (id: string) => Promise<void>;
+  reorderFolders: (from: number, to: number) => Promise<void>;
+  /** 단어장을 폴더에 넣거나(id) 폴더 밖으로 꺼낸다(null). */
+  moveWordBook: (bookId: string, folderId: string | null) => Promise<void>;
   /**
    * 단어장별 집계(항목 수·카드 수·암기율). **서버가 센 값이다.**
    *
@@ -67,6 +80,7 @@ const VocabContext = createContext<VocabContextValue | null>(null);
 export function VocabProvider({ children }: { children: ReactNode }) {
   const { user, getToken } = useAuth();
   const [wordBooks, setWordBooks] = useState<WordBook[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [summaries, setSummaries] = useState<Record<string, BookSummary>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,16 +89,19 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     const token = await getToken();
     if (!token) {
       setWordBooks([]);
+      setFolders([]);
       return;
     }
     setLoading(true);
     try {
-      const [books, bookSummaries] = await Promise.all([
+      const [books, bookSummaries, folderRows] = await Promise.all([
         listBooks(token),
         fetchBookSummaries(token),
+        listFolders(token),
       ]);
       setWordBooks(books);
       setSummaries(bookSummaries);
+      setFolders(folderRows);
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "목록을 불러오지 못했어요.");
@@ -205,6 +222,106 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     [getToken, refresh, wordBooks],
   );
 
+  const createFolder = useCallback(
+    async (title: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+      const created = await putFolder(token, newId("folder"), title);
+      setFolders((prev) => [...prev, created]);
+      return created;
+    },
+    [getToken],
+  );
+
+  const renameFolder = useCallback(
+    async (id: string, title: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+      const current = folders.find((folder) => folder.id === id);
+      const saved = await putFolder(token, id, title, {
+        sortOrder: current?.sortOrder,
+        createdAt: current?.createdAt,
+      });
+      setFolders((prev) => prev.map((folder) => (folder.id === id ? saved : folder)));
+    },
+    [folders, getToken],
+  );
+
+  const deleteFolder = useCallback(
+    async (id: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+      await removeFolder(token, id);
+      setFolders((prev) => prev.filter((folder) => folder.id !== id));
+      // 안의 단어장도 함께 지워졌다. 서버가 가진 것으로 맞춘다.
+      await refresh();
+    },
+    [getToken, refresh],
+  );
+
+  const reorderFolders = useCallback(
+    async (from: number, to: number) => {
+      const { items, changed } = reorder(folders, from, to);
+      if (changed.length === 0) return;
+
+      setFolders(items);
+
+      const token = await getToken();
+      if (!token) return;
+      try {
+        await Promise.all(
+          changed.map((row) => {
+            const folder = items.find((value) => value.id === row.id)!;
+            return putFolder(token, folder.id, folder.title, {
+              sortOrder: row.sortOrder,
+              createdAt: folder.createdAt,
+            });
+          }),
+        );
+      } catch (reason) {
+        setError(
+          reason instanceof Error ? reason.message : "순서를 저장하지 못했어요.",
+        );
+        await refresh();
+      }
+    },
+    [folders, getToken, refresh],
+  );
+
+  const moveWordBook = useCallback(
+    async (bookId: string, folderId: string | null) => {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+      const current = wordBooks.find((book) => book.id === bookId);
+      if (!current) return;
+
+      setWordBooks((prev) =>
+        prev.map((book) =>
+          book.id === bookId ? { ...book, folderId: folderId ?? undefined } : book,
+        ),
+      );
+
+      try {
+        await putBook(
+          token,
+          bookId,
+          {
+            title: current.title,
+            description: current.description,
+            folderId,
+          },
+          current.createdAt,
+        );
+      } catch (reason) {
+        setError(
+          reason instanceof Error ? reason.message : "옮기지 못했어요.",
+        );
+        await refresh();
+      }
+    },
+    [getToken, refresh, wordBooks],
+  );
+
   const createWord = useCallback(async (wordBookId: string, input: WordInput) => {
     const token = await getToken();
     if (!token) throw new Error("로그인이 필요합니다.");
@@ -301,6 +418,12 @@ export function VocabProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       wordBooks,
+      folders,
+      createFolder,
+      renameFolder,
+      deleteFolder,
+      reorderFolders,
+      moveWordBook,
       summaries,
       patchSummary,
       syncSummaries,
@@ -318,6 +441,12 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     }),
     [
       wordBooks,
+      folders,
+      createFolder,
+      renameFolder,
+      deleteFolder,
+      reorderFolders,
+      moveWordBook,
       summaries,
       patchSummary,
       syncSummaries,

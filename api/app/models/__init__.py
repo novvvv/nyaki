@@ -21,12 +21,14 @@ from .sync import SyncChangeModel
 from .vocab import (
     CardModel,
     ClozeNoteModel,
+    FolderModel,
     ReviewLogModel,
     WordBookModel,
     WordModel,
 )
 
 __all__ = [
+    "FolderModel",
     "WordBookModel",
     "CardModel",
     "ClozeNoteModel",

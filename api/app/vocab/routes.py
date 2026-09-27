@@ -11,6 +11,7 @@ from ..core.database import get_session
 from ..models import (
     CardModel,
     ClozeNoteModel,
+    FolderModel,
     SyncChangeModel,
     WordBookModel,
     WordModel,
@@ -18,6 +19,8 @@ from ..models import (
 from .schemas import (
     CardResponse,
     DailyAddedResponse,
+    FolderPayload,
+    FolderResponse,
     ClozeFaceResponse,
     ClozeNotePayload,
     ClozeNoteResponse,
@@ -43,6 +46,9 @@ from .srs import Sm2State, preview
 from .services import (
     apply_review_grades,
     daily_added_counts,
+    delete_folder,
+    list_folders,
+    upsert_folder,
     delete_word,
     delete_word_book,
     book_summaries,
@@ -78,6 +84,42 @@ def _get_word(session: Session, user_id: str, word_id: str) -> WordModel:
     if entity is None or entity.is_deleted:
         raise HTTPException(status_code=404, detail="단어를 찾을 수 없습니다.")
     return entity
+
+
+@router.get("/folders", response_model=list[FolderResponse])
+def get_folders(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[FolderModel]:
+    return list_folders(session, user_id)
+
+
+@router.put("/folders/{folder_id}", response_model=FolderResponse)
+def put_folder(
+    folder_id: str,
+    payload: FolderPayload,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> FolderModel:
+    if folder_id != payload.id:
+        raise HTTPException(status_code=400, detail="URL과 payload ID가 일치하지 않습니다.")
+    entity, _ = upsert_folder(session, user_id, payload)
+    session.commit()
+    return entity
+
+
+@router.delete("/folders/{folder_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_folder(
+    folder_id: str,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    """폴더와 **그 안의 단어장까지** 지운다. 화면이 미리 알려준다."""
+    entity, _, _ = delete_folder(session, user_id, folder_id)
+    if entity is None:
+        raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/word-books", response_model=list[WordBookResponse])
@@ -393,6 +435,22 @@ def post_review_grades(
 
 
 def _apply_mutation(session: Session, user_id: str, mutation: SyncMutation) -> int | None:
+    if mutation.entity_type == "folder":
+        if mutation.folder is None:
+            raise HTTPException(status_code=400, detail="폴더 payload가 필요합니다.")
+        if mutation.action == "delete":
+            entity = session.get(
+                FolderModel, {"id": mutation.folder.id, "user_id": user_id}
+            )
+            if entity is None:
+                payload = mutation.folder.model_copy(update={"is_deleted": True})
+                _, cursor = upsert_folder(session, user_id, payload)
+                return cursor
+            _, _, cursor = delete_folder(session, user_id, mutation.folder.id)
+            return cursor
+        _, cursor = upsert_folder(session, user_id, mutation.folder)
+        return cursor
+
     if mutation.entity_type == "word_book":
         if mutation.action == "delete":
             if mutation.word_book is None:
@@ -495,7 +553,19 @@ def sync_pull(
     )
     result: list[SyncChange] = []
     for change in changes:
-        if change.entity_type == "word_book":
+        if change.entity_type == "folder":
+            entity = session.get(
+                FolderModel, {"id": change.entity_id, "user_id": user_id}
+            )
+            if entity is not None:
+                result.append(
+                    SyncChange(
+                        cursor=change.cursor,
+                        entity_type="folder",
+                        folder=FolderResponse.model_validate(entity),
+                    )
+                )
+        elif change.entity_type == "word_book":
             entity = session.get(
                 WordBookModel, {"id": change.entity_id, "user_id": user_id}
             )

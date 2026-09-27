@@ -1,5 +1,6 @@
 import type {
   ClozeNote,
+  Folder,
   Word,
   WordBook,
   WordBookInput,
@@ -8,9 +9,18 @@ import type {
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
+type ApiFolder = {
+  id: string;
+  title: string;
+  sort_order: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type ApiWordBook = {
   id: string;
   title: string;
+  folder_id: string | null;
   sort_order: number | null;
   description: string | null;
   created_at: string;
@@ -42,6 +52,7 @@ function toWordBook(value: ApiWordBook): WordBook {
   return {
     id: value.id,
     title: value.title,
+    folderId: value.folder_id ?? undefined,
     sortOrder: value.sort_order ?? undefined,
     description: value.description ?? undefined,
     createdAt: value.created_at,
@@ -96,6 +107,50 @@ function now() {
   return new Date().toISOString();
 }
 
+function toFolder(value: ApiFolder): Folder {
+  return {
+    id: value.id,
+    title: value.title,
+    sortOrder: value.sort_order ?? undefined,
+    createdAt: value.created_at,
+    updatedAt: value.updated_at,
+  };
+}
+
+export async function listFolders(token: string): Promise<Folder[]> {
+  const folders = await request<ApiFolder[]>("/v1/folders", token);
+  return folders.map(toFolder);
+}
+
+export async function putFolder(
+  token: string,
+  id: string,
+  title: string,
+  options: { sortOrder?: number; createdAt?: string } = {},
+): Promise<Folder> {
+  const timestamp = now();
+  const folder = await request<ApiFolder>(`/v1/folders/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify({
+      id,
+      title: title.trim(),
+      ...(options.sortOrder !== undefined
+        ? { sort_order: options.sortOrder }
+        : {}),
+      // 그대로 덮어쓰므로(exclude_unset), now()를 보내면 생성 시각이 바뀐다.
+      created_at: options.createdAt ?? timestamp,
+      updated_at: timestamp,
+      is_deleted: false,
+    }),
+  });
+  return toFolder(folder);
+}
+
+/** 폴더와 **그 안의 단어장까지** 지운다. 화면이 미리 알려준 뒤에 부른다. */
+export async function removeFolder(token: string, id: string): Promise<void> {
+  await request<void>(`/v1/folders/${id}`, token, { method: "DELETE" });
+}
+
 export async function listBooks(token: string): Promise<WordBook[]> {
   const books = await request<ApiWordBook[]>("/v1/word-books", token);
   return Promise.all(
@@ -126,6 +181,8 @@ export async function putBook(
       description: input.description?.trim() || null,
       // 안 보내면 서버가 기존 값을 유지한다(exclude_unset).
       ...(input.sortOrder !== undefined ? { sort_order: input.sortOrder } : {}),
+      // null은 "폴더 밖으로 꺼내기"라 undefined와 구분해서 보낸다.
+      ...(input.folderId !== undefined ? { folder_id: input.folderId } : {}),
       created_at: createdAt,
       updated_at: timestamp,
       is_deleted: false,

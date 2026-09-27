@@ -4,6 +4,21 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+class FolderPayload(BaseModel):
+    """단어장을 담는 폴더. 한 단계뿐이다 — 폴더 안에 폴더는 없다."""
+
+    id: str = Field(min_length=1, max_length=80)
+    title: str = Field(min_length=1, max_length=200)
+    sort_order: float | None = None
+    created_at: datetime
+    updated_at: datetime
+    is_deleted: bool = False
+
+
+class FolderResponse(FolderPayload):
+    model_config = ConfigDict(from_attributes=True)
+
+
 class WordBookPayload(BaseModel):
     id: str = Field(min_length=1, max_length=80)
     title: str = Field(min_length=1, max_length=200)
@@ -11,6 +26,8 @@ class WordBookPayload(BaseModel):
     # 없으면 recognition 하나(= 카드 도입 전과 같은 동작).
     card_kinds: str | None = Field(default=None, max_length=120)
     description: str | None = None
+    # 담긴 폴더. null이면 폴더 밖이다 — 어디에도 안 속한 단어장을 허용한다.
+    folder_id: str | None = Field(default=None, max_length=80)
     # 사용자가 끌어서 정한 순서. 작을수록 위다. 안 보내면 서버가 맨 뒤로 넣는다.
     sort_order: float | None = None
     created_at: datetime
@@ -128,8 +145,9 @@ class CardResponse(CardPayload):
 
 
 class SyncMutation(BaseModel):
-    entity_type: Literal["word_book", "word", "card", "cloze_note"]
+    entity_type: Literal["folder", "word_book", "word", "card", "cloze_note"]
     action: Literal["upsert", "delete"]
+    folder: FolderPayload | None = None
     word_book: WordBookPayload | None = None
     word: WordPayload | None = None
     card: CardPayload | None = None
@@ -147,7 +165,8 @@ class SyncPushResponse(BaseModel):
 
 class SyncChange(BaseModel):
     cursor: int
-    entity_type: Literal["word_book", "word", "card", "cloze_note"]
+    entity_type: Literal["folder", "word_book", "word", "card", "cloze_note"]
+    folder: FolderResponse | None = None
     word_book: WordBookResponse | None = None
     word: WordResponse | None = None
     card: CardResponse | None = None

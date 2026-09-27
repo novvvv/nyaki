@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..models import (
     CardModel,
     ClozeNoteModel,
+    FolderModel,
     ReviewLogModel,
     SyncChangeModel,
     UserProgressModel,
@@ -17,6 +18,7 @@ from ..models import (
 from .schemas import (
     CardPayload,
     ClozeNotePayload,
+    FolderPayload,
     ReviewGradeItem,
     WordBookPayload,
     WordPayload,
@@ -53,6 +55,92 @@ def _as_utc(value: datetime) -> datetime:
 
 def _is_newer(incoming: datetime, current: datetime) -> bool:
     return _as_utc(incoming) > _as_utc(current)
+
+
+# ==================== 폴더 ====================
+#
+# 단어장의 상위 개념. 한 단계뿐이고, 단어장은 폴더에 안 속해도 된다.
+
+
+def upsert_folder(
+    session: Session, user_id: str, payload: FolderPayload
+) -> tuple[FolderModel, int | None]:
+    entity = session.get(FolderModel, {"id": payload.id, "user_id": user_id})
+    if entity is not None and not _is_newer(payload.updated_at, entity.updated_at):
+        return entity, None
+
+    if entity is None:
+        values = payload.model_dump()
+        if values.get("sort_order") is None:
+            values["sort_order"] = _next_folder_sort_order(session, user_id)
+        entity = FolderModel(user_id=user_id, **values)
+        session.add(entity)
+    else:
+        # 보낸 필드만 덮어쓴다 (ARCHITECTURE.md §4.6).
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(entity, field, value)
+
+    session.flush()
+    return entity, _new_change(session, user_id, "folder", payload.id)
+
+
+def delete_folder(
+    session: Session, user_id: str, folder_id: str
+) -> tuple[FolderModel | None, list[str], int | None]:
+    """폴더와 **그 안의 단어장까지** 지운다.
+
+    안의 단어장을 폴더 밖으로 꺼내는 쪽이 안전하지만, 그러면 지웠는데 단어장이
+    목록에 그대로 남아 "안 지워졌다"로 읽힌다. 화면에서 무엇이 함께 지워지는지
+    미리 알려주고 통째로 지운다.
+
+    돌려주는 목록은 함께 지운 단어장 id다 — 호출부가 변경 로그를 남기는 데 쓴다.
+    """
+    entity = session.get(FolderModel, {"id": folder_id, "user_id": user_id})
+    if entity is None:
+        return None, [], None
+    if entity.is_deleted:
+        return entity, [], None
+
+    entity.is_deleted = True
+    entity.updated_at = utc_now()
+
+    book_ids = list(
+        session.scalars(
+            select(WordBookModel.id).where(
+                WordBookModel.user_id == user_id,
+                WordBookModel.folder_id == folder_id,
+                WordBookModel.is_deleted.is_(False),
+            )
+        )
+    )
+    for book_id in book_ids:
+        delete_word_book(session, user_id, book_id)
+
+    session.flush()
+    return entity, book_ids, _new_change(session, user_id, "folder", folder_id)
+
+
+def list_folders(session: Session, user_id: str) -> list[FolderModel]:
+    return list(
+        session.scalars(
+            select(FolderModel)
+            .where(FolderModel.user_id == user_id, FolderModel.is_deleted.is_(False))
+            .order_by(
+                FolderModel.sort_order.is_(None),
+                FolderModel.sort_order,
+                FolderModel.created_at,
+            )
+        )
+    )
+
+
+def _next_folder_sort_order(session: Session, user_id: str) -> float:
+    largest = session.scalar(
+        select(func.max(FolderModel.sort_order)).where(
+            FolderModel.user_id == user_id
+        )
+    )
+    return (largest or 0.0) + 1.0
 
 
 def _next_sort_order(session: Session, user_id: str) -> float:

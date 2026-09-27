@@ -29,9 +29,19 @@ export interface Word {
   isDeleted: boolean;
 }
 
+export interface Folder {
+  id: string;
+  title: string;
+  sortOrder?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WordBook {
   id: string;
   title: string;
+  /** 담긴 폴더. 없으면 폴더 밖이다. */
+  folderId?: string;
   /** 사용자가 끌어서 정한 순서. 작을수록 위다. */
   sortOrder?: number;
   description?: string;
@@ -67,6 +77,11 @@ export interface ClozeNote {
 export interface WordBookInput {
   title: string;
   description?: string;
+  /**
+   * 담을 폴더. `null`을 주면 폴더 밖으로 꺼낸다.
+   * 생략하면 서버가 기존 값을 유지한다(exclude_unset).
+   */
+  folderId?: string | null;
   /** 생략하면 서버가 기존 값을 유지한다(새 단어장이면 맨 뒤). */
   sortOrder?: number;
 }

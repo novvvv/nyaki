@@ -134,8 +134,16 @@ class SyncCoordinator {
             await _mergeClozeNote(
               change['cloze_note'] as Map<String, dynamic>,
             );
-          default:
+          case 'word':
             await _mergeWord(change['word'] as Map<String, dynamic>);
+          default:
+            // 모르는 종류는 건너뛴다.
+            //
+            // 예전에는 default가 단어였다. 서버에 새 종류(폴더 등)가 생기면
+            // 그 변경을 단어로 읽으려다 null 캐스팅으로 터졌고, 트랜잭션이
+            // 통째로 실패해 앱이 서버 변경을 아예 못 받았다. 구버전 앱이
+            // 새 서버를 만나는 상황은 앞으로도 계속 생긴다.
+            break;
         }
       }
       await _db.into(_db.syncState).insertOnConflictUpdate(

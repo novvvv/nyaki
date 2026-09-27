@@ -2,12 +2,9 @@
 
 import { FirebaseError } from "firebase/app";
 import {
-  createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  updateProfile,
   type User,
 } from "firebase/auth";
 import {
@@ -35,15 +32,14 @@ interface AuthContextValue {
   user: User | null;
   ready: boolean;
   configured: boolean;
+  /**
+   * 로그인 방법은 구글 하나다.
+   *
+   * 비밀번호를 직접 받으면 그 순간 개인정보처리자가 된다 — 처리방침 고지,
+   * 보관·파기 의무, 유출 시 신고까지 따라온다. 혼자 만드는 서비스에서 떠안을
+   * 이유가 없어서 신원 확인을 통째로 위임했다. docs/ARCHITECTURE.md §인증
+   */
   signIn: () => Promise<void>;
-  /** 이메일 로그인. 구글 계정이 없거나 쓰기 싫은 사람을 위한 길이다. */
-  signInWithEmail: (email: string, password: string) => Promise<void>;
-  /** 이메일 회원가입. 이름은 비워두면 이메일 앞부분을 쓴다. */
-  signUpWithEmail: (
-    email: string,
-    password: string,
-    displayName?: string,
-  ) => Promise<void>;
   signOutUser: () => Promise<void>;
   getToken: () => Promise<string | null>;
 }
@@ -80,35 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signInWithEmail = useCallback(
-    async (email: string, password: string) => {
-      if (!firebaseAuth) {
-        throw new Error("Firebase Web 환경 변수가 설정되지 않았습니다.");
-      }
-      await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
-    },
-    [],
-  );
-
-  const signUpWithEmail = useCallback(
-    async (email: string, password: string, displayName?: string) => {
-      if (!firebaseAuth) {
-        throw new Error("Firebase Web 환경 변수가 설정되지 않았습니다.");
-      }
-      const credential = await createUserWithEmailAndPassword(
-        firebaseAuth,
-        email.trim(),
-        password,
-      );
-
-      // 이름이 없으면 이메일 앞부분을 쓴다 — 마이페이지에 "이름 없음"만
-      // 뜨는 것보다 낫다.
-      const name = displayName?.trim() || email.trim().split("@")[0];
-      if (name) await updateProfile(credential.user, { displayName: name });
-    },
-    [],
-  );
-
   const signOutUser = useCallback(async () => {
     if (firebaseAuth) await signOut(firebaseAuth);
   }, []);
@@ -121,8 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ready,
       configured: firebaseEnabled,
       signIn,
-      signInWithEmail,
-      signUpWithEmail,
       signOutUser,
       getToken,
     }),
@@ -130,8 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       ready,
       signIn,
-      signInWithEmail,
-      signUpWithEmail,
       signOutUser,
       getToken,
     ],

@@ -32,6 +32,8 @@ export interface Word {
 export interface WordBook {
   id: string;
   title: string;
+  /** 사용자가 끌어서 정한 순서. 작을수록 위다. */
+  sortOrder?: number;
   description?: string;
   createdAt: string;
   updatedAt: string;
@@ -65,4 +67,6 @@ export interface ClozeNote {
 export interface WordBookInput {
   title: string;
   description?: string;
+  /** 생략하면 서버가 기존 값을 유지한다(새 단어장이면 맨 뒤). */
+  sortOrder?: number;
 }

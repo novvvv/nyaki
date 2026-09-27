@@ -11,6 +11,8 @@ class WordBookPayload(BaseModel):
     # 없으면 recognition 하나(= 카드 도입 전과 같은 동작).
     card_kinds: str | None = Field(default=None, max_length=120)
     description: str | None = None
+    # 사용자가 끌어서 정한 순서. 작을수록 위다. 안 보내면 서버가 맨 뒤로 넣는다.
+    sort_order: float | None = None
     created_at: datetime
     updated_at: datetime
     is_deleted: bool = False

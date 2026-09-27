@@ -24,6 +24,12 @@ class WordBookModel(Base):
     card_kinds: Mapped[str | None] = mapped_column(String(120), nullable=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 사용자가 직접 정한 순서. 작을수록 위다.
+    #
+    # 실수인 이유는 **옮긴 행 하나만 쓰기 위해서**다. 3번과 4번 사이로 끌어다
+    # 놓으면 3.5를 준다. 정수면 아래 행 번호를 전부 다시 써야 하고, 그만큼의
+    # 변경이 오프라인 동기화에 한꺼번에 밀려 올라간다.
+    sort_order: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

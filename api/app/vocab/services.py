@@ -55,6 +55,16 @@ def _is_newer(incoming: datetime, current: datetime) -> bool:
     return _as_utc(incoming) > _as_utc(current)
 
 
+def _next_sort_order(session: Session, user_id: str) -> float:
+    """맨 뒤 자리. 아무것도 없으면 1부터 시작한다."""
+    largest = session.scalar(
+        select(func.max(WordBookModel.sort_order)).where(
+            WordBookModel.user_id == user_id
+        )
+    )
+    return (largest or 0.0) + 1.0
+
+
 def upsert_word_book(
     session: Session, user_id: str, payload: WordBookPayload
 ) -> tuple[WordBookModel, int | None]:
@@ -63,7 +73,12 @@ def upsert_word_book(
         return entity, None
 
     if entity is None:
-        entity = WordBookModel(user_id=user_id, **payload.model_dump())
+        values = payload.model_dump()
+        # 순서를 안 보내면 맨 뒤에 붙인다. 새 단어장이 목록 한가운데 끼어들면
+        # 방금 만든 것을 찾지 못한다.
+        if values.get("sort_order") is None:
+            values["sort_order"] = _next_sort_order(session, user_id)
+        entity = WordBookModel(user_id=user_id, **values)
         session.add(entity)
     else:
         # 보낸 필드만 덮어쓴다. model_dump()는 안 보낸 필드까지 기본값으로 뱉어서,
@@ -158,7 +173,13 @@ def list_word_books(session: Session, user_id: str) -> list[WordBookModel]:
         session.scalars(
             select(WordBookModel)
             .where(WordBookModel.user_id == user_id, WordBookModel.is_deleted.is_(False))
-            .order_by(WordBookModel.created_at)
+            # 사용자가 정한 순서가 먼저다. 값이 없는 행(구버전 클라이언트가 만든
+            # 것)은 맨 뒤로 보내고, 그 안에서는 만든 순서를 지킨다.
+            .order_by(
+                WordBookModel.sort_order.is_(None),
+                WordBookModel.sort_order,
+                WordBookModel.created_at,
+            )
         )
     )
 

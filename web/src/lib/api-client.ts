@@ -11,6 +11,7 @@ const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:800
 type ApiWordBook = {
   id: string;
   title: string;
+  sort_order: number | null;
   description: string | null;
   created_at: string;
   updated_at: string;
@@ -41,6 +42,7 @@ function toWordBook(value: ApiWordBook): WordBook {
   return {
     id: value.id,
     title: value.title,
+    sortOrder: value.sort_order ?? undefined,
     description: value.description ?? undefined,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
@@ -122,6 +124,8 @@ export async function putBook(
       id,
       title: input.title.trim(),
       description: input.description?.trim() || null,
+      // 안 보내면 서버가 기존 값을 유지한다(exclude_unset).
+      ...(input.sortOrder !== undefined ? { sort_order: input.sortOrder } : {}),
       created_at: createdAt,
       updated_at: timestamp,
       is_deleted: false,

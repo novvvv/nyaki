@@ -24,6 +24,7 @@ import {
 } from "./api-client";
 
 import type { BookSummary } from "./api-client";
+import { reorder } from "./sort-order";
 import type { Word, WordBook, WordBookInput, WordInput } from "./types";
 import { newId } from "./utils";
 
@@ -49,6 +50,8 @@ interface VocabContextValue {
   getWordBook: (id: string) => WordBook | undefined;
   createWordBook: (input: WordBookInput) => Promise<WordBook>;
   updateWordBook: (id: string, input: WordBookInput) => Promise<WordBook>;
+  /** 단어장 순서를 바꾼다. 화면은 즉시, 서버는 옮긴 것만 저장한다. */
+  reorderWordBooks: (from: number, to: number) => Promise<void>;
   createWord: (wordBookId: string, input: WordInput) => Promise<Word>;
   updateWord: (
     wordBookId: string,
@@ -110,7 +113,9 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       ...(await putBook(token, newId("book"), input)),
       words: [],
     };
-    setWordBooks((prev) => [created, ...prev]);
+    // 서버가 맨 뒤 자리를 주므로 화면도 맨 뒤에 붙인다. 앞에 넣으면 새로고침할
+    // 때 아래로 내려가 위치가 튄다.
+    setWordBooks((prev) => [...prev, created]);
     return created;
   }, [getToken]);
 
@@ -159,6 +164,45 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       return next;
     },
     [getToken, wordBooks],
+  );
+
+  const reorderWordBooks = useCallback(
+    async (from: number, to: number) => {
+      const { items, changed } = reorder(wordBooks, from, to);
+      if (changed.length === 0) return;
+
+      // 먼저 화면부터 옮긴다. 저장을 기다리면 손을 뗀 카드가 제자리로
+      // 돌아갔다가 다시 움직이는 것처럼 보인다.
+      setWordBooks(items);
+
+      const token = await getToken();
+      if (!token) return;
+
+      try {
+        await Promise.all(
+          changed.map((row) => {
+            const book = items.find((value) => value.id === row.id)!;
+            return putBook(
+              token,
+              book.id,
+              {
+                title: book.title,
+                description: book.description,
+                sortOrder: row.sortOrder,
+              },
+              book.createdAt,
+            );
+          }),
+        );
+      } catch (reason) {
+        setError(
+          reason instanceof Error ? reason.message : "순서를 저장하지 못했어요.",
+        );
+        // 서버가 진짜 무엇을 갖고 있는지로 되돌린다.
+        await refresh();
+      }
+    },
+    [getToken, refresh, wordBooks],
   );
 
   const createWord = useCallback(async (wordBookId: string, input: WordInput) => {
@@ -266,6 +310,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       getWordBook,
       createWordBook,
       updateWordBook,
+      reorderWordBooks,
       createWord,
       updateWord,
       deleteWord,
@@ -282,6 +327,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       getWordBook,
       createWordBook,
       updateWordBook,
+      reorderWordBooks,
       createWord,
       updateWord,
       deleteWord,

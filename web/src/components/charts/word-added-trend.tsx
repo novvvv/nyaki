@@ -1,14 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { DailyCount } from "@/lib/stats";
 
-const WIDTH = 720;
 const HEIGHT = 200;
-const PAD_LEFT = 40;
-const PAD_RIGHT = 12;
-const PAD_TOP = 12;
+const PAD_LEFT = 34;
+const PAD_RIGHT = 8;
+const PAD_TOP = 14;
 const PAD_BOTTOM = 26;
 
 /** 축에 쓸 "깔끔한" 상한값으로 올림한다 (0, 1, 2, 5, 10, 20, 50, 100…). */
@@ -25,67 +24,75 @@ function formatDateLabel(dateKey: string): string {
   return `${Number(month)}/${Number(day)}`;
 }
 
+/**
+ * 날짜별 추가 개수 — 막대.
+ *
+ * 선이 아니라 막대인 이유: 하루 추가량은 이어지는 값이 아니라 그날그날의 개수다.
+ * 선으로 그으면 값이 없는 날 사이를 비스듬히 이어서, 추가한 적 없는 날에도
+ * 뭔가 있었던 것처럼 보이는 삼각형이 줄줄이 생긴다(안키의 Added 그래프도 막대다).
+ *
+ * **SVG를 컨테이너 픽셀 그대로 그린다.** 전에는 고정 viewBox에 width="100%"를
+ * 줬는데, 그러면 넓은 화면에서 내용이 가운데로 몰리고 양옆에 여백이 생긴다.
+ * 포인터 좌표를 요소 너비 기준으로 환산하던 계산이 그 여백만큼 어긋나서
+ * 커서보다 왼쪽 날짜가 잡혔다. 이제 막대마다 히트 영역을 따로 두므로
+ * 좌표 환산 자체가 없다.
+ */
 export function WordAddedTrend({ data }: { data: DailyCount[] }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const [width, setWidth] = useState(0);
+  const boxRef = useRef<HTMLDivElement>(null);
 
-  const plotWidth = WIDTH - PAD_LEFT - PAD_RIGHT;
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    // observe() 직후 한 번 호출되므로 초기값도 여기서 채워진다.
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [showTable]);
+
+  const plotWidth = Math.max(0, width - PAD_LEFT - PAD_RIGHT);
   const plotHeight = HEIGHT - PAD_TOP - PAD_BOTTOM;
+  const baseY = PAD_TOP + plotHeight;
 
   const maxValue = useMemo(
     () => niceCeil(Math.max(1, ...data.map((d) => d.count))),
     [data],
   );
 
-  const points = useMemo(() => {
-    if (data.length === 0) return [];
-    const step = data.length === 1 ? 0 : plotWidth / (data.length - 1);
-    return data.map((d, i) => ({
-      x: PAD_LEFT + (data.length === 1 ? plotWidth / 2 : i * step),
-      y: PAD_TOP + plotHeight - (d.count / maxValue) * plotHeight,
-      ...d,
-    }));
-  }, [data, maxValue, plotWidth, plotHeight]);
-
-  const linePath = points
-    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-    .join(" ");
-  const areaPath =
-    points.length > 0
-      ? `${linePath} L${points[points.length - 1]!.x.toFixed(1)},${
-          PAD_TOP + plotHeight
-        } L${points[0]!.x.toFixed(1)},${PAD_TOP + plotHeight} Z`
-      : "";
+  const bars = useMemo(() => {
+    if (data.length === 0 || plotWidth <= 0) return [];
+    const band = plotWidth / data.length;
+    // 칸 사이를 조금 띄우되, 기간이 길어 칸이 좁아지면 띄우기를 포기한다.
+    const barWidth = Math.max(1.5, Math.min(band - Math.max(1, band * 0.3), 22));
+    return data.map((d, i) => {
+      const bandX = PAD_LEFT + i * band;
+      const height = (d.count / maxValue) * plotHeight;
+      return {
+        ...d,
+        bandX,
+        band,
+        center: bandX + band / 2,
+        x: bandX + (band - barWidth) / 2,
+        width: barWidth,
+        y: baseY - height,
+        height,
+      };
+    });
+  }, [data, maxValue, plotWidth, plotHeight, baseY]);
 
   // 라벨은 겹치지 않게 최대 6개만 균등 간격으로.
   const labelIndices = useMemo(() => {
     if (data.length <= 6) return data.map((_, i) => i);
-    const count = 6;
-    const step = (data.length - 1) / (count - 1);
-    return Array.from({ length: count }, (_, i) => Math.round(i * step));
+    const step = (data.length - 1) / 5;
+    return Array.from({ length: 6 }, (_, i) => Math.round(i * step));
   }, [data]);
 
   const gridValues = [0, maxValue / 2, maxValue];
-
-  function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
-    const svg = svgRef.current;
-    if (!svg || points.length === 0) return;
-    const rect = svg.getBoundingClientRect();
-    const relX = ((e.clientX - rect.left) / rect.width) * WIDTH;
-    let nearest = 0;
-    let nearestDist = Infinity;
-    points.forEach((p, i) => {
-      const dist = Math.abs(p.x - relX);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearest = i;
-      }
-    });
-    setHoverIndex(nearest);
-  }
-
-  const hovered = hoverIndex !== null ? points[hoverIndex] : null;
+  const hovered = hoverIndex !== null ? bars[hoverIndex] : null;
 
   if (data.length === 0) {
     return (
@@ -130,30 +137,27 @@ export function WordAddedTrend({ data }: { data: DailyCount[] }) {
           </table>
         </div>
       ) : (
-        <div className="relative mt-3">
+        <div ref={boxRef} className="relative mt-3">
           <svg
-            ref={svgRef}
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+            viewBox={`0 0 ${Math.max(width, 1)} ${HEIGHT}`}
             width="100%"
             height={HEIGHT}
-            className="overflow-visible"
-            onPointerMove={handlePointerMove}
             onPointerLeave={() => setHoverIndex(null)}
             role="img"
             aria-label="날짜별 단어 추가 개수 추이"
           >
             {/* 가로 그리드 + y축 라벨 */}
             {gridValues.map((v) => {
-              const y = PAD_TOP + plotHeight - (v / maxValue) * plotHeight;
+              const y = baseY - (v / maxValue) * plotHeight;
               return (
                 <g key={v}>
                   <line
                     x1={PAD_LEFT}
-                    x2={WIDTH - PAD_RIGHT}
+                    x2={width - PAD_RIGHT}
                     y1={y}
                     y2={y}
                     stroke="var(--nyaki-taupe)"
-                    strokeOpacity={0.2}
+                    strokeOpacity={v === 0 ? 0.45 : 0.18}
                     strokeWidth={1}
                   />
                   <text
@@ -173,68 +177,55 @@ export function WordAddedTrend({ data }: { data: DailyCount[] }) {
             {labelIndices.map((i) => (
               <text
                 key={i}
-                x={points[i]!.x}
+                x={bars[i]?.center ?? 0}
                 y={HEIGHT - 6}
                 textAnchor="middle"
                 className="fill-umber/42 text-[10px] tabular-nums"
               >
-                {formatDateLabel(points[i]!.date)}
+                {formatDateLabel(data[i]!.date)}
               </text>
             ))}
 
-            {/* 영역 채움 */}
-            <path d={areaPath} fill="var(--chart-1)" fillOpacity={0.12} stroke="none" />
-            {/* 선 — 배경(Ivory)에 자연스럽게 얹히면서도 또렷하게 보이는 절충값 */}
-            <path
-              d={linePath}
-              fill="none"
-              stroke="var(--chart-1)"
-              strokeOpacity={0.8}
-              strokeWidth={1.75}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-
-            {/* 크로스헤어 + 포인트 */}
-            {hovered ? (
-              <g>
-                <line
-                  x1={hovered.x}
-                  x2={hovered.x}
-                  y1={PAD_TOP}
-                  y2={PAD_TOP + plotHeight}
-                  stroke="var(--nyaki-ink)"
-                  strokeOpacity={0.12}
-                  strokeWidth={1}
+            {/* 막대 — 값이 0인 날은 아무것도 그리지 않는다 */}
+            {bars.map((bar, i) =>
+              bar.count === 0 ? null : (
+                <rect
+                  key={bar.date}
+                  x={bar.x}
+                  y={bar.y}
+                  width={bar.width}
+                  height={Math.max(bar.height, 1.5)}
+                  rx={Math.min(bar.width / 2, 2)}
+                  fill="var(--nyaki-ink)"
+                  fillOpacity={hoverIndex === null || hoverIndex === i ? 0.82 : 0.22}
+                  className="transition-[fill-opacity] duration-150"
                 />
-                <circle
-                  cx={hovered.x}
-                  cy={hovered.y}
-                  r={3.5}
-                  fill="var(--chart-1)"
-                  fillOpacity={0.75}
-                  stroke="var(--nyaki-cream)"
-                  strokeWidth={2}
-                />
-              </g>
-            ) : null}
+              ),
+            )}
 
-            {/* 히트 영역 — 전체 플롯 위에 투명 오버레이로 포인터 이벤트 수신 */}
-            <rect
-              x={PAD_LEFT}
-              y={0}
-              width={plotWidth}
-              height={HEIGHT}
-              fill="transparent"
-            />
+            {/* 히트 영역 — 날짜 칸마다 하나. 좌표를 환산하지 않으니 어긋날 일이 없다. */}
+            {bars.map((bar, i) => (
+              <rect
+                key={`hit-${bar.date}`}
+                x={bar.bandX}
+                y={PAD_TOP}
+                width={bar.band}
+                height={plotHeight + PAD_BOTTOM}
+                fill="transparent"
+                // enter가 아니라 move로 받는다 — enter는 버블링하지 않아서
+                // 이벤트 위임을 쓰는 환경(React 합성 이벤트)에서 놓치기 쉽다.
+                onPointerMove={() => setHoverIndex(i)}
+              />
+            ))}
           </svg>
 
           {hovered ? (
             <div
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-md border border-taupe/30 bg-card px-2.5 py-1.5 text-xs shadow-sm"
               style={{
-                left: `${(hovered.x / WIDTH) * 100}%`,
-                top: `${(hovered.y / HEIGHT) * 100}%`,
+                // 가장자리 날짜에서 툴팁이 카드 밖으로 잘리지 않게 붙잡는다.
+                left: `${Math.min(Math.max(hovered.center, 52), Math.max(width - 52, 52))}px`,
+                top: `${Math.max(hovered.y - 8, 0)}px`,
               }}
             >
               <div className="font-semibold tabular-nums text-ink">

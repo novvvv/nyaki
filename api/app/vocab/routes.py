@@ -321,8 +321,7 @@ def get_review_due(
         )
         if note is not None:
             # 가리는 일은 서버가 한다 — 웹·앱이 각자 파싱하면 렌더가 갈린다.
-            number = int(card.kind[1:]) if card.kind[1:].isdigit() else 1
-            front, back = render_cloze(note.text, number)
+            front, back = render_cloze(note.text)
             due_cards.append(
                 DueCardResponse(
                     id=card.id,
@@ -335,9 +334,7 @@ def get_review_due(
                         back=back,
                         segments=[
                             ClozeSegmentResponse(text=chunk, blank=is_blank, hint=hint)
-                            for chunk, is_blank, hint in cloze_segments(
-                                note.text, number
-                            )
+                            for chunk, is_blank, hint in cloze_segments(note.text)
                         ],
                     ),
                     preview=preview_value,

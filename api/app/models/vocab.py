@@ -131,7 +131,7 @@ class CardModel(Base):
     note_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     # 단어 카드는 recognition(단어→뜻) · recall(뜻→단어),
-    # 빈칸 노트 카드는 c1 · c2 … (빈칸 번호)
+    # 빈칸 노트 카드는 cloze 하나 — 노트 하나가 카드 한 장이다
     kind: Mapped[str] = mapped_column(String(32))
 
     srs_ease_factor: Mapped[float] = mapped_column(

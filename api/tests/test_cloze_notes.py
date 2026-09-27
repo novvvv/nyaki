@@ -1,9 +1,13 @@
-"""빈칸 노트 — 안키의 Cloze 노트 타입.
+"""빈칸 노트.
 
-**단어의 파생물이 아니다.** 문장 한 덩이에 빈칸을 여럿 찍어 카드를 여러 장
-만든다. 단어 암기뿐 아니라 정의·조문·개념을 외우는 데 쓴다.
+**단어의 파생물이 아니다.** 문장 한 덩이에 빈칸을 여럿 찍어 한 번에 묻는다.
+단어 암기뿐 아니라 정의·조문·개념을 외우는 데 쓴다.
 
-문법은 안키와 같은 `{{cN::답}}`이다.
+**노트 하나가 카드 한 장이다.** 빈칸이 셋이어도 카드는 하나다 —
+"각 빈칸에 알맞은 용어를 쓰시오"가 문제 하나인 것과 같다.
+(안키는 번호마다 카드를 따로 만들지만, 그 모델은 우리 쓰임에 안 맞았다.)
+
+문법은 안키와 같은 `{{cN::답}}`이고, 번호는 어디를 가릴지 표시하는 용도다.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -13,7 +17,7 @@ from fastapi.testclient import TestClient
 from app.core.auth import get_current_user_id
 from app.core.database import Base, engine
 from app.main import app
-from app.vocab.services import cloze_numbers, render_cloze
+from app.vocab.services import cloze_count, render_cloze
 
 BOOK = "cloze-book"
 TEXT = "TCP는 {{c1::연결 지향}}, UDP는 {{c2::비연결}} 프로토콜이다"
@@ -22,26 +26,22 @@ TEXT = "TCP는 {{c1::연결 지향}}, UDP는 {{c2::비연결}} 프로토콜이�
 # ==================== 파서 ====================
 
 
-def test_parser_finds_blank_numbers() -> None:
-    assert cloze_numbers(TEXT) == (1, 2)
-    assert cloze_numbers("빈칸 없음") == ()
-    # 같은 번호를 여러 번 쓰면 한 카드다 — 안키와 같다.
-    assert cloze_numbers("{{c1::A}}와 {{c1::B}}") == (1,)
+def test_parser_counts_blanks() -> None:
+    assert cloze_count(TEXT) == 2
+    assert cloze_count("빈칸 없음") == 0
+    # 번호를 같게 쓰든 다르게 쓰든 자리 수만큼 센다.
+    assert cloze_count("{{c1::A}}와 {{c1::B}}") == 2
 
 
-def test_parser_hides_only_the_asked_blank() -> None:
-    front, back = render_cloze(TEXT, 1)
+def test_parser_hides_every_blank() -> None:
+    front, back = render_cloze(TEXT)
 
-    # 묻는 빈칸만 가리고 나머지는 문맥으로 남긴다.
-    assert front == "TCP는 [ … ], UDP는 비연결 프로토콜이다"
+    assert front == "TCP는 [ … ], UDP는 [ … ] 프로토콜이다"
     assert back == "TCP는 연결 지향, UDP는 비연결 프로토콜이다"
-
-    front2, _ = render_cloze(TEXT, 2)
-    assert front2 == "TCP는 연결 지향, UDP는 [ … ] 프로토콜이다"
 
 
 def test_parser_shows_hint_when_given() -> None:
-    front, _ = render_cloze("답은 {{c1::42::숫자}}", 1)
+    front, _ = render_cloze("답은 {{c1::42::숫자}}")
     assert front == "답은 [ 숫자 ]"
 
 
@@ -95,26 +95,28 @@ def _due(client: TestClient) -> list[dict]:
     return client.get("/v1/review/due?limit=9999").json()["cards"]
 
 
-def test_one_note_makes_one_card_per_blank() -> None:
-    """빈칸 두 개면 카드 두 장, 그리고 둘 다 같은 세션에 나온다."""
+def test_one_note_makes_one_card() -> None:
+    """빈칸이 둘이어도 카드는 하나다. 한 문제이기 때문이다."""
     client = _client("firebase-user-cloze-basic")
     _put_note(client, "n1", TEXT)
 
     cards = _due(client)
-    assert sorted(card["kind"] for card in cards) == ["c1", "c2"]
-    assert all(card["source_type"] == "cloze" for card in cards)
-    assert all(card["word"] is None for card in cards)
+    assert len(cards) == 1
 
-    c1 = next(card for card in cards if card["kind"] == "c1")
-    assert c1["id"] == "n1:c1"
+    card = cards[0]
+    assert card["id"] == "n1:cloze"
+    assert card["kind"] == "cloze"
+    assert card["source_type"] == "cloze"
+    assert card["word"] is None
     # 가리는 일은 서버가 한다 — 웹·앱이 각자 파싱하면 렌더가 갈린다.
-    assert c1["cloze"]["front"] == "TCP는 [ … ], UDP는 비연결 프로토콜이다"
-    assert c1["cloze"]["back"] == "TCP는 연결 지향, UDP는 비연결 프로토콜이다"
+    assert card["cloze"]["front"] == "TCP는 [ … ], UDP는 [ … ] 프로토콜이다"
+    assert card["cloze"]["back"] == "TCP는 연결 지향, UDP는 비연결 프로토콜이다"
 
     app.dependency_overrides.clear()
 
 
-def test_each_blank_keeps_its_own_schedule() -> None:
+def test_grading_the_note_pushes_the_whole_card_out() -> None:
+    """빈칸별 일정은 없다 — 노트 하나에 일정 하나다."""
     client = _client("firebase-user-cloze-schedule")
     _put_note(client, "n1", TEXT)
 
@@ -124,9 +126,9 @@ def test_each_blank_keeps_its_own_schedule() -> None:
             json={
                 "grades": [
                     {
-                        "id": "log-c1",
+                        "id": "log-1",
                         "word_id": "n1",
-                        "card_id": "n1:c1",
+                        "card_id": "n1:cloze",
                         "grade": "good",
                         "reviewed_at": datetime.now(timezone.utc).isoformat(),
                     }
@@ -136,32 +138,36 @@ def test_each_blank_keeps_its_own_schedule() -> None:
         == 1
     )
 
-    # c1은 내일로 밀렸으니 이제 c2가 나온다.
-    assert [card["kind"] for card in _due(client)] == ["c2"]
+    assert _due(client) == []
 
     app.dependency_overrides.clear()
 
 
-def test_adding_a_blank_adds_a_card() -> None:
+def test_adding_a_blank_does_not_add_a_card() -> None:
     client = _client("firebase-user-cloze-grow")
     _put_note(client, "n1", "{{c1::하나}}뿐")
 
-    assert [card["kind"] for card in _due(client)] == ["c1"]
+    assert [card["kind"] for card in _due(client)] == ["cloze"]
 
     _put_note(client, "n1", "{{c1::하나}}와 {{c2::둘}}")
-    assert sorted(card["kind"] for card in _due(client)) == ["c1", "c2"]
-    assert client.get("/v1/review/due/count").json()["total"] == 2
+    assert [card["kind"] for card in _due(client)] == ["cloze"]
+    assert client.get("/v1/review/due/count").json()["total"] == 1
 
     app.dependency_overrides.clear()
 
 
-def test_removing_a_blank_hides_its_card() -> None:
+def test_removing_every_blank_hides_the_card() -> None:
+    """물을 게 없으면 낼 것도 없다."""
     client = _client("firebase-user-cloze-shrink")
     _put_note(client, "n1", TEXT)
+    assert len(_due(client)) == 1
 
-    _put_note(client, "n1", "TCP는 {{c1::연결 지향}} 프로토콜이다")
+    _put_note(client, "n1", "빈칸이 없는 문장")
+    assert _due(client) == []
 
-    assert [card["kind"] for card in _due(client)] == ["c1"]
+    # 다시 넣으면 살아난다.
+    _put_note(client, "n1", TEXT)
+    assert [card["id"] for card in _due(client)] == ["n1:cloze"]
 
     app.dependency_overrides.clear()
 
@@ -198,7 +204,7 @@ def test_sync_carries_notes_and_their_cards() -> None:
     kinds = [change["entity_type"] for change in changes]
 
     assert "cloze_note" in kinds
-    assert kinds.count("card") == 2  # c1, c2
+    assert kinds.count("card") == 1  # 노트 하나에 카드 하나
 
     note = next(c for c in changes if c["entity_type"] == "cloze_note")
     assert note["cloze_note"]["text"] == TEXT
@@ -250,7 +256,7 @@ def test_different_notes_each_bring_their_own_card() -> None:
     _put_note(client, "n1", "{{c1::하나}}")
     _put_note(client, "n2", "{{c1::둘}}")
 
-    assert sorted(card["id"] for card in _due(client)) == ["n1:c1", "n2:c1"]
+    assert sorted(card["id"] for card in _due(client)) == ["n1:cloze", "n2:cloze"]
 
     app.dependency_overrides.clear()
 
@@ -284,7 +290,7 @@ def test_summary_counts_words_and_notes_together() -> None:
     )
 
     assert summary["item_count"] == 2  # 단어 1 + 노트 1
-    assert summary["card_count"] == 3  # recognition 1 + c1 · c2
+    assert summary["card_count"] == 2  # 단어의 recognition 1 + 노트 1
     assert summary["mastery_rate"] == 0  # 아직 아무것도 안 했다
 
     app.dependency_overrides.clear()
@@ -302,7 +308,7 @@ def test_summary_mastery_counts_cloze_cards() -> None:
                 {
                     "id": "log-1",
                     "word_id": "n1",
-                    "card_id": "n1:c1",
+                    "card_id": "n1:cloze",
                     "grade": "good",
                     "reviewed_at": datetime.now(timezone.utc).isoformat(),
                 }
@@ -322,7 +328,7 @@ def test_summary_mastery_counts_cloze_cards() -> None:
     app.dependency_overrides.clear()
 
 
-def test_cloze_segments_mark_the_asked_blank() -> None:
+def test_cloze_segments_mark_every_blank() -> None:
     """화면이 빈칸 자리를 그대로 답으로 바꿀 수 있게 조각으로 준다."""
     client = _client("firebase-user-cloze-segments")
     _put_note(client, "n1", TEXT)
@@ -337,8 +343,8 @@ def test_cloze_segments_mark_the_asked_blank() -> None:
         "비연결",
         " 프로토콜이다",
     ]
-    # 지금 묻는 빈칸만 blank다. 나머지 빈칸은 답이 보인 채 문맥으로 남는다.
-    assert [s["blank"] for s in segments] == [False, True, False, False, False]
+    # 빈칸 자리는 전부 blank다 — 한 번에 묻는다.
+    assert [s["blank"] for s in segments] == [False, True, False, True, False]
 
     app.dependency_overrides.clear()
 

@@ -70,12 +70,11 @@ function ClozeForm() {
   const [error, setError] = useState<string>();
 
   // 서버와 같은 규칙으로 센다. 저장 전에 카드가 몇 장 생기는지만 보여준다.
-  const blanks = new Set(
-    [...text.matchAll(/\{\{c(\d+)::/g)].map((match) => match[1]),
-  );
+  // 노트 하나가 카드 한 장이다 — 이 수는 카드 수가 아니라 가려질 자리의 수다.
+  const blanks = [...text.matchAll(/\{\{c(\d+)::/g)].length;
 
   async function save() {
-    if (saving || blanks.size === 0) return;
+    if (saving || blanks === 0) return;
     setSaving(true);
     setError(undefined);
     try {
@@ -95,7 +94,7 @@ function ClozeForm() {
     <main className="mx-auto w-full max-w-3xl px-8 py-10 lg:px-12">
       <PageHeader
         title="빈칸"
-        description="가릴 부분을 {{c1::답}} 으로 감쌉니다. 번호를 늘리면 카드가 늘어납니다."
+        description="가릴 부분을 {{c1::답}} 으로 감쌉니다. 빈칸이 여럿이어도 한 번에 묻습니다."
       />
 
       <TextArea
@@ -111,7 +110,7 @@ function ClozeForm() {
 
       <div className="mt-8 flex items-center justify-end gap-3">
         <span className="text-xs text-umber/45">
-          {blanks.size === 0 ? "빈칸을 하나 이상" : `카드 ${blanks.size}장`}
+          {blanks === 0 ? "빈칸을 하나 이상" : `빈칸 ${blanks}개`}
         </span>
         <SubtleButton
           className="py-1.5 text-xs"
@@ -120,7 +119,7 @@ function ClozeForm() {
           취소
         </SubtleButton>
         <PrimaryButton
-          disabled={saving || blanks.size === 0}
+          disabled={saving || blanks === 0}
           onClick={() => void save()}
         >
           {saving ? "저장 중…" : "저장"}

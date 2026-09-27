@@ -195,18 +195,20 @@ DEFAULT_CARD_KINDS = ("recognition",)
 CLOZE_PATTERN = re.compile(r"\{\{c(\d+)::(.+?)(?:::(.+?))?\}\}", re.DOTALL)
 
 
-def cloze_numbers(text: str) -> tuple[int, ...]:
-    """이 텍스트가 만드는 빈칸 번호들. 중복은 하나로 본다.
+def cloze_count(text: str) -> int:
+    """이 텍스트의 빈칸 개수. 카드 수가 아니라 **가려질 자리의 수**다.
 
-    같은 번호를 여러 번 쓰면(`{{c1::A}} … {{c1::B}}`) 한 카드에서 둘 다 가려진다 —
-    안키와 같은 동작이다.
+    한 노트는 카드 한 장이다. 빈칸이 셋이면 셋을 한 번에 묻는다 —
+    "각 빈칸에 알맞은 용어를 쓰시오"가 문제 하나인 것과 같다.
+
+    번호(`c1`, `c2`)는 어디를 가릴지 표시하는 용도로만 남았다. 번호를 다르게
+    쓰든 같게 쓰든 결과는 같다.
     """
-    found = {int(match.group(1)) for match in CLOZE_PATTERN.finditer(text)}
-    return tuple(sorted(n for n in found if n > 0))
+    return len(CLOZE_PATTERN.findall(text))
 
 
-def cloze_segments(text: str, number: int) -> list[tuple[str, bool, str | None]]:
-    """문장을 조각으로 쪼갠다 — (글자, 이 자리가 묻는 빈칸인가, 힌트).
+def cloze_segments(text: str) -> list[tuple[str, bool, str | None]]:
+    """문장을 조각으로 쪼갠다 — (글자, 이 자리가 빈칸인가, 힌트).
 
     앞뒤를 **문장 두 개**로 내려주면 화면이 "가린 문장"과 "답 문장"을 위아래로
     늘어놓게 된다. 사용자가 보고 싶은 것은 빈칸 자리가 답으로 바뀌는 것이다.
@@ -217,27 +219,17 @@ def cloze_segments(text: str, number: int) -> list[tuple[str, bool, str | None]]
     for match in CLOZE_PATTERN.finditer(text):
         if match.start() > cursor:
             out.append((text[cursor : match.start()], False, None))
-        answer = match.group(2)
-        if int(match.group(1)) == number:
-            out.append((answer, True, match.group(3)))
-        else:
-            # 묻지 않는 빈칸은 답을 그대로 둔다 — 문맥으로 남긴다.
-            out.append((answer, False, None))
+        out.append((match.group(2), True, match.group(3)))
         cursor = match.end()
     if cursor < len(text):
         out.append((text[cursor:], False, None))
     return out
 
 
-def render_cloze(text: str, number: int) -> tuple[str, str]:
-    """(앞면, 뒷면). 앞면은 해당 번호만 가리고 나머지는 답을 보여준다.
-
-    안키와 같다 — 한 번에 한 빈칸만 묻고, 나머지는 문맥으로 남긴다.
-    """
+def render_cloze(text: str) -> tuple[str, str]:
+    """(앞면, 뒷면). 앞면은 빈칸을 **전부** 가린다."""
 
     def to_front(match: re.Match[str]) -> str:
-        if int(match.group(1)) != number:
-            return match.group(2)
         hint = match.group(3)
         return f"[ {hint} ]" if hint else "[ … ]"
 
@@ -498,25 +490,28 @@ def delete_card(
 def sync_cards_for_note(session: Session, user_id: str, note: ClozeNoteModel) -> None:
     """빈칸 노트의 카드를 텍스트에 맞춘다.
 
-    빈칸 번호가 곧 카드 종류다(c1, c2 …). 번호를 지우면 그 카드는 soft delete —
-    다시 넣으면 복습 기록이 살아난다.
-    """
-    numbers = () if note.is_deleted else cloze_numbers(note.text)
-    kinds = tuple(f"c{number}" for number in numbers)
+    **노트 하나가 카드 한 장이다.** 빈칸이 셋이어도 한 번에 묻는다 — 한 문장의
+    빈칸들은 대개 같이 떠올려야 하는 것이고, 앞 빈칸의 답이 뒤 빈칸의 문맥이 된다.
+    (예전에는 번호마다 카드를 따로 만들었다. 안키의 cloze와 같은 방식이었는데,
+    "각 빈칸에 알맞은 용어를 쓰시오" 같은 한 문제가 카드 여러 장으로 쪼개졌다.)
 
-    existing = {
-        card.kind: card
-        for card in session.scalars(
+    빈칸이 하나도 없으면 물을 게 없으므로 카드도 없다.
+    """
+    wanted = not note.is_deleted and cloze_count(note.text) > 0
+    kind = "cloze"
+
+    existing = list(
+        session.scalars(
             select(CardModel).where(
                 CardModel.user_id == user_id, CardModel.note_id == note.id
             )
         )
-    }
+    )
+    card = next((value for value in existing if value.kind == kind), None)
 
     touched: list[str] = []
 
-    for kind in kinds:
-        card = existing.get(kind)
+    if wanted:
         if card is None:
             session.add(
                 CardModel(
@@ -536,11 +531,13 @@ def sync_cards_for_note(session: Session, user_id: str, note: ClozeNoteModel) ->
             card.updated_at = note.updated_at
             touched.append(card.id)
 
-    for kind, card in existing.items():
-        if kind not in kinds and not card.is_deleted:
-            card.is_deleted = True
-            card.updated_at = note.updated_at
-            touched.append(card.id)
+    # 번호별 카드를 쓰던 시절에 만들어진 c1·c2 …도 여기서 정리된다.
+    for value in existing:
+        stale = value.kind != kind or not wanted
+        if stale and not value.is_deleted:
+            value.is_deleted = True
+            value.updated_at = note.updated_at
+            touched.append(value.id)
 
     session.flush()
     for card_id in touched:

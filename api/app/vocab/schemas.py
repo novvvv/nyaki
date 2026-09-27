@@ -107,7 +107,7 @@ class CardPayload(BaseModel):
     source_type: Literal["word", "cloze"] = "word"
     word_id: str | None = Field(default=None, max_length=80)
     note_id: str | None = Field(default=None, max_length=80)
-    # 단어 카드는 recognition·recall, 빈칸 카드는 c1·c2 …
+    # 단어 카드는 recognition·recall, 빈칸 노트 카드는 cloze 하나
     kind: str = Field(min_length=1, max_length=32)
     srs_ease_factor: float = 2.5
     srs_interval_days: int = 0

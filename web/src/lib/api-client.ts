@@ -737,3 +737,13 @@ export async function fetchPackImports(token: string): Promise<PackImport[]> {
   const records = await request<ApiPackImport[]>("/v1/pack-imports", token);
   return records.map(toPackImport);
 }
+
+// =============== 회원 탈퇴 =============== //
+
+/**
+ * 회원 탈퇴. 서버가 내 데이터를 전부 지우고 Firebase 계정까지 지운다.
+ * 되돌릴 수 없다 — 화면이 두 번 확인받은 뒤에 부른다.
+ */
+export async function deleteAccount(token: string): Promise<void> {
+  await request<void>("/v1/account", token, { method: "DELETE" });
+}

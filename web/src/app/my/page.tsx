@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
@@ -236,6 +237,7 @@ function Row({
 }
 
 export default function MyPage() {
+  const router = useRouter();
   const { user, signOutUser } = useAuth();
   const { wordBooks } = useVocab();
 
@@ -299,7 +301,10 @@ export default function MyPage() {
             label="회원 탈퇴"
             value="모든 단어장이 삭제됩니다"
             action={
-              <SubtleButton className="py-1.5 text-xs" disabled>
+              <SubtleButton
+                className="py-1.5 text-xs"
+                onClick={() => router.push("/my/withdraw")}
+              >
                 탈퇴
               </SubtleButton>
             }

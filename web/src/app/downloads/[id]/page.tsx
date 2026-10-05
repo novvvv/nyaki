@@ -6,11 +6,20 @@ import { useParams, useRouter } from "next/navigation";
 import { Badge, PageHeader, SubtleButton } from "@/components/ui";
 import { getPack, LEVEL_TONE } from "@/lib/packs";
 import { cn } from "@/lib/utils";
+import { useVocab } from "@/lib/vocab-store";
 
 export default function PackDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const pack = getPack(params.id);
+  const { wordBooks, packImports } = useVocab();
+
+  // 이 묶음을 담은 단어장 이름. 지운 단어장은 서버가 이미 뺐다.
+  const importedInto = packImports
+    .filter((record) => record.packId === pack?.id)
+    .map((record) => wordBooks.find((book) => book.id === record.wordBookId))
+    .filter((book) => book !== undefined)
+    .map((book) => `「${book.title}」`);
 
   if (!pack) {
     return (
@@ -48,6 +57,11 @@ export default function PackDetailPage() {
         {pack.tags.map((tag) => (
           <Badge key={tag}>{tag}</Badge>
         ))}
+        {importedInto.length > 0 ? (
+          <span className="text-xs text-umber/55">
+            이미 {importedInto.join(", ")}에 담았어요
+          </span>
+        ) : null}
       </div>
 
       <ul className="divide-y divide-taupe/25 border-t border-taupe/25">

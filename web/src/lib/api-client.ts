@@ -648,3 +648,92 @@ export function pushGradesBeacon(
     body: gradesBody(grades),
   }).catch(() => {});
 }
+
+// =============== 단어 묶음 담기 =============== //
+
+export interface PackImport {
+  id: string;
+  packId: string;
+  wordBookId: string;
+  wordCount: number;
+  importedAt: string;
+}
+
+type ApiPackImport = {
+  id: string;
+  pack_id: string;
+  word_book_id: string;
+  word_count: number;
+  imported_at: string;
+};
+
+function toPackImport(value: ApiPackImport): PackImport {
+  return {
+    id: value.id,
+    packId: value.pack_id,
+    wordBookId: value.word_book_id,
+    wordCount: value.word_count,
+    importedAt: value.imported_at,
+  };
+}
+
+export interface PackImportInput {
+  /** 담기 기록 id. 재전송 때 같은 값을 보내야 서버가 중복을 알아본다. */
+  id: string;
+  packId: string;
+  wordBookId: string;
+  /** 새 단어장으로 담을 때만. 없으면 wordBookId의 기존 단어장에 담는다. */
+  newBook?: { title: string; folderId: string | null };
+  words: {
+    id: string;
+    term: string;
+    pronunciation?: string;
+    meaning: string;
+  }[];
+}
+
+/**
+ * 묶음을 단어장에 담는다. 단어장 생성 · 단어 추가 · 기록이 서버에서 한 번에
+ * 처리돼, 실패하면 아무것도 남지 않는다.
+ */
+export async function importPack(
+  token: string,
+  input: PackImportInput,
+): Promise<PackImport> {
+  const timestamp = now();
+  const record = await request<ApiPackImport>("/v1/pack-imports", token, {
+    method: "POST",
+    body: JSON.stringify({
+      id: input.id,
+      pack_id: input.packId,
+      word_book_id: input.wordBookId,
+      ...(input.newBook
+        ? {
+            word_book: {
+              id: input.wordBookId,
+              title: input.newBook.title.trim(),
+              folder_id: input.newBook.folderId,
+              created_at: timestamp,
+              updated_at: timestamp,
+            },
+          }
+        : {}),
+      words: input.words.map((word) => ({
+        id: word.id,
+        word_book_id: input.wordBookId,
+        term: word.term,
+        pronunciation: word.pronunciation ?? null,
+        meaning: word.meaning,
+        created_at: timestamp,
+        updated_at: timestamp,
+      })),
+    }),
+  });
+  return toPackImport(record);
+}
+
+/** 내가 담은 묶음. 담은 단어장이 지워진 것은 서버가 뺀다. */
+export async function fetchPackImports(token: string): Promise<PackImport[]> {
+  const records = await request<ApiPackImport[]>("/v1/pack-imports", token);
+  return records.map(toPackImport);
+}

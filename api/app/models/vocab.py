@@ -247,3 +247,31 @@ class ReviewLogModel(Base):
     #               미래로 돌려 복습 간격을 늘리는 걸 막기 위해서다.
     reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class PackImportModel(Base):
+    """단어 묶음을 단어장에 담은 기록.
+
+    단어 다운로드에서 묶음을 담으면 한 줄 남는다. 같은 묶음을 다시 담으려 할 때
+    화면이 "이미 담았어요"를 띄우는 근거다. 다시 담는 것 자체는 막지 않는다.
+
+    id는 클라이언트가 만든다 — ReviewLogModel과 같은 이유로, 응답이 끊겨 같은
+    요청이 다시 와도 이 id로 알아보고 단어를 두 번 넣지 않는다.
+
+    고치거나 지우지 않고 동기화도 하지 않아서 is_deleted · updated_at이 없다.
+    담은 단어장이 지워지면 조회할 때 걸러낸다.
+    """
+
+    __tablename__ = "pack_imports"
+    __table_args__ = (
+        Index("ix_pack_imports_user_imported", "user_id", "imported_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    # 묶음 ID. 묶음 데이터는 웹(web/src/lib/packs.ts)에 있고 서버는 모른다.
+    pack_id: Mapped[str] = mapped_column(String(120))
+    word_book_id: Mapped[str] = mapped_column(String(80))
+    word_count: Mapped[int] = mapped_column(Integer)
+    # 서버가 받은 시각.
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

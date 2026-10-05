@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Badge, Card, PageHeader, TextInput } from "@/components/ui";
 import { LEVEL_TONE, PACKS, type JlptLevel, type Pack } from "@/lib/packs";
 import { cn } from "@/lib/utils";
+import { useVocab } from "@/lib/vocab-store";
 
 const CATEGORIES = ["전체", "일본어"] as const;
 
@@ -18,7 +19,7 @@ function averageLevel(pack: Pack) {
   return levels.reduce((total, level) => total + level, 0) / levels.length;
 }
 
-function PackCard({ pack }: { pack: Pack }) {
+function PackCard({ pack, imported }: { pack: Pack; imported: boolean }) {
   const average = averageLevel(pack);
 
   return (
@@ -36,6 +37,7 @@ function PackCard({ pack }: { pack: Pack }) {
           <span className="text-xs tabular-nums text-umber/45">
             {pack.words.length}개
           </span>
+          {imported ? <Badge>담음</Badge> : null}
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-taupe/30 pt-3">
@@ -63,6 +65,8 @@ function PackCard({ pack }: { pack: Pack }) {
 export default function DownloadsPage() {
   const [category, setCategory] = useState<string>("전체");
   const [query, setQuery] = useState("");
+  const { packImports } = useVocab();
+  const importedPackIds = new Set(packImports.map((record) => record.packId));
 
   const packs = PACKS.filter((pack) => {
     const byCategory = category === "전체" || pack.tags.includes(category);
@@ -105,7 +109,11 @@ export default function DownloadsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {packs.map((pack) => (
-          <PackCard key={pack.id} pack={pack} />
+          <PackCard
+            key={pack.id}
+            pack={pack}
+            imported={importedPackIds.has(pack.id)}
+          />
         ))}
       </div>
 

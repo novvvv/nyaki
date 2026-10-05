@@ -6,7 +6,9 @@ default vs server_default
                     안 거치는 경로로 row가 생겨도 적용됨.
 
 도메인별로 파일을 나눴다 — 도메인 하나 볼 때 파일 하나만 보면 되게:
-  vocab.py    — 단어장·단어·카드·복습 기록 (WordBookModel, WordModel, CardModel, ReviewLogModel)
+  vocab.py    — 폴더·단어장·단어·빈칸 노트·카드·복습 기록·묶음 담기 기록
+                (FolderModel, WordBookModel, WordModel, ClozeNoteModel, CardModel,
+                 ReviewLogModel, PackImportModel)
   sync.py     — Hub sync 변경 로그 (SyncChangeModel)
   gamification.py — 게이미피케이션 (UserProgressModel, QuestStateModel)
   content.py  — nyaki-web 블로그 콘텐츠 (ArtistModel, PostModel)
@@ -22,6 +24,7 @@ from .vocab import (
     CardModel,
     ClozeNoteModel,
     FolderModel,
+    PackImportModel,
     ReviewLogModel,
     WordBookModel,
     WordModel,
@@ -34,6 +37,7 @@ __all__ = [
     "ClozeNoteModel",
     "WordModel",
     "ReviewLogModel",
+    "PackImportModel",
     "SyncChangeModel",
     "UserProgressModel",
     "QuestStateModel",

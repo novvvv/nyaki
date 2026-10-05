@@ -27,6 +27,8 @@ from .schemas import (
     ClozeSegmentResponse,
     DueCardResponse,
     GradePreviewResponse,
+    PackImportRequest,
+    PackImportResponse,
     ReviewDueCountResponse,
     ReviewDueResponse,
     ReviewGradesRequest,
@@ -44,7 +46,11 @@ from .schemas import (
 )
 from .srs import Sm2State, preview
 from .services import (
+    WordBookAlreadyExistsError,
+    WordBookNotFoundError,
     apply_review_grades,
+    import_pack,
+    list_pack_imports,
     daily_added_counts,
     delete_folder,
     list_folders,
@@ -300,6 +306,45 @@ def remove_cloze_note(
         raise HTTPException(status_code=404, detail="빈칸 노트를 찾을 수 없습니다.")
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/pack-imports", response_model=PackImportResponse)
+def post_pack_import(
+    payload: PackImportRequest,
+    response: Response,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> PackImportResponse:
+    """단어 묶음을 단어장에 담는다. 단어장 생성 · 단어 추가 · 기록이 한 번에.
+
+    새로 담았으면 201, 같은 id의 재전송이면 아무것도 하지 않고 200.
+    """
+    if payload.word_book is not None and payload.word_book.id != payload.word_book_id:
+        raise HTTPException(status_code=400, detail="word_book.id와 word_book_id가 다릅니다.")
+    if any(word.word_book_id != payload.word_book_id for word in payload.words):
+        raise HTTPException(status_code=400, detail="단어의 word_book_id가 담을 단어장과 다릅니다.")
+
+    try:
+        record, created = import_pack(session, user_id, payload)
+    except WordBookNotFoundError as error:
+        raise HTTPException(status_code=404, detail="단어장을 찾을 수 없습니다.") from error
+    except WordBookAlreadyExistsError as error:
+        raise HTTPException(status_code=409, detail="같은 ID의 단어장이 이미 있습니다.") from error
+    session.commit()
+    response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return PackImportResponse.model_validate(record)
+
+
+@router.get("/pack-imports", response_model=list[PackImportResponse])
+def get_pack_imports(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[PackImportResponse]:
+    """내가 담은 묶음. 담은 단어장이 지워진 것은 빠진다."""
+    return [
+        PackImportResponse.model_validate(record)
+        for record in list_pack_imports(session, user_id)
+    ]
 
 
 @router.get("/review/due", response_model=ReviewDueResponse)

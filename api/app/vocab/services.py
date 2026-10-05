@@ -9,6 +9,7 @@ from ..models import (
     CardModel,
     ClozeNoteModel,
     FolderModel,
+    PackImportModel,
     ReviewLogModel,
     SyncChangeModel,
     UserProgressModel,
@@ -19,6 +20,7 @@ from .schemas import (
     CardPayload,
     ClozeNotePayload,
     FolderPayload,
+    PackImportRequest,
     ReviewGradeItem,
     WordBookPayload,
     WordPayload,
@@ -1130,3 +1132,85 @@ def apply_review_grades(
         applied += 1
 
     return applied, skipped, missing
+
+
+# ==================== 단어 묶음 담기 ====================
+#
+# 단어 다운로드의 "내 단어장에 담기". 단어장 생성 · 단어 추가 · 담은 기록을
+# 한 트랜잭션으로 한다. 커밋은 라우트가 하고, 중간에 예외가 나면 세션이
+# 닫히면서 전부 되돌아간다 — 반쪽짜리 단어장이 남지 않는다.
+
+
+class WordBookNotFoundError(Exception):
+    """기존 단어장에 담으려는데 그 단어장이 없다 (삭제됐거나 남의 것)."""
+
+
+class WordBookAlreadyExistsError(Exception):
+    """새 단어장으로 담으려는데 같은 ID의 단어장이 이미 있다."""
+
+
+def import_pack(
+    session: Session, user_id: str, payload: PackImportRequest
+) -> tuple[PackImportModel, bool]:
+    """묶음을 단어장에 담는다. (기록, 이번에 새로 담았는지)
+
+    **같은 id로 다시 오면 아무것도 하지 않고 처음 기록을 돌려준다.** 응답이
+    끊겨 클라이언트가 재전송해도 단어가 두 번 들어가지 않는다. 사용자가 같은
+    묶음을 일부러 다시 담으면 새 id라 그대로 추가된다 — 막지 않고 화면이
+    경고만 한다.
+
+    단어장 · 단어는 기존 upsert를 그대로 쓴다. 카드 생성과 동기화 기록(앱이
+    sync/pull로 받는 것)이 거기서 같이 처리된다.
+    """
+    existing = session.get(PackImportModel, {"id": payload.id, "user_id": user_id})
+    if existing is not None:
+        return existing, False
+
+    if payload.word_book is not None:
+        # 새 단어장. 이미 있는 단어장을 "새 단어장"으로 덮어쓰지 않게 막는다 —
+        # upsert는 updated_at만 새로우면 제목·폴더를 바꿔버린다.
+        if session.get(WordBookModel, {"id": payload.word_book_id, "user_id": user_id}):
+            raise WordBookAlreadyExistsError
+        upsert_word_book(session, user_id, payload.word_book)
+    else:
+        book = session.get(WordBookModel, {"id": payload.word_book_id, "user_id": user_id})
+        if book is None or book.is_deleted:
+            raise WordBookNotFoundError
+
+    for word in payload.words:
+        upsert_word(session, user_id, word)
+
+    record = PackImportModel(
+        id=payload.id,
+        user_id=user_id,
+        pack_id=payload.pack_id,
+        word_book_id=payload.word_book_id,
+        word_count=len(payload.words),
+        imported_at=utc_now(),
+    )
+    session.add(record)
+    session.flush()
+    return record, True
+
+
+def list_pack_imports(session: Session, user_id: str) -> list[PackImportModel]:
+    """담은 기록. 최근 순.
+
+    **담은 단어장이 지워졌으면 뺀다.** 단어장을 지운 뒤에도 "이미 담았어요"가
+    뜨면 사용자는 어디에 담았는지 찾을 수 없다.
+    """
+    return list(
+        session.scalars(
+            select(PackImportModel)
+            .join(
+                WordBookModel,
+                (WordBookModel.id == PackImportModel.word_book_id)
+                & (WordBookModel.user_id == PackImportModel.user_id),
+            )
+            .where(
+                PackImportModel.user_id == user_id,
+                WordBookModel.is_deleted.is_(False),
+            )
+            .order_by(PackImportModel.imported_at.desc())
+        )
+    )

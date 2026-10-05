@@ -267,3 +267,30 @@ class ReviewGradesResponse(BaseModel):
     skipped: int
     # 단어를 못 찾아 버린 개수 (삭제됐거나 남의 단어).
     missing: int
+
+
+class PackImportRequest(BaseModel):
+    """단어 묶음 담기. 단어장 생성 · 단어 추가 · 담은 기록을 한 트랜잭션으로 한다.
+
+    word_book은 **새 단어장일 때만** 보낸다. 기존 단어장에 담을 때는 빼고
+    word_book_id만 준다. ID가 서로 맞는지는 라우트가 400으로 걸러낸다 — 다른
+    API의 "URL과 payload ID 불일치"와 같은 자리에서 같은 코드로 막는다.
+    """
+
+    # 담기 기록 ID. 클라이언트가 만든다 — 재전송을 알아보는 열쇠다.
+    id: str = Field(min_length=1, max_length=80)
+    # 묶음 ID. 묶음 데이터는 웹에 있고 서버는 모른다.
+    pack_id: str = Field(min_length=1, max_length=120)
+    word_book_id: str = Field(min_length=1, max_length=80)
+    word_book: WordBookPayload | None = None
+    words: list[WordPayload] = Field(min_length=1, max_length=500)
+
+
+class PackImportResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    pack_id: str
+    word_book_id: str
+    word_count: int
+    imported_at: datetime

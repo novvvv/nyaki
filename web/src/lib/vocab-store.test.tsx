@@ -17,6 +17,9 @@ const putBook = vi.fn();
 const listBooks = vi.fn();
 const listFolders = vi.fn();
 const fetchBookSummaries = vi.fn();
+// 같은 배열을 돌려준다. 테스트의 getToken은 렌더마다 새 함수라 refresh가 다시
+// 도는데, 매번 새 배열이면 상태가 바뀌어 끝없이 다시 그린다.
+const noImports: never[] = [];
 
 vi.mock("./api-client", () => ({
   putBook: (...args: unknown[]) => putBook(...args),
@@ -29,6 +32,8 @@ vi.mock("./api-client", () => ({
   removeWord: vi.fn(),
   removeWordBook: vi.fn(),
   completeQuest: vi.fn(),
+  fetchPackImports: async () => noImports,
+  importPack: vi.fn(),
 }));
 
 vi.mock("@/components/auth-provider", () => ({

@@ -16,6 +16,8 @@ import { useAuth } from "@/components/auth-provider";
 import {
   completeQuest,
   fetchBookSummaries,
+  fetchPackImports,
+  importPack as postPackImport,
   listBooks,
   listFolders,
   putFolder,
@@ -26,7 +28,7 @@ import {
   removeWordBook,
 } from "./api-client";
 
-import type { BookSummary } from "./api-client";
+import type { BookSummary, PackImport } from "./api-client";
 import type { Folder } from "./types";
 import { reorder } from "./sort-order";
 import type { Word, WordBook, WordBookInput, WordInput } from "./types";
@@ -78,6 +80,24 @@ interface VocabContextValue {
   ) => Promise<Word | undefined>;
   deleteWord: (wordBookId: string, wordId: string) => Promise<void>;
   deleteWordBook: (wordBookId: string) => Promise<void>;
+  /** 내가 담은 단어 묶음. 담은 단어장이 지워진 것은 빠져 있다. */
+  packImports: PackImport[];
+  /**
+   * 단어 묶음을 단어장에 담고, 담은 단어장 id를 돌려준다.
+   *
+   * importId는 화면이 한 번 만들어 두고 재시도할 때 그대로 넘긴다 — 응답이
+   * 끊겨 다시 눌러도 서버가 같은 요청으로 알아보고 두 번 넣지 않는다.
+   */
+  importPack: (input: ImportPackInput) => Promise<string>;
+}
+
+export interface ImportPackInput {
+  importId: string;
+  packId: string;
+  words: { term: string; reading?: string; meaning: string }[];
+  target:
+    | { type: "existing"; wordBookId: string }
+    | { type: "new"; title: string; folderId: string | null };
 }
 
 const VocabContext = createContext<VocabContextValue | null>(null);
@@ -87,6 +107,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
   const [wordBooks, setWordBooks] = useState<WordBook[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [summaries, setSummaries] = useState<Record<string, BookSummary>>({});
+  const [packImports, setPackImports] = useState<PackImport[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,14 +120,18 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
-      const [books, bookSummaries, folderRows] = await Promise.all([
+      const [books, bookSummaries, folderRows, imports] = await Promise.all([
         listBooks(token),
         fetchBookSummaries(token),
         listFolders(token),
+        // 담은 기록은 "이미 담았어요" 표시에만 쓴다. 못 받아도 목록은 떠야 한다
+        // — 서버가 아직 이 API를 모르는 배포 순간에도 앱이 멈추지 않게.
+        fetchPackImports(token).catch(() => []),
       ]);
       setWordBooks(books);
       setSummaries(bookSummaries);
       setFolders(folderRows);
+      setPackImports(imports);
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "목록을 불러오지 못했어요.");
@@ -467,6 +492,36 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     setWordBooks((prev) => prev.filter((book) => book.id !== wordBookId));
   }, [getToken]);
 
+  const importPack = useCallback(
+    async ({ importId, packId, words, target }: ImportPackInput) => {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+
+      const record = await postPackImport(token, {
+        id: importId,
+        packId,
+        wordBookId:
+          target.type === "existing" ? target.wordBookId : newId("book"),
+        newBook:
+          target.type === "new"
+            ? { title: target.title, folderId: target.folderId }
+            : undefined,
+        words: words.map((word) => ({
+          id: newId("word"),
+          term: word.term,
+          pronunciation: word.reading,
+          meaning: word.meaning,
+        })),
+      });
+      // 단어장 · 단어 · 집계 · 담은 기록이 한꺼번에 바뀌었다. 사이드바와
+      // "이미 담았어요" 표시가 바로 맞도록 전부 다시 받는다.
+      await refresh();
+      // 재전송이면 서버가 처음 기록을 돌려주므로 그 단어장으로 간다.
+      return record.wordBookId;
+    },
+    [getToken, refresh],
+  );
+
   const value = useMemo(
     () => ({
       wordBooks,
@@ -490,6 +545,8 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       updateWord,
       deleteWord,
       deleteWordBook,
+      packImports,
+      importPack,
     }),
     [
       wordBooks,
@@ -513,6 +570,8 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       updateWord,
       deleteWord,
       deleteWordBook,
+      packImports,
+      importPack,
     ],
   );
 

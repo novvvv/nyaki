@@ -24,7 +24,14 @@ function PackCard({ pack, imported }: { pack: Pack; imported: boolean }) {
 
   return (
     <Link href={`/downloads/${pack.id}`} className="group block">
-      <Card className="flex h-full flex-col gap-4 bg-card transition group-hover:border-taupe">
+      <Card
+        className={cn(
+          "flex h-full flex-col gap-4 transition group-hover:border-taupe",
+          // 이미 담은 묶음은 카드 전체를 옅은 회색으로 칠한다. 다시 담는 건
+          // 막지 않으니 눌러서 들어갈 수는 있다.
+          imported ? "bg-subtle/60" : "bg-card",
+        )}
+      >
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-ink">{pack.title}</p>
           <p className="mt-1 truncate text-xs text-umber/45">{pack.source}</p>
@@ -37,7 +44,6 @@ function PackCard({ pack, imported }: { pack: Pack; imported: boolean }) {
           <span className="text-xs tabular-nums text-umber/45">
             {pack.words.length}개
           </span>
-          {imported ? <Badge>담음</Badge> : null}
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-taupe/30 pt-3">

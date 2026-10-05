@@ -204,7 +204,7 @@ export default function SavePackPage() {
 
         <div className="space-y-3 border-t border-taupe/25 pt-6">
           {importedInto.length > 0 ? (
-            <p className="text-xs text-umber/55">
+            <p className="text-xs text-red-700">
               이미 {importedInto.join(", ")}에 담은 묶음이에요. 다시 담으면 같은
               단어가 또 들어가요.
             </p>

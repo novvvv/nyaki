@@ -19,9 +19,27 @@ const donguri = localFont({
   display: "swap",
 });
 
+const TITLE = "Nyaki — 단어장";
+
 export const metadata: Metadata = {
-  title: "Nyaki — 단어장",
-  description: "Nyaki 웹 단어 편집기",
+  // 공유 이미지 같은 상대 경로를 이 주소 기준으로 바꾼다. 카톡 등은 절대 주소만 읽는다.
+  metadataBase: new URL("https://nyaki.kr"),
+  title: TITLE,
+  // 링크를 공유하면 메인의 고양이가 보인다. cat.png는 배경이 투명해 메신저에
+  // 따라 검게 나와서, 흰 배경에 얹은 1200×630(og.png)을 따로 둔다.
+  openGraph: {
+    title: TITLE,
+    siteName: "Nyaki",
+    url: "/",
+    type: "website",
+    locale: "ko_KR",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Nyaki 고양이" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({

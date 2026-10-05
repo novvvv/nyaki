@@ -254,6 +254,38 @@ def delete_word_book(
         )
         .values(is_deleted=True, updated_at=entity.updated_at)
     )
+    # 빈칸 노트와 그 카드도 지운다. 빠져 있어서 지운 단어장의 빈칸 카드가 복습에
+    # 계속 나왔다. 노트는 단어보다 훨씬 적어 한 건씩 동기화 기록을 남긴다 —
+    # 다른 기기가 sync/pull로 "지워졌다"를 받게.
+    note_ids = list(
+        session.scalars(
+            select(ClozeNoteModel.id).where(
+                ClozeNoteModel.user_id == user_id,
+                ClozeNoteModel.word_book_id == word_book_id,
+                ClozeNoteModel.is_deleted.is_(False),
+            )
+        )
+    )
+    if note_ids:
+        session.execute(
+            ClozeNoteModel.__table__.update()
+            .where(
+                ClozeNoteModel.user_id == user_id,
+                ClozeNoteModel.id.in_(note_ids),
+            )
+            .values(is_deleted=True, updated_at=entity.updated_at)
+        )
+        session.execute(
+            CardModel.__table__.update()
+            .where(
+                CardModel.user_id == user_id,
+                CardModel.is_deleted.is_(False),
+                CardModel.note_id.in_(note_ids),
+            )
+            .values(is_deleted=True, updated_at=entity.updated_at)
+        )
+        for note_id in note_ids:
+            _new_change(session, user_id, "cloze_note", note_id)
     session.flush()
     return entity, _new_change(session, user_id, "word_book", word_book_id)
 
@@ -854,12 +886,22 @@ def load_step_config(session: Session, user_id: str) -> StepConfig:
 
 
 def _book_of_sources(session: Session, user_id: str) -> dict[str, str]:
-    """카드의 출처 id → 단어장 id. 단어와 빈칸 노트를 한 표로 합친다."""
+    """카드의 출처 id → 단어장 id. 단어와 빈칸 노트를 한 표로 합친다.
+
+    **지운 단어장의 것은 뺀다.** 여기 없는 카드는 출제되지 않는다. 단어장을
+    지울 때 안의 항목도 지우지만, 앱이 오프라인에서 만든 항목이 단어장 삭제
+    뒤에 늦게 올라오면 살아 있는 채로 남는다.
+    """
+    live_books = select(WordBookModel.id).where(
+        WordBookModel.user_id == user_id, WordBookModel.is_deleted.is_(False)
+    )
     mapping = {
         row[0]: row[1]
         for row in session.execute(
             select(WordModel.id, WordModel.word_book_id).where(
-                WordModel.user_id == user_id, WordModel.is_deleted.is_(False)
+                WordModel.user_id == user_id,
+                WordModel.is_deleted.is_(False),
+                WordModel.word_book_id.in_(live_books),
             )
         )
     }
@@ -870,6 +912,7 @@ def _book_of_sources(session: Session, user_id: str) -> dict[str, str]:
                 select(ClozeNoteModel.id, ClozeNoteModel.word_book_id).where(
                     ClozeNoteModel.user_id == user_id,
                     ClozeNoteModel.is_deleted.is_(False),
+                    ClozeNoteModel.word_book_id.in_(live_books),
                 )
             )
         }

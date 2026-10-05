@@ -1,5 +1,7 @@
 # 테스트
 
+> **보관 문서.** 더는 갱신하지 않는다. API는 [API.md](../API.md).
+
 > 세 곳(서버·웹·앱)의 테스트를 한 번에 보는 문서. 무엇을 어디서 검증하는지와
 > 돌리는 법만 적는다. 2026-09-23 정리.
 
@@ -13,7 +15,7 @@ cd api && DATABASE_URL=sqlite:////tmp/nyaki_test.db PYTHONPATH=. pytest
 cd web && npm test          # 한 번 / npm run test:watch
 
 # 앱
-flutter test
+cd app && flutter test
 ```
 
 ## 무엇을 어디서 보는가

@@ -181,7 +181,7 @@ export default function ReviewPage() {
   );
 
   // 채점 결과는 세션이 끝날 때 한 번에 보낸다. 카드마다 보내면 30장에 30요청이
-  // 되고, 매번 단어 전체를 재전송하게 된다. docs/WEB-REVIEW-PLAN.md 1절.
+  // 되고, 매번 단어 전체를 재전송하게 된다. docs/archive/WEB-REVIEW-PLAN.md 1절.
   // 화면을 다시 그리게 할 값이 아니라서 ref에 둔다.
   const pending = useRef<ReviewGradeItem[]>([]);
   const sent = useRef(false);
@@ -208,10 +208,11 @@ export default function ReviewPage() {
       : counts.total
     : 0;
 
-  // 슬라이더 상한. 실제로 출제할 수 있는 건 받아둔 목록(최대 200) 안에서
-  // 선택한 단어장에 속한 것까지다.
+  // 슬라이더 상한. 실제로 출제할 수 있는 건 받아둔 목록 안에서 선택한
+  // 단어장에 속한 것까지다. **낼 게 없으면 0이다** — 전에는 최소 1로 올려서
+  // 복습할 단어가 없는데도 "1개"가 적혀 있었다.
   const picked = (due ?? []).filter((card) => isSelected(card.wordBookId));
-  const limit = Math.max(1, Math.min(picked.length, MAX_COUNT));
+  const limit = Math.min(picked.length, MAX_COUNT);
 
   const parsed = countText === null ? NaN : Number.parseInt(countText, 10);
   const size =
@@ -227,7 +228,7 @@ export default function ReviewPage() {
   // 기본값 20이 나중에 채워지는 순서라 보정이 걸리지 않았다. 1개뿐인데 20이
   // 적혀 있고 새로고침해야 고쳐지는 이유가 이것이었다.
   const countValue =
-    countText !== null && Number.isNaN(parsed) ? countText : String(size || 1);
+    countText !== null && Number.isNaN(parsed) ? countText : String(size);
 
   const flush = useCallback(async () => {
     if (sent.current || pending.current.length === 0) return;
@@ -628,8 +629,9 @@ export default function ReviewPage() {
           <input
             type="number"
             inputMode="numeric"
-            min={1}
+            min={limit === 0 ? 0 : 1}
             max={limit}
+            disabled={limit === 0}
             value={countValue}
             onChange={(e) => setCountText(e.target.value)}
             onKeyDown={(e) => {
@@ -643,9 +645,11 @@ export default function ReviewPage() {
 
         <input
           type="range"
-          min={1}
-          max={limit}
-          value={size || 1}
+          min={limit === 0 ? 0 : 1}
+          // max가 min보다 작으면 브라우저가 값을 제멋대로 잡는다.
+          max={Math.max(limit, 1)}
+          disabled={limit === 0}
+          value={size}
           onChange={(e) => setCountText(e.target.value)}
           aria-label="출제할 단어 개수 조절"
           className="mt-8 h-1 w-full max-w-xs cursor-pointer accent-ink"

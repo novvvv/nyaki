@@ -99,7 +99,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.<도메인>
 **Flutter:**
 
 ```bash
-flutter run --dart-define=NYAKI_API_BASE_URL=https://api.<도메인>
+cd app && flutter run --dart-define=NYAKI_API_BASE_URL=https://api.<도메인>
 ```
 
 ---

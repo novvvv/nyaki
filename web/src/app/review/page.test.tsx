@@ -241,6 +241,12 @@ describe("복습 세션", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /시작하기/ })).toBeDisabled(),
     );
+
+    // 낼 게 없으면 0이다. 전에는 최소 1로 올려서 "1개"가 적혀 있었다.
+    const count = screen.getByLabelText("출제할 단어 개수");
+    expect(count).toHaveValue(0);
+    expect(count).toBeDisabled();
+    expect(screen.getByLabelText("출제할 단어 개수 조절")).toBeDisabled();
   });
 });
 

@@ -106,7 +106,7 @@ Firebase는 인증만 맡고 데이터는 전부 자체 Hub에 둔다.</sub>
 - **간격 반복 학습 (SM-2):** 알고리즘 기반 복습 일정 최적화 및 제스처 기반 채점
 - **게이미피케이션:** KST 자정 기준으로 갱신되는 고양이 쓰다듬기, 아침/저녁 복습 퀘스트
 - **웹 전용 기능:** 단어 팩 다운로드 및 PC 환경에 최적화된 단어장 편집 기능
-- **OCR 단어 저장:** 설계 중 ([docs/DRIVE-PLAN.md](docs/DRIVE-PLAN.md))
+- **OCR 단어 저장:** 계획 중
 
 ---
 
@@ -114,7 +114,7 @@ Firebase는 인증만 맡고 데이터는 전부 자체 Hub에 둔다.</sub>
 
 ```
 nyaki/
-├── lib/     Flutter 앱
+├── app/     Flutter 앱
 ├── web/     Next.js 웹
 ├── api/     Sync Hub (FastAPI + Postgres)
 └── docs/    아키텍처 · 할 일 · 기획
@@ -130,21 +130,20 @@ cd api && docker compose up --build     # http://localhost:8000/docs
 cd web && npm install && npm run dev    # http://localhost:3000
 
 # 앱
-flutter pub get && flutter run
+cd app && flutter pub get && flutter run
 ```
 
 ## 테스트
 
 ```bash
 cd api && pytest      # 동기화 · SRS · 게이미피케이션 · 콘텐츠
-flutter test          # SM-2 계산 · 진행도 저장소
+cd app && flutter test   # SM-2 계산 · 진행도 저장소
 ```
 
 ## 문서
 
 | 문서 | 내용 |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 도메인 모델 · ERD · API · 동기화 결함 분석 · SRS 스펙 · 디자인 토큰 · 보안 점검 |
-| [docs/TASKS.md](docs/TASKS.md) | 할 일 · 출시 전 필수 · 기술부채 |
-| [docs/PLANS.md](docs/PLANS.md) | 착수 전 기획 |
+| [docs/API.md](docs/API.md) | API 명세 · 쓰기 규칙 · 동기화 · 한도 |
+| [docs/archive/](docs/archive/) | 보관 문서 — 아키텍처 · 할 일 · 테스트 · 지난 기획 |
 | [api/README.md](api/README.md) | 로컬 실행 · 환경 변수 · 배포 절차 |

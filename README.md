@@ -104,7 +104,7 @@ Firebase は認証だけを担い、データはすべて自前の Hub に置く
 - **間隔反復学習 (SM-2):** アルゴリズムによる復習スケジューリングと、スワイプによる採点
 - **ゲーミフィケーション:** KST の深夜 0 時で切り替わる「ニャキを撫でる」「朝／夜の復習」クエスト
 - **ウェブ専用:** 単語パックのダウンロードと、PC 向けに最適化した単語帳編集
-- **OCR での単語保存:** 設計中 ([docs/DRIVE-PLAN.md](docs/DRIVE-PLAN.md))
+- **OCR での単語保存:** 計画中
 
 ---
 
@@ -112,7 +112,7 @@ Firebase は認証だけを担い、データはすべて自前の Hub に置く
 
 ```
 nyaki/
-├── lib/     Flutter アプリ
+├── app/     Flutter アプリ
 ├── web/     Next.js ウェブ
 ├── api/     Sync Hub (FastAPI + Postgres)
 └── docs/    アーキテクチャ · タスク · 企画
@@ -128,21 +128,20 @@ cd api && docker compose up --build     # http://localhost:8000/docs
 cd web && npm install && npm run dev    # http://localhost:3000
 
 # アプリ
-flutter pub get && flutter run
+cd app && flutter pub get && flutter run
 ```
 
 ## テスト
 
 ```bash
 cd api && pytest      # 同期 · SRS · ゲーミフィケーション · コンテンツ
-flutter test          # SM-2 の計算 · 進捗リポジトリ
+cd app && flutter test   # SM-2 の計算 · 進捗リポジトリ
 ```
 
 ## ドキュメント
 
 | ドキュメント | 内容 |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | ドメインモデル · ERD · API · 同期の欠陥分析 · SRS 仕様 · デザイントークン · セキュリティ点検 |
-| [docs/TASKS.md](docs/TASKS.md) | タスク · リリース前の必須項目 · 技術的負債 |
-| [docs/PLANS.md](docs/PLANS.md) | 着手前の企画 |
+| [docs/API.md](docs/API.md) | API 仕様 · 書き込みルール · 同期 · 上限 (韓国語) |
+| [docs/archive/](docs/archive/) | 保管文書 — アーキテクチャ · タスク · テスト · 過去の企画 (韓国語) |
 | [api/README.md](api/README.md) | ローカル実行 · 環境変数 · デプロイ手順 |

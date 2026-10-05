@@ -28,7 +28,7 @@ class ProgressSnapshot {
   // field
   final int churuBalance;
 
-  /// 열빙어 잔액. 아침/저녁 복습 퀘스트로만 얻는다(PLANS.md 1-4).
+  /// 열빙어 잔액. 아침/저녁 복습 퀘스트로만 얻는다(docs/archive/PLANS.md 1-4).
   final int capelinBalance;
 
   final Set<String> completedQuestIds;

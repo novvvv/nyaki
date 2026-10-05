@@ -76,7 +76,7 @@ def upsert_folder(
         entity = FolderModel(user_id=user_id, **values)
         session.add(entity)
     else:
-        # 보낸 필드만 덮어쓴다 (ARCHITECTURE.md §4.6).
+        # 보낸 필드만 덮어쓴다 (docs/archive/ARCHITECTURE.md §4.6).
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(entity, field, value)
 
@@ -170,7 +170,7 @@ def upsert_word_book(
         session.add(entity)
     else:
         # 보낸 필드만 덮어쓴다. model_dump()는 안 보낸 필드까지 기본값으로 뱉어서,
-        # 일부 필드만 아는 클라이언트가 나머지를 지워버린다 (ARCHITECTURE.md §4.6).
+        # 일부 필드만 아는 클라이언트가 나머지를 지워버린다 (docs/archive/ARCHITECTURE.md §4.6).
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(entity, field, value)
 
@@ -191,7 +191,7 @@ def upsert_word(
         entity = WordModel(user_id=user_id, **payload.model_dump())
         session.add(entity)
     else:
-        # 보낸 필드만 덮어쓴다 (ARCHITECTURE.md §4.6).
+        # 보낸 필드만 덮어쓴다 (docs/archive/ARCHITECTURE.md §4.6).
         # 웹은 단어를 저장할 때 srs_*를 보내지 않는다 — 전체 덮어쓰기였을 때는
         # 뜻 한 글자만 고쳐도 그 단어의 복습 기록이 통째로 초기화됐다.
         for field, value in payload.model_dump(exclude_unset=True).items():
@@ -1019,7 +1019,7 @@ def apply_review_grades(
     """채점 묶음을 반영한다. (applied, skipped, missing)
 
     웹 테스트는 카드를 한 장씩 보내지 않고 세션이 끝날 때 모아서 보낸다
-    (docs/WEB-REVIEW-PLAN.md 1절). 그래서 여기가 여러 건을 한 트랜잭션으로 받는다.
+    (docs/archive/WEB-REVIEW-PLAN.md 1절). 그래서 여기가 여러 건을 한 트랜잭션으로 받는다.
 
     **같은 요청을 두 번 받아도 결과가 같아야 한다.** 응답이 끊겨 클라이언트가
     재전송하는 일이 실제로 생기는데, good이 두 번 반영되면 repetitions가 2 올라가고

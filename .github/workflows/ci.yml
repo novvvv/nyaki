@@ -1,7 +1,7 @@
 # 세 곳(서버·웹·앱)을 한 번에 검증한다.
 #
 # 배포(deploy-api.yml)는 이 중 서버 테스트를 다시 불러서 통과해야만 진행된다.
-# 무엇을 어디서 보는지는 docs/TESTING.md에 정리돼 있다.
+# 무엇을 어디서 보는지는 docs/archive/TESTING.md에 정리돼 있다.
 name: CI
 
 on:
@@ -46,6 +46,9 @@ jobs:
 
   app:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
 
     steps:
       - uses: actions/checkout@v4

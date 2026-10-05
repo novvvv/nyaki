@@ -2,7 +2,7 @@
 
 import {
   DndContext,
-  KeyboardSensor,
+  DragOverlay,
   PointerSensor,
   closestCenter,
   useDroppable,
@@ -10,22 +10,54 @@ import {
   useSensors,
   type CollisionDetection,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Folder, WordBook } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
+
+/**
+ * 끌고 난 뒤의 클릭을 삼킨다.
+ *
+ * 줄 전체를 잡아 끌게 하면 손을 뗄 때 클릭이 한 번 더 발생해서, 옮기자마자
+ * 그 단어장으로 이동해버린다. 포인터가 얼마나 움직였는지 재뒀다가 문턱을
+ * 넘었으면 클릭을 막는다. (예전에는 이걸 피하려고 작은 손잡이를 따로 뒀다)
+ */
+const DRAG_SLOP = 6;
+
+function useClickAfterDragGuard() {
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const moved = useRef(false);
+
+  return {
+    onPointerDownCapture: (event: React.PointerEvent) => {
+      start.current = { x: event.clientX, y: event.clientY };
+      moved.current = false;
+    },
+    onPointerMoveCapture: (event: React.PointerEvent) => {
+      if (!start.current) return;
+      const dx = event.clientX - start.current.x;
+      const dy = event.clientY - start.current.y;
+      if (Math.hypot(dx, dy) > DRAG_SLOP) moved.current = true;
+    },
+    onClickCapture: (event: React.MouseEvent) => {
+      if (!moved.current) return;
+      event.preventDefault();
+      event.stopPropagation();
+    },
+  };
+}
 
 /**
  * 사이드바 — 폴더와 단어장.
@@ -54,6 +86,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   } = useVocab();
 
   const [collapsed, setCollapsed] = useState<string[]>([]);
+  // 끌고 있는 줄. 커서에 붙여 따로 그린다(DragOverlay).
+  const [dragging, setDragging] = useState<string | null>(null);
   const showSidebar = pathname !== "/word-books/overview";
 
   /**
@@ -79,9 +113,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   // 8px은 끌기 시작으로 본다. 이게 없으면 클릭이 드래그로 잡혀 링크가 안 열린다.
+  //
+  // 키보드 센서는 뺐다. 줄 전체를 잡게 하면서 손잡이를 없앴는데, 키보드로 끌려면
+  // 포커스 받을 활성 요소가 따로 있어야 한다. 링크를 감싼 껍데기에 role="button"을
+  // 씌우면 스크린리더에 버튼 안에 링크가 있는 꼴이 된다.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const loose = wordBooks.filter((book) => !book.folderId);
@@ -104,7 +141,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (window.confirm(warning)) await deleteFolder(folder.id);
   }
 
+  function labelOf(id: string) {
+    return (
+      folders.find((folder) => folder.id === id)?.title ??
+      wordBooks.find((book) => book.id === id)?.title ??
+      ""
+    );
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setDragging(String(event.active.id));
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    setDragging(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -163,7 +213,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               sensors={sensors}
               collisionDetection={collision}
               modifiers={[restrictToVerticalAxis]}
+              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
+              onDragCancel={() => setDragging(null)}
             >
               <nav className="space-y-0.5">
                 <SortableContext
@@ -198,12 +250,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   hasFolders={folders.length > 0}
                 />
               </nav>
+
+              {/*
+                끌리는 줄을 커서에 붙여 따로 그린다.
+
+                이게 없으면 폴더로 옮길 때 원래 자리에 붙어 있다가 손을 뗀
+                순간에만 자리가 바뀌어 툭 끊긴다. 되돌아가는 애니메이션도
+                끈다 — 이미 옮겨진 자리로 다시 그릴 참이라 한 번 더 움직이면
+                두 번 튀는 것처럼 보인다.
+              */}
+              <DragOverlay dropAnimation={null}>
+                {dragging ? <DragPreview label={labelOf(dragging)} /> : null}
+              </DragOverlay>
             </DndContext>
           )}
         </aside>
       ) : null}
 
       <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
+/** 커서를 따라다니는 줄. 목록 안의 줄과 같은 모양이되 그림자만 얹는다. */
+function DragPreview({ label }: { label: string }) {
+  return (
+    <div className="w-44 cursor-grabbing rounded-md border border-taupe/40 bg-card px-2.5 py-1.5 text-sm text-ink shadow-sm">
+      <span className="truncate">{label}</span>
     </div>
   );
 }
@@ -227,15 +300,9 @@ function FolderRow({
   onRename: () => void;
   onDelete: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: folder.id, data: { type: "folder" } });
+  const { listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: folder.id, data: { type: "folder" } });
+  const guard = useClickAfterDragGuard();
 
   // 단어장을 받는 곳은 **머리줄뿐**이다. 폴더 전체(소속 단어장 포함)를 드롭
   // 영역으로 두면 안쪽 단어장 위로 끌어도 폴더가 먼저 잡힌다.
@@ -248,26 +315,17 @@ function FolderRow({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={cn(isDragging && "z-10 opacity-80")}
+      className={cn(isDragging && "opacity-30")}
     >
       <div
         ref={setDropRef}
         className={cn(
-          "group relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm transition",
+          "group relative flex cursor-grab items-center gap-1 rounded-md px-2.5 py-1.5 text-sm transition active:cursor-grabbing",
           isOver ? "bg-subtle ring-1 ring-ink/15" : "hover:bg-subtle/70",
         )}
+        {...listeners}
+        {...guard}
       >
-        <button
-          ref={setActivatorNodeRef}
-          type="button"
-          aria-label={`${folder.title} 순서 바꾸기`}
-          className="absolute -left-2.5 top-1/2 flex h-6 w-4 -translate-y-1/2 cursor-grab items-center justify-center text-[11px] leading-none text-ink/25 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-        >
-          <span aria-hidden>⠿</span>
-        </button>
-
         <button
           type="button"
           onClick={onToggle}
@@ -379,15 +437,9 @@ function BookRow({
   meta: number;
   pathname: string;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: book.id, data: { type: "book" } });
+  const { listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: book.id, data: { type: "book" } });
+  const guard = useClickAfterDragGuard();
 
   const href = `/word-books/${book.id}`;
   const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -396,22 +448,18 @@ function BookRow({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={cn("group relative", isDragging && "z-10 opacity-80")}
+      className={cn(
+        "relative cursor-grab active:cursor-grabbing",
+        // 원본은 자리만 남긴다 — 실물은 커서를 따라다니는 DragOverlay다.
+        isDragging && "opacity-30",
+      )}
+      {...listeners}
+      {...guard}
     >
-      {/* 줄 전체가 링크라 손잡이를 따로 둔다. 없으면 옮기려던 손짓이 클릭이 된다. */}
-      <button
-        ref={setActivatorNodeRef}
-        type="button"
-        aria-label={`${book.title} 순서 바꾸기`}
-        className="absolute -left-2.5 top-1/2 flex h-6 w-4 -translate-y-1/2 cursor-grab items-center justify-center text-[11px] leading-none text-ink/25 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-      >
-        <span aria-hidden>⠿</span>
-      </button>
-
       <Link
         href={href}
+        // 브라우저 기본 이미지 끌기가 dnd-kit과 겹친다.
+        draggable={false}
         className={cn(
           "flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm transition",
           active

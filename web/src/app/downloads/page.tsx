@@ -4,11 +4,23 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Badge, Card, PageHeader, TextInput } from "@/components/ui";
-import { PACKS, type Pack } from "@/lib/packs";
+import { LEVEL_TONE, PACKS, type JlptLevel, type Pack } from "@/lib/packs";
+import { cn } from "@/lib/utils";
 
 const CATEGORIES = ["전체", "일본어"] as const;
 
+/** 레벨 붙은 단어들의 평균(3.3이면 N3.3). 레벨이 하나도 없으면 undefined. */
+function averageLevel(pack: Pack) {
+  const levels = pack.words.flatMap((word) =>
+    word.level ? [Number(word.level.slice(1))] : [],
+  );
+  if (levels.length === 0) return undefined;
+  return levels.reduce((total, level) => total + level, 0) / levels.length;
+}
+
 function PackCard({ pack }: { pack: Pack }) {
+  const average = averageLevel(pack);
+
   return (
     <Link href={`/downloads/${pack.id}`} className="group block">
       <Card className="flex h-full flex-col gap-4 bg-card transition group-hover:border-taupe">
@@ -26,8 +38,22 @@ function PackCard({ pack }: { pack: Pack }) {
           </span>
         </div>
 
-        <div className="mt-auto border-t border-taupe/30 pt-3">
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-taupe/30 pt-3">
           <span className="text-xs text-ink/30">{pack.updatedAt} 업데이트</span>
+          {average !== undefined ? (
+            <span className="flex items-center gap-1.5 text-xs text-umber/45">
+              평균 난이도
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+                  // 색은 반올림한 레벨을 따른다 — 3.3이면 N3.
+                  LEVEL_TONE[`N${Math.round(average)}` as JlptLevel],
+                )}
+              >
+                N{average.toFixed(1)}
+              </span>
+            </span>
+          ) : null}
         </div>
       </Card>
     </Link>

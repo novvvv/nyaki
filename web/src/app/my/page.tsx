@@ -72,10 +72,6 @@ function DailyLimits() {
   const [progress, setProgress] = useState<Progress>();
   const [newText, setNewText] = useState("");
   const [reviewText, setReviewText] = useState("");
-  // 안키와 같이 한 칸에 적는다 — "1, 10"이면 1분 뒤와 10분 뒤.
-  const [learningText, setLearningText] = useState("");
-  const [relearningText, setRelearningText] = useState("");
-  const [graduatingText, setGraduatingText] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>();
 
@@ -104,18 +100,12 @@ function DailyLimits() {
   function apply(value: Progress) {
     setNewText(String(value.dailyNewLimit));
     setReviewText(String(value.dailyReviewLimit));
-    setLearningText(value.learningSteps.join(", "));
-    setRelearningText(value.relearningSteps.join(", "));
-    setGraduatingText(String(value.graduatingIntervalDays));
   }
 
   const dirty =
     progress !== undefined &&
     (newText !== String(progress.dailyNewLimit) ||
-      reviewText !== String(progress.dailyReviewLimit) ||
-      learningText !== progress.learningSteps.join(", ") ||
-      relearningText !== progress.relearningSteps.join(", ") ||
-      graduatingText !== String(progress.graduatingIntervalDays));
+      reviewText !== String(progress.dailyReviewLimit));
 
   async function save() {
     if (!progress || saving) return;
@@ -133,12 +123,6 @@ function DailyLimits() {
       const saved = await updateSettings(token, {
         dailyNewLimit: clamp(newText, progress.dailyNewLimit),
         dailyReviewLimit: clamp(reviewText, progress.dailyReviewLimit),
-        learningSteps: learningText,
-        relearningSteps: relearningText,
-        graduatingIntervalDays: Math.max(
-          1,
-          clamp(graduatingText, progress.graduatingIntervalDays),
-        ),
       });
       setProgress(saved);
       apply(saved);
@@ -197,82 +181,11 @@ function DailyLimits() {
       </p>
       <div className="divide-y divide-taupe/25">
         <Field
-          title="학습 단계"
-          hint="새 단어를 다시 보여줄 간격 · 0은 즉시"
-        >
-          <div className="flex items-center gap-2.5">
-            <TextInput
-              value={learningText}
-              onChange={(e) => setLearningText(e.target.value)}
-              placeholder="0, 10"
-              aria-label="학습 단계(분)"
-              className="w-40 py-2 text-base"
-            />
-            <span className="text-sm text-umber/45">분</span>
-          </div>
-        </Field>
-
-        <Field title="재학습 단계" hint="외웠던 단어를 틀렸을 때">
-          <div className="flex items-center gap-2.5">
-            <TextInput
-              value={relearningText}
-              onChange={(e) => setRelearningText(e.target.value)}
-              placeholder="0"
-              aria-label="재학습 단계(분)"
-              className="w-40 py-2 text-base"
-            />
-            <span className="text-sm text-umber/45">분</span>
-          </div>
-        </Field>
-
-        <Field title="졸업 간격" hint="마지막 단계를 통과한 뒤">
-          <div className="flex items-center gap-2.5">
-            <TextInput
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={365}
-              value={graduatingText}
-              onChange={(e) => setGraduatingText(e.target.value)}
-              aria-label="졸업 간격(일)"
-              className="w-24 py-2 text-right text-base tabular-nums"
-            />
-            <span className="text-sm text-umber/45">일</span>
-          </div>
-        </Field>
-
-        <Field
           title="다음 복습 시각 표시"
           hint="채점 버튼 위에 즉시 · 10분처럼 띄웁니다"
         >
           <DelayHintToggle />
         </Field>
-      </div>
-
-      <div className="mt-5 rounded-lg bg-subtle/60 px-4 py-3.5">
-        <p className="text-xs font-medium text-ink/55">추천</p>
-        <dl className="mt-2 space-y-1.5 text-xs text-umber/55">
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 text-ink/45">기본</dt>
-            <dd>0분 · 10분 — 틀린 건 바로 다시 나옵니다</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 text-ink/45">안키 기본</dt>
-            <dd>1분 · 10분 — 틀린 건 1분 뒤부터</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 text-ink/45">빨리 넘기기</dt>
-            <dd>10분 하나 — 세션이 짧아집니다</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 text-ink/45">촘촘하게</dt>
-            <dd>1분 · 5분 · 15분 · 60분 — 잘 안 외워질 때</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="w-20 shrink-0 text-ink/45">단계 없이</dt>
-            <dd>칸을 모두 비우면 바로 다음 날로</dd>
-          </div>
-        </dl>
       </div>
 
       <div className="mt-4 flex items-center justify-end gap-3">

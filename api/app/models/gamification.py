@@ -25,7 +25,7 @@ class UserProgressModel(Base):
 
     user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
     churu_balance: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
-    # 열빙어 — 츄르와 달리 "실제 학습 행동"에만 나오는 희소 재화(PLANS.md §1-4).
+    # 열빙어 — 츄르와 달리 "실제 학습 행동"에만 나오는 희소 재화(docs/archive/PLANS.md §1-4).
     # 잔액을 따로 들고 있어야 소비처를 재화별로 갈라 막을 수 있다.
     capelin_balance: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     streak_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

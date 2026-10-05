@@ -1,5 +1,7 @@
 # 사용자 Drive 저장 전환 (설계안)
 
+> **보관 문서.** 더는 갱신하지 않는다. API는 [API.md](../API.md).
+
 > 단어·메모를 Hub에서 사용자 Google Drive로 옮기고, Hub는 재화·퀘스트만 담당하게 하는 구조 변경안.
 > 2026-09-10 작성. 착수 확정 시 [PLANS.md](PLANS.md)로 통합하고 이 파일은 지운다.
 > 현재 구조는 [ARCHITECTURE.md](ARCHITECTURE.md), 진행 상태는 [TASKS.md](TASKS.md).

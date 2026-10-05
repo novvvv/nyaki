@@ -1,5 +1,7 @@
 # Nyaki 아키텍처
 
+> **보관 문서.** 더는 갱신하지 않는다. API는 [API.md](../API.md).
+
 > 시스템 구성 · 도메인 모델 · ERD · API · 동기화 · SRS · 디자인 토큰 · 보안.
 > 2026-09-01 통합 (기존 ERD/DOMAIN/API/SRS/app_erd/hub_erd/Design/SECURITY + 동기화 결함 분석).
 > 스키마가 바뀌면 **여기에 반영**한다.
@@ -16,7 +18,7 @@
 
 인증은 Firebase ID 토큰. Firebase는 **인증만** 담당하고 데이터는 전부 자체 Hub에 둔다.
 
-구현: `lib/data/local/tables.dart` · `api/app/models/` · `api/app/vocab/`
+구현: `app/lib/data/local/tables.dart` · `api/app/models/` · `api/app/vocab/`
 
 ---
 
@@ -40,7 +42,7 @@
 WordBook (1) ──────< (N) Word
 ```
 
-한 단어는 하나의 단어장에만 속한다. (책장 도입 시 `Bookshelf (1) ──< (N) WordBook` 추가 — PLANS.md)
+한 단어는 하나의 단어장에만 속한다. (책장 도입 시 `Bookshelf (1) ──< (N) WordBook` 추가 — archive/PLANS.md)
 
 #### WordBook
 
@@ -141,7 +143,7 @@ UserProgress (1) ──────< (N) QuestState
 | `morning_review_count` / `evening_review_count` | int | O | 시간대별 복습 카운터. 기본 `0` |
 
 **재화 두 종류** — 츄르는 가벼운 참여(탭 1회)의 보상이고, 열빙어는 실제 복습에만 나온다.
-소비처를 갈라 "꾸준히 복습해야 얻는 것"이라는 포지셔닝을 유지한다(PLANS.md §1-4).
+소비처를 갈라 "꾸준히 복습해야 얻는 것"이라는 포지셔닝을 유지한다(archive/PLANS.md §1-4).
 
 #### QuestState
 
@@ -348,50 +350,7 @@ erDiagram
 
 ## 3. API
 
-Base `/v1` · `Authorization: Bearer <Firebase ID token>` · ISO 8601 · OpenAPI는 `{base}/docs` · Health `GET /health`
-
-| HTTP | 의미 |
-|---|---|
-| 401 | 토큰 없음/무효 |
-| 403 | 관리자 전용(콘텐츠 쓰기) |
-| 404 | 리소스 없음 또는 삭제됨 |
-| 400 | URL·payload ID 불일치 |
-| 422 | payload 검증 실패 (길이 제한 등) |
-
-### 리소스
-
-| Method | Path | 설명 |
-|---|---|---|
-| GET | `/v1/word-books` | 목록 (`is_deleted = false`) |
-| PUT | `/v1/word-books/{id}` | upsert |
-| DELETE | `/v1/word-books/{id}` | soft delete + **하위 단어도 soft delete** (§4.4 결함 B) |
-| GET | `/v1/word-books/{id}/words` | 목록 |
-| PUT | `/v1/word-books/{id}/words/{wordId}` | upsert |
-| DELETE | `/v1/word-books/{id}/words/{wordId}` | soft delete |
-| GET | `/v1/review/due?limit=50` | 오늘 낼 수 있는 단어 (하루 한도 적용, max 9999) |
-| POST | `/v1/progress/quests/{quest_id}/complete` | idempotent 퀘스트 완료 |
-| GET | `/v1/progress` | 잔액 + 오늘 완료 퀘스트 |
-| GET/PUT/DELETE | `/v1/content/...` | 웹 콘텐츠 (쓰기는 `require_admin_id`) |
-| GET | `/v1/review/due/count` | 오늘 낼 수 있는 개수 (단어장별, 상한 없음) |
-| PUT | `/v1/progress/settings` | 하루 한도 · 복습 흐름 설정 |
-| GET/PUT/DELETE | `/v1/word-books/{id}/cloze-notes/...` | 빈칸 노트 |
-
-### Sync
-
-**`POST /v1/sync/push`** — 최대 100건 mutation.
-
-```json
-{ "changes": [
-  { "entity_type": "word", "action": "upsert", "word": { "...Word payload..." } },
-  { "entity_type": "word_book", "action": "delete", "word_book": { "...payload..." } }
-] }
-```
-→ `{ "cursor": 42, "accepted": 2 }`
-
-**`GET /v1/sync/pull?cursor=0`** — 해당 cursor **이후** 변경분, 최대 **500건**.
-→ `{ "cursor": 42, "changes": [ { "cursor": 41, "entity_type": "word_book", "word_book": { ...현재 스냅샷... } } ] }`
-
-클라이언트는 응답 최상위 `cursor`를 저장해 다음 pull에 쓴다. (개별 `change.cursor`는 안 읽는다)
+엔드포인트 · 인증 · 에러 · 쓰기 규칙 · 동기화 형식 · 한도는 **[API.md](../API.md)** 에 있다.
 
 ---
 
@@ -529,7 +488,7 @@ for field, value in payload.model_dump().items():
 
 ### 5.2 계산 스펙
 
-`lib/data/srs/sm2.dart`가 이 절을 그대로 따른다.
+`app/lib/data/srs/sm2.dart`가 이 절을 그대로 따른다.
 
 **Again (모름)**
 ```
@@ -634,7 +593,7 @@ UI (word_test_session_screen.dart)
 진행 표시가 제자리라 끝이 안 보인다 — 안키는 카운터가 줄어드는 화면이라 괜찮지만
 "N / 20"처럼 진행을 보여주는 이 화면과는 맞지 않는다.
 
-> **주의 — 앱은 아직 단계를 모른다.** `lib/data/srs/sm2.dart`에 단계 개념이 없고
+> **주의 — 앱은 아직 단계를 모른다.** `app/lib/data/srs/sm2.dart`에 단계 개념이 없고
 > Drift에 `srs_learning_step` 컬럼도 없다. 단계를 켠 상태에서 앱으로 채점하면
 > 앱은 일 단위로 계산해 올리므로 두 클라이언트의 결과가 갈린다.
 > **앱을 함께 쓰는 동안에는 단계를 켜지 않는 것이 안전하다.**
@@ -676,7 +635,7 @@ uvicorn 프로세스 1개 / Lightsail $5~10 (vCPU 1) / SQLAlchemy 기본 pool(5+
 | **Nude** | `#E3DBCC` | 테두리·구분선·비활성 |
 | **Obsidian** | `#101010` | 텍스트·필 버튼·강조 |
 
-구현: `lib/core/theme/nyaki_colors.dart` (토큰 이름 `cream`/`ink`/`umber`/`softDune`/`taupe`/`cardBg`는
+구현: `app/lib/core/theme/nyaki_colors.dart` (토큰 이름 `cream`/`ink`/`umber`/`softDune`/`taupe`/`cardBg`는
 기존 코드 호환을 위해 유지하고 값만 교체) · 웹은 `web/src/app/globals.css`
 
 **원칙** — 별도 액센트 컬러 없음(강조는 Obsidian 채움) / 순백·순흑 풀블리드 금지 /

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { Badge, PageHeader, SubtleButton } from "@/components/ui";
-import { getPack } from "@/lib/packs";
+import { getPack, LEVEL_TONE } from "@/lib/packs";
+import { cn } from "@/lib/utils";
 
 export default function PackDetailPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const pack = getPack(params.id);
 
@@ -33,12 +35,12 @@ export default function PackDetailPage() {
         title={pack.title}
         description={`${pack.source} · ${pack.words.length}개 · ${pack.updatedAt} 업데이트`}
         actions={
-          <div className="flex items-center gap-1.5">
-            <SubtleButton className="py-1.5 text-xs">CSV</SubtleButton>
-            <SubtleButton className="py-1.5 text-xs">
-              내 단어장에 담기
-            </SubtleButton>
-          </div>
+          <SubtleButton
+            className="py-1.5 text-xs"
+            onClick={() => router.push(`/downloads/${pack.id}/save`)}
+          >
+            내 단어장에 담기
+          </SubtleButton>
         }
       />
 
@@ -65,6 +67,18 @@ export default function PackDetailPage() {
             </span>
             <span className="min-w-0 flex-1 truncate text-umber/70">
               {word.meaning}
+            </span>
+            <span className="w-8 shrink-0 text-right">
+              {word.level ? (
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+                    LEVEL_TONE[word.level],
+                  )}
+                >
+                  {word.level}
+                </span>
+              ) : null}
             </span>
           </li>
         ))}

@@ -37,7 +37,7 @@ interface AuthContextValue {
    *
    * 비밀번호를 직접 받으면 그 순간 개인정보처리자가 된다 — 처리방침 고지,
    * 보관·파기 의무, 유출 시 신고까지 따라온다. 혼자 만드는 서비스에서 떠안을
-   * 이유가 없어서 신원 확인을 통째로 위임했다. docs/ARCHITECTURE.md §인증
+   * 이유가 없어서 신원 확인을 통째로 위임했다. docs/archive/ARCHITECTURE.md §인증
    */
   signIn: () => Promise<void>;
   signOutUser: () => Promise<void>;

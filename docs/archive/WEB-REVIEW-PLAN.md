@@ -1,5 +1,7 @@
 # 웹 복습 기능
 
+> **보관 문서.** 더는 갱신하지 않는다. API는 [API.md](../API.md).
+
 > 웹에서도 테스트(복습)를 할 수 있게 한다. 채점 결과를 **어떻게 서버에 보낼지**가 핵심이다.
 > 2026-09-15 작성 후 같은 날 구현 완료. 8절에 무엇이 남았는지 적어 뒀다.
 > 현재 구조는 [ARCHITECTURE.md](ARCHITECTURE.md), 진행 상태는 [TASKS.md](TASKS.md).
@@ -111,7 +113,7 @@ Anki가 `revlog.id`에 복습 시각(밀리초)을 넣어 15년간 써온 방식
 
 | | 계산 위치 | 이유 |
 |---|---|---|
-| **앱** | 로컬 (Dart, [sm2.dart](../lib/data/srs/sm2.dart)) | **오프라인이 타협 불가.** 비행기에서 다음 카드가 뭔지 알아야 한다 |
+| **앱** | 로컬 (Dart, [sm2.dart](../../app/lib/data/srs/sm2.dart)) | **오프라인이 타협 불가.** 비행기에서 다음 카드가 뭔지 알아야 한다 |
 | **웹** | **서버 (Python)** | 브라우저 편집기다. 오프라인 요구가 없다 |
 
 Anki가 스케줄러를 클라이언트에 둔 것도 같은 이유다.
@@ -122,7 +124,7 @@ Anki가 스케줄러를 클라이언트에 둔 것도 같은 이유다.
 
 > 단어가 사용자 Drive로 갔다면 서버가 계산할 수 없어 이 설계가 무너진다.
 > [TASKS.md](TASKS.md) 첫 줄에 **"구글 드라이브로 옮기는 계획은 접었다"**고
-> 적혀 있어 문제없다. [DRIVE-PLAN.md](DRIVE-PLAN.md)는 폐기된 문서다.
+> 적혀 있어 문제없다. Drive 전환 설계안은 폐기했다.
 
 ---
 
@@ -130,7 +132,7 @@ Anki가 스케줄러를 클라이언트에 둔 것도 같은 이유다.
 
 ### 6-1. 출제 — 이미 있다
 
-[routes.py:138](../api/app/vocab/routes.py#L138). 그대로 쓴다.
+[routes.py:138](../../api/app/vocab/routes.py#L138). 그대로 쓴다.
 
 ```
 GET /v1/review/due?limit=30      기본 50, 최대 9999 (하루 한도가 먼저 적용된다)
@@ -149,7 +151,7 @@ POST /v1/review/grades
 → { "applied": 28, "skipped": 2 }     skipped = 이미 본 id
 ```
 
-- `grade`는 `again` / `good` 두 가지 ([sm2.dart](../lib/data/srs/sm2.dart)의 `ReviewGrade`와 동일)
+- `grade`는 `again` / `good` 두 가지 ([sm2.dart](../../app/lib/data/srs/sm2.dart)의 `ReviewGrade`와 동일)
 - 서버가 각 단어의 현재 `srs_*`를 읽어 SM-2를 돌리고 갱신한다
 - 한 번에 받는 개수는 `sync/push`와 같이 **100건**으로 제한한다
 
@@ -181,8 +183,8 @@ POST /v1/review/grades
 스와이프는 모바일 제스처라 데스크톱에 맞지 않는다.
 **좌우 화살표 키 + 버튼 두 개**로 바꾼다. 카드를 뒤집어 답을 보는 흐름은 그대로 가져온다.
 
-앱 화면 참고: [word_test_screen.dart](../lib/screens/test/word_test_screen.dart) ·
-[word_test_session_screen.dart](../lib/screens/test/word_test_session_screen.dart)
+앱 화면 참고: [word_test_screen.dart](../../app/lib/screens/test/word_test_screen.dart) ·
+[word_test_session_screen.dart](../../app/lib/screens/test/word_test_session_screen.dart)
 
 ---
 
@@ -190,8 +192,8 @@ POST /v1/review/grades
 
 | | |
 |---|---|
-| 서버 SM-2 포팅 ([srs.py](../api/app/vocab/srs.py)) | **완료.** [sm2_test.dart](../test/data/srs/sm2_test.dart)를 옮긴 [test_srs.py](../api/tests/test_srs.py) 13개 통과 |
-| `review_logs` 테이블 | **완료.** [0009_review_logs.py](../api/alembic/versions/0009_review_logs.py) — **아직 운영 DB에 안 돌렸다** |
+| 서버 SM-2 포팅 ([srs.py](../../api/app/vocab/srs.py)) | **완료.** [sm2_test.dart](../../app/test/data/srs/sm2_test.dart)를 옮긴 [test_srs.py](../../api/tests/test_srs.py) 13개 통과 |
+| `review_logs` 테이블 | **완료.** [0009_review_logs.py](../../api/alembic/versions/0009_review_logs.py) — **아직 운영 DB에 안 돌렸다** |
 | `POST /v1/review/grades` | **완료.** 재전송·요청 내 중복·없는 단어 케이스까지 테스트 |
 | 웹 세션 화면 | **완료.** `/review/due`로 출제, 세션 끝에 한 번 전송 |
 
@@ -208,9 +210,9 @@ POST /v1/review/grades
 
 ## 9. 아직 안 정한 것
 
-- **하루 한도.** [gamification.py:33](../api/app/models/gamification.py#L33)에 `daily_review_goal`
-  컬럼이 있는데 아직 안 쓴다([tables.dart:115](../lib/data/local/tables.dart#L115)에 `이번 라운드 미사용`).
-  [plans.ts](../web/src/lib/plans.ts)의 `오늘 배울 단어 열 개`(Free) / `하루 추천 백 개`(Pro)가 이 값이다.
+- **하루 한도.** [gamification.py:33](../../api/app/models/gamification.py#L33)에 `daily_review_goal`
+  컬럼이 있는데 아직 안 쓴다([tables.dart:115](../../app/lib/data/local/tables.dart#L115)에 `이번 라운드 미사용`).
+  [plans.ts](../../web/src/lib/plans.ts)의 `오늘 배울 단어 열 개`(Free) / `하루 추천 백 개`(Pro)가 이 값이다.
   **팩 다운로드로 300개를 한 번에 담으면 전부 due가 되므로, 이 한도를 살려야 한다.**
   안키도 due를 흩뿌리지 않고 신규 카드 한도로 막는다
 - **앱을 언제 서버 경로로 옮길지.** 지금은 안 옮긴다. 오프라인이 깨진다

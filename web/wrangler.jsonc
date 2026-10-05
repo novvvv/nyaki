@@ -1,0 +1,15 @@
+// Cloudflare Workers 설정. `npm run deploy`가 이 파일을 읽는다.
+//
+// NEXT_PUBLIC_* 환경 변수는 **빌드할 때** 코드에 박힌다. 로컬에서 배포하면
+// .env.local 값이 그대로 들어가니, 배포 전에 운영 값인지 확인한다.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nyaki-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}

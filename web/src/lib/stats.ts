@@ -127,6 +127,8 @@ export interface MasteryRow {
   /** 0~100 */
   rate: number;
   itemCount: number;
+  /** 암기 단계별 카드 수(6칸). 서버가 아직 안 보내면 빈 배열이다. */
+  stages: number[];
 }
 
 /**
@@ -147,6 +149,7 @@ export function computeMasteryByBook(
       title: book.title,
       rate: summaries[book.id]?.masteryRate ?? 0,
       itemCount: summaries[book.id]?.itemCount ?? 0,
+      stages: summaries[book.id]?.stages ?? [],
     }))
     .filter((row) => row.itemCount > 0)
     .sort((a, b) => b.rate - a.rate);

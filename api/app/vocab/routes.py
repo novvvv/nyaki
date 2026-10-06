@@ -19,6 +19,7 @@ from ..models import (
 from .schemas import (
     CardResponse,
     DailyAddedResponse,
+    DailyReviewedResponse,
     FolderPayload,
     FolderResponse,
     ClozeFaceResponse,
@@ -52,6 +53,7 @@ from .services import (
     import_pack,
     list_pack_imports,
     daily_added_counts,
+    daily_reviewed_counts,
     delete_folder,
     list_folders,
     upsert_folder,
@@ -251,6 +253,24 @@ def get_daily_added(
     return [
         DailyAddedResponse(date=date, count=count)
         for date, count in daily_added_counts(session, user_id, days, tz_offset)
+    ]
+
+
+@router.get("/stats/daily-reviewed", response_model=list[DailyReviewedResponse])
+def get_daily_reviewed(
+    days: int = Query(default=30, ge=1, le=366),
+    tz_offset: int = Query(default=0, ge=-720, le=840),
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[DailyReviewedResponse]:
+    """날짜별 복습한 카드 수. 같은 카드를 하루에 여러 번 채점해도 1개다.
+
+    daily-added와 달리 기간이 필수다(최대 1년) — 복습 기록은 쌓이기만 해서
+    전체를 읽게 두면 오래 쓴 사용자일수록 느려진다.
+    """
+    return [
+        DailyReviewedResponse(date=date, count=count)
+        for date, count in daily_reviewed_counts(session, user_id, days, tz_offset)
     ]
 
 

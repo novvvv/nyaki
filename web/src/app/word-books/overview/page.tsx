@@ -6,7 +6,11 @@ import { useAuth } from "@/components/auth-provider";
 import { MasteryByBook } from "@/components/charts/mastery-by-book";
 import { WordAddedTrend } from "@/components/charts/word-added-trend";
 import { Card, PageHeader } from "@/components/ui";
-import { fetchDailyAdded, type DailyAdded } from "@/lib/api-client";
+import {
+  fetchDailyAdded,
+  fetchDailyReviewed,
+  type DailyAdded,
+} from "@/lib/api-client";
 import {
   computeMasteryByBook,
   computeOverviewSummary,
@@ -14,6 +18,9 @@ import {
   type RangePreset,
 } from "@/lib/stats";
 import { useVocab } from "@/lib/vocab-store";
+
+/** "복습한 단어" 차트 기간(일) */
+const REVIEW_DAYS = 30;
 
 const RANGE_OPTIONS: { key: RangePreset; label: string }[] = [
   { key: 7, label: "7일" },
@@ -27,6 +34,7 @@ export default function OverviewPage() {
   const { getToken } = useAuth();
   const [range, setRange] = useState<RangePreset>(30);
   const [added, setAdded] = useState<DailyAdded[]>([]);
+  const [reviewed, setReviewed] = useState<DailyAdded[]>([]);
 
   // 날짜별 개수는 서버가 센다 — 단어와 빈칸 노트를 함께 세려면 여기서는 셀 수 없다.
   // 이펙트 본문에서 곧바로 setState가 일어나지 않도록 async 블록으로 감싼다
@@ -51,6 +59,25 @@ export default function OverviewPage() {
     };
   }, [getToken, range, wordBooks]);
 
+  // 복습한 카드 수 — 최근 30일 고정. 단어장을 바꾸면 복습 기록도 바뀔 수 있어
+  // 단어장 목록이 바뀔 때 다시 받는다.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const token = await getToken();
+      if (!token) return;
+      try {
+        const rows = await fetchDailyReviewed(token, REVIEW_DAYS);
+        if (!cancelled) setReviewed(rows);
+      } catch {
+        // 차트 하나 때문에 화면 전체를 못 보게 만들지 않는다.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, wordBooks]);
+
   const summary = useMemo(
     () => computeOverviewSummary(wordBooks, summaries),
     [wordBooks, summaries],
@@ -63,6 +90,12 @@ export default function OverviewPage() {
     () => fillDailyCounts(added, range),
     [added, range],
   );
+  const reviewCounts = useMemo(
+    () => fillDailyCounts(reviewed, REVIEW_DAYS),
+    [reviewed],
+  );
+  // 빈 날짜까지 채운 목록의 마지막 칸이 오늘이다.
+  const reviewedToday = reviewCounts.at(-1)?.count ?? 0;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
@@ -106,6 +139,17 @@ export default function OverviewPage() {
 
           <Card className="px-5 py-5">
             <MasteryByBook data={mastery} />
+          </Card>
+
+          <Card className="px-5 py-5">
+            <WordAddedTrend
+              data={reviewCounts}
+              title="복습한 단어"
+              valueLabel="복습한 단어"
+              ariaLabel="최근 30일 날짜별 복습한 단어 수"
+              note={`오늘 ${reviewedToday}개`}
+              highlightLast
+            />
           </Card>
         </div>
       )}

@@ -1,4 +1,4 @@
-"""통계 — 날짜별 추가 개수.
+"""통계 — 날짜별 추가 개수, 암기 단계 분포, 날짜별 복습 수.
 
 전체 통계 화면의 추이 차트가 쓰는 값이다. 한때 웹이 스토어의 단어만 세어
 빈칸 노트가 통째로 빠졌다. 같은 화면 안에서 위 타일은 "항목", 가운데 차트는
@@ -199,3 +199,133 @@ def test_other_users_items_are_not_counted() -> None:
     assert _daily(other, tz_offset=KST) == {today: 1}
 
     app.dependency_overrides.clear()
+
+
+# ==================== 암기 단계 분포 ====================
+#
+# 단어장 집계의 stages — 새 카드 · 학습 중 · 1일 · 3일 · 1주 · 1달+.
+# 다음 복습 간격으로 나눈다. 통계 화면의 분포 곡선이 쓴다.
+
+
+def _set_card(
+    user: str, word_id: str, interval_days: int, reviewed: bool = True
+) -> None:
+    from sqlalchemy import update
+
+    from app.core.database import SessionLocal
+    from app.models import CardModel
+
+    with SessionLocal() as session:
+        session.execute(
+            update(CardModel)
+            .where(CardModel.user_id == user, CardModel.word_id == word_id)
+            .values(
+                srs_interval_days=interval_days,
+                srs_last_reviewed_at=datetime.now(timezone.utc) if reviewed else None,
+            )
+        )
+        session.commit()
+
+
+def _stages(client: TestClient) -> list[int]:
+    rows = client.get("/v1/word-books/summaries").json()
+    return next(row for row in rows if row["word_book_id"] == BOOK)["stages"]
+
+
+def test_cards_are_split_into_stages_by_interval() -> None:
+    user = "firebase-user-stats-stages"
+    client = _client(user)
+    now = datetime.now(timezone.utc)
+    for word_id in ["new", "learning", "d1", "d2", "d5", "d10", "d45"]:
+        _add_word(client, word_id, now)
+
+    _set_card(user, "learning", 0)  # 봤지만 아직 학습 단계
+    _set_card(user, "d1", 1)
+    _set_card(user, "d2", 2)  # 3일 미만은 1일 칸
+    _set_card(user, "d5", 5)
+    _set_card(user, "d10", 10)
+    _set_card(user, "d45", 45)
+
+    #               새 카드 · 학습 중 · 1일 · 3일 · 1주 · 1달+
+    assert _stages(client) == [1, 1, 2, 1, 1, 1]
+
+
+# ==================== 날짜별 복습 수 ====================
+
+
+def _log(user: str, log_id: str, card_id: str, at: datetime) -> None:
+    """채점 기록을 직접 남긴다. API는 서버 시각을 써서 날짜를 고를 수 없다."""
+    from app.core.database import SessionLocal
+    from app.models import ReviewLogModel
+
+    with SessionLocal() as session:
+        session.add(
+            ReviewLogModel(
+                id=log_id,
+                user_id=user,
+                word_id=card_id.split(":")[0],
+                card_id=card_id,
+                grade="good",
+                reviewed_at=at,
+                created_at=at,
+            )
+        )
+        session.commit()
+
+
+def _reviewed(client: TestClient, days: int = 30) -> dict[str, int]:
+    response = client.get(f"/v1/stats/daily-reviewed?days={days}&tz_offset={KST}")
+    assert response.status_code == 200, response.text
+    return {row["date"]: row["count"] for row in response.json()}
+
+
+def test_same_card_twice_a_day_counts_once() -> None:
+    """학습 단계에서 1분 · 10분 뒤 다시 봐도 그날 1개다."""
+    user = "firebase-user-stats-reviewed-once"
+    client = _client(user)
+    now = datetime.now(timezone.utc)
+    _log(user, "r1", "w1:recognition", now)
+    _log(user, "r2", "w1:recognition", now - timedelta(minutes=1))
+    _log(user, "r3", "w2:recognition", now)
+
+    today = (now + timedelta(minutes=KST)).date().isoformat()
+    assert _reviewed(client) == {today: 2}
+
+
+def test_reviews_are_grouped_by_local_date() -> None:
+    """UTC 15시 = KST 다음 날 0시. 저장 날짜가 아니라 한국 날짜로 묶는다."""
+    user = "firebase-user-stats-reviewed-kst"
+    client = _client(user)
+    today_utc = datetime.now(timezone.utc).date()
+    # 이틀 전 UTC 14:59 → KST 23:59(이틀 전), UTC 15:00 → KST 0:00(어제)
+    base = datetime.combine(
+        today_utc - timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc
+    )
+    _log(user, "k1", "w1:recognition", base + timedelta(hours=14, minutes=59))
+    _log(user, "k2", "w2:recognition", base + timedelta(hours=15))
+
+    two_days_ago = (today_utc - timedelta(days=2)).isoformat()
+    yesterday = (today_utc - timedelta(days=1)).isoformat()
+    assert _reviewed(client) == {two_days_ago: 1, yesterday: 1}
+
+
+def test_reviews_outside_the_window_are_cut() -> None:
+    user = "firebase-user-stats-reviewed-window"
+    client = _client(user)
+    now = datetime.now(timezone.utc)
+    _log(user, "o1", "w1:recognition", now - timedelta(days=40))
+    _log(user, "o2", "w2:recognition", now)
+
+    assert list(_reviewed(client, days=30).values()) == [1]
+
+
+def test_reviews_of_other_users_are_not_counted() -> None:
+    _log(
+        "firebase-user-stats-reviewed-other",
+        "x1",
+        "w1:recognition",
+        datetime.now(timezone.utc),
+    )
+    client = _client("firebase-user-stats-reviewed-me")
+
+    assert _reviewed(client) == {}

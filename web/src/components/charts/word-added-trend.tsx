@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { DailyCount } from "@/lib/stats";
 
@@ -37,7 +37,25 @@ function formatDateLabel(dateKey: string): string {
  * 커서보다 왼쪽 날짜가 잡혔다. 이제 막대마다 히트 영역을 따로 두므로
  * 좌표 환산 자체가 없다.
  */
-export function WordAddedTrend({ data }: { data: DailyCount[] }) {
+export function WordAddedTrend({
+  data,
+  title = "일별 단어 추가",
+  valueLabel = "추가한 단어",
+  ariaLabel = "날짜별 단어 추가 개수 추이",
+  note,
+  highlightLast = false,
+}: {
+  data: DailyCount[];
+  /** 같은 막대 차트를 "복습한 단어"에도 쓴다. 기본값은 단어 추가 차트의 문구다. */
+  title?: string;
+  /** 표로 볼 때 개수 칸 머리글 */
+  valueLabel?: string;
+  ariaLabel?: string;
+  /** 제목 오른쪽에 붙는 짧은 요약 (예: "오늘 12개") */
+  note?: ReactNode;
+  /** 마지막 날(오늘) 막대를 진하게, 나머지를 옅게 */
+  highlightLast?: boolean;
+}) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
   const [width, setWidth] = useState(0);
@@ -104,8 +122,13 @@ export function WordAddedTrend({ data }: { data: DailyCount[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-ink">일별 단어 추가</h3>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-sm font-medium text-ink">{title}</h3>
+          {note ? (
+            <span className="text-xs tabular-nums text-umber/50">{note}</span>
+          ) : null}
+        </div>
         <button
           type="button"
           onClick={() => setShowTable((v) => !v)}
@@ -121,7 +144,7 @@ export function WordAddedTrend({ data }: { data: DailyCount[] }) {
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-taupe/25 text-umber/50">
                 <th className="px-3 py-2 font-medium">날짜</th>
-                <th className="px-3 py-2 text-right font-medium">추가한 단어</th>
+                <th className="px-3 py-2 text-right font-medium">{valueLabel}</th>
               </tr>
             </thead>
             <tbody>
@@ -144,7 +167,7 @@ export function WordAddedTrend({ data }: { data: DailyCount[] }) {
             height={HEIGHT}
             onPointerLeave={() => setHoverIndex(null)}
             role="img"
-            aria-label="날짜별 단어 추가 개수 추이"
+            aria-label={ariaLabel}
           >
             {/* 가로 그리드 + y축 라벨 */}
             {gridValues.map((v) => {
@@ -197,7 +220,15 @@ export function WordAddedTrend({ data }: { data: DailyCount[] }) {
                   height={Math.max(bar.height, 1.5)}
                   rx={Math.min(bar.width / 2, 2)}
                   fill="var(--nyaki-ink)"
-                  fillOpacity={hoverIndex === null || hoverIndex === i ? 0.82 : 0.22}
+                  fillOpacity={
+                    hoverIndex !== null
+                      ? hoverIndex === i
+                        ? 0.82
+                        : 0.22
+                      : highlightLast && i !== bars.length - 1
+                        ? 0.4
+                        : 0.82
+                  }
                   className="transition-[fill-opacity] duration-150"
                 />
               ),

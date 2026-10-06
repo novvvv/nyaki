@@ -65,7 +65,7 @@
 | GET | `/v1/word-books` | 목록 | |
 | PUT | `/v1/word-books/{word_book_id}` | 생성 · 수정 | |
 | DELETE | `/v1/word-books/{word_book_id}` | 삭제 | |
-| GET | `/v1/word-books/summaries` | 단어장별 항목 수 · 카드 수 · 암기율 | |
+| GET | `/v1/word-books/summaries` | 단어장별 항목 수 · 카드 수 · 암기율(OK 비율) · 암기 단계별 카드 수(`stages`, 6칸) | |
 
 ### 단어
 
@@ -95,6 +95,7 @@
 | Method | Path | 설명 | 상세 |
 |---|---|---|---|
 | GET | `/v1/stats/daily-added?days=&tz_offset=` | 날짜별 추가 개수. `tz_offset`은 분 단위 (KST 540) | |
+| GET | `/v1/stats/daily-reviewed?days=30&tz_offset=` | 날짜별 복습한 카드 수. 같은 카드를 하루에 여러 번 채점해도 1개. `days` 1~366 | |
 
 ### 복습
 

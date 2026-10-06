@@ -463,7 +463,24 @@ def sync_cards_for_word(session: Session, user_id: str, word: WordModel) -> None
 # 갈린다 — 실제로 웹은 단어만 세어 빈칸 노트가 빠졌고, 암기율은 words.srs_*를
 # 읽어 빈칸 카드를 아예 무시했다.
 
-def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
+# 암기 단계 — 다음 복습 간격(일)으로 나눈다. 통계 화면의 분포 곡선이 쓴다.
+# 앞 둘은 X(미암기), 나머지는 OK다(암기율과 같은 경계).
+STAGE_LABELS = ("새 카드", "학습 중", "1일", "3일", "1주", "1달+")
+
+
+def _stage(interval_days: int, last_reviewed_at: datetime | None) -> int:
+    if interval_days <= 0:
+        return 0 if last_reviewed_at is None else 1
+    if interval_days < 3:
+        return 2
+    if interval_days < 7:
+        return 3
+    if interval_days < 30:
+        return 4
+    return 5
+
+
+def book_summaries(session: Session, user_id: str) -> dict[str, dict]:
     """단어장별 항목 수와 암기율.
 
     항목 = 단어 + 빈칸 노트. 사용자에게는 둘 다 "외울 거리 하나"다.
@@ -485,7 +502,13 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
 
     def bucket(book_id: str) -> dict[str, int]:
         return summaries.setdefault(
-            book_id, {"item_count": 0, "card_count": 0, "mastery_rate": 0}
+            book_id,
+            {
+                "item_count": 0,
+                "card_count": 0,
+                "mastery_rate": 0,
+                "stages": [0] * len(STAGE_LABELS),
+            },
         )
 
     word_book_of: dict[str, str] = {}
@@ -507,15 +530,19 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
         bucket(book_id)["item_count"] += 1
 
     ok: dict[str, int] = {}
-    for word_id, note_id, interval in session.execute(
+    for word_id, note_id, interval, reviewed_at in session.execute(
         select(
-            CardModel.word_id, CardModel.note_id, CardModel.srs_interval_days
+            CardModel.word_id,
+            CardModel.note_id,
+            CardModel.srs_interval_days,
+            CardModel.srs_last_reviewed_at,
         ).where(CardModel.user_id == user_id, CardModel.is_deleted.is_(False))
     ):
         book_id = word_book_of.get(word_id or "") or note_book_of.get(note_id or "")
         if book_id is None:
             continue
         bucket(book_id)["card_count"] += 1
+        bucket(book_id)["stages"][_stage(interval, reviewed_at)] += 1
         if interval >= 1:
             ok[book_id] = ok.get(book_id, 0) + 1
 
@@ -574,6 +601,49 @@ def daily_added_counts(
         if floor is not None and local_date < floor:
             continue
         key = local_date.isoformat()
+        counts[key] = counts.get(key, 0) + 1
+
+    return sorted(counts.items())
+
+
+def daily_reviewed_counts(
+    session: Session,
+    user_id: str,
+    days: int,
+    tz_offset_minutes: int = 0,
+) -> list[tuple[str, int]]:
+    """날짜별로 복습한 카드 수. 통계 화면의 "복습한 단어" 막대가 쓴다.
+
+    **같은 카드를 하루에 여러 번 채점해도 1개다.** 학습 단계에서 1분 · 10분 뒤
+    다시 보면 채점이 여러 번 남는데, 사용자가 궁금한 건 "몇 개를 봤나"다.
+
+    날짜는 daily_added_counts와 같이 로컬 날짜로 묶고, 묶기는 파이썬에서 한다.
+    다만 기간 하한은 SQL에 건다 — review_logs는 오래 쓸수록 쌓이기만 해서,
+    (user_id, created_at) 인덱스로 최근 것만 읽어야 한다.
+
+    0개인 날은 보내지 않는다.
+    """
+    offset = timedelta(minutes=tz_offset_minutes)
+    today_local = (utc_now() + offset).date()
+    floor = today_local - timedelta(days=days - 1)
+    # 로컬 자정을 UTC로 바꾼 시각부터 읽는다.
+    since = datetime.combine(floor, time.min, tzinfo=timezone.utc) - offset
+
+    seen: set[tuple[str, str]] = set()
+    counts: dict[str, int] = {}
+    for created_at, card_id, word_id in session.execute(
+        select(
+            ReviewLogModel.created_at, ReviewLogModel.card_id, ReviewLogModel.word_id
+        ).where(
+            ReviewLogModel.user_id == user_id, ReviewLogModel.created_at >= since
+        )
+    ):
+        key = (_as_utc(created_at) + offset).date().isoformat()
+        # 카드 도입 전 기록은 card_id가 없어 단어로 센다.
+        card = card_id or word_id
+        if (key, card) in seen:
+            continue
+        seen.add((key, card))
         counts[key] = counts.get(key, 0) + 1
 
     return sorted(counts.items())

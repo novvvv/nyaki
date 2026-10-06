@@ -216,6 +216,11 @@ export interface BookSummary {
   itemCount: number;
   cardCount: number;
   masteryRate: number;
+  /**
+   * 암기 단계별 카드 수 — 새 카드 · 학습 중 · 1일 · 3일 · 1주 · 1달+ 순(6칸).
+   * 다음 복습 간격으로 나눈 것이고, 앞 둘이 X, 나머지가 OK다.
+   */
+  stages: number[];
 }
 
 /** 단어장별 집계. 숫자는 서버가 센다 — 클라이언트가 각자 세면 값이 갈린다. */
@@ -228,6 +233,7 @@ export async function fetchBookSummaries(
       item_count: number;
       card_count: number;
       mastery_rate: number;
+      stages?: number[];
     }[]
   >("/v1/word-books/summaries", token);
 
@@ -239,6 +245,8 @@ export async function fetchBookSummaries(
         itemCount: row.item_count,
         cardCount: row.card_count,
         masteryRate: row.mastery_rate,
+        // 새 서버 배포 전에는 오지 않는다. 비어 있으면 곡선에서 뺀다.
+        stages: row.stages ?? [],
       },
     ]),
   );
@@ -268,6 +276,21 @@ export async function fetchDailyAdded(
   });
   if (days !== undefined) params.set("days", String(days));
   return request<DailyAdded[]>(`/v1/stats/daily-added?${params}`, token);
+}
+
+/**
+ * 날짜별 복습한 카드 수(최근 days일). 같은 카드를 하루에 여러 번 채점해도 1개다.
+ * 0개인 날은 오지 않는다 — 빈 날짜는 화면이 채운다. 시차는 fetchDailyAdded와 같다.
+ */
+export async function fetchDailyReviewed(
+  token: string,
+  days: number,
+): Promise<DailyAdded[]> {
+  const params = new URLSearchParams({
+    days: String(days),
+    tz_offset: String(-new Date().getTimezoneOffset()),
+  });
+  return request<DailyAdded[]>(`/v1/stats/daily-reviewed?${params}`, token);
 }
 
 export async function fetchClozeNotes(

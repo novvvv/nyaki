@@ -91,6 +91,9 @@ class WordBookSummaryResponse(BaseModel):
     item_count: int
     card_count: int
     mastery_rate: int
+    # 암기 단계별 카드 수 — 새 카드 · 학습 중 · 1일 · 3일 · 1주 · 1달+ 순.
+    # 다음 복습 간격으로 나눈다(services.STAGE_LABELS). 앞 둘이 X, 나머지가 OK다.
+    stages: list[int] = []
 
 
 class DailyAddedResponse(BaseModel):
@@ -98,6 +101,16 @@ class DailyAddedResponse(BaseModel):
 
     개수가 0인 날은 아예 오지 않는다 — 빈 날짜를 메우는 일은 "오늘"이 며칠인지
     아는 클라이언트가 한다.
+    """
+
+    date: str  # YYYY-MM-DD, 요청한 시차 기준
+    count: int
+
+
+class DailyReviewedResponse(BaseModel):
+    """하루치 복습한 카드 수. 같은 카드를 여러 번 채점해도 1개다.
+
+    0개인 날은 오지 않는다 — 빈 날짜 채우기는 클라이언트 몫이다.
     """
 
     date: str  # YYYY-MM-DD, 요청한 시차 기준

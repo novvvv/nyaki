@@ -35,7 +35,13 @@ function summary(
   itemCount: number,
   masteryRate: number,
 ): BookSummary {
-  return { wordBookId, itemCount, cardCount: itemCount, masteryRate };
+  return {
+    wordBookId,
+    itemCount,
+    cardCount: itemCount,
+    masteryRate,
+    stages: [],
+  };
 }
 
 function book(words: Word[], overrides: Partial<WordBook> = {}): WordBook {
@@ -70,7 +76,7 @@ describe("computeMasteryByBook — 단어장별 비교", () => {
     });
 
     expect(rows).toEqual([
-      { id: "cloze-only", title: "냐키", rate: 55, itemCount: 2 },
+      { id: "cloze-only", title: "냐키", rate: 55, itemCount: 2, stages: [] },
     ]);
   });
 

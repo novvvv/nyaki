@@ -71,10 +71,11 @@ describe("MasteryByBook — 보여줄 단어장", () => {
     await user.click(screen.getByRole("checkbox", { name: "라" }));
 
     expect(shownTitles()).toEqual(["가", "나", "다"]);
+    // 고른 순서로 남는다 — 기본 3개(라 · 나 · 다)에 가를 더하고 라를 뺐다.
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([
-      "a",
       "b",
       "c",
+      "a",
     ]);
 
     // 다시 열어도 고른 그대로다.
@@ -209,5 +210,196 @@ describe("MasteryByBook — 곡선", () => {
     await user.click(screen.getByRole("button", { name: "막대" }));
 
     expect(shownTitles()).toEqual(["나", "다", "라"]);
+  });
+});
+
+describe("MasteryByBook — 최대 5개", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  const MANY: MasteryRow[] = Array.from({ length: 7 }, (_, i) => ({
+    id: `m${i}`,
+    title: `단어장${i}`,
+    rate: 70 - i * 10,
+    itemCount: 10,
+    stages: [1, 1, 2, 2, 2, 2],
+  }));
+
+  it("5개를 고르면 나머지는 고를 수 없다", async () => {
+    const user = userEvent.setup();
+    render(<MasteryByBook data={MANY} />);
+
+    await user.click(screen.getByRole("button", { name: "단어장 고르기" }));
+    // 기본 3개에 2개를 더해 5개
+    await user.click(screen.getByRole("checkbox", { name: "단어장3" }));
+    await user.click(screen.getByRole("checkbox", { name: "단어장4" }));
+
+    expect(screen.getByText("5 / 5")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "단어장5" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "단어장0" })).toBeEnabled();
+    expect(shownTitles()).toHaveLength(5);
+  });
+
+  it("예전에 5개보다 많이 골라뒀으면 앞의 5개만 보인다", () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(["m6", "m5", "m4", "m3", "m2", "m1", "m0"]),
+    );
+
+    render(<MasteryByBook data={MANY} />);
+
+    // m6 · m5 · m4 · m3 · m2만, 암기율 높은 순
+    expect(shownTitles()).toEqual([
+      "단어장2",
+      "단어장3",
+      "단어장4",
+      "단어장5",
+      "단어장6",
+    ]);
+  });
+});
+
+describe("MasteryByBook — 그룹", () => {
+  const GROUPS_KEY = "nyaki.stats.masteryGroups";
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  async function makeGroup(
+    user: ReturnType<typeof userEvent.setup>,
+    name: string,
+    titles: string[],
+  ) {
+    await user.click(screen.getByRole("button", { name: "+ 그룹 만들기" }));
+    await user.type(screen.getByRole("textbox", { name: "그룹 이름" }), name);
+    const editor = screen.getByRole("textbox", {
+      name: "그룹 이름",
+    }).parentElement!;
+    for (const title of titles) {
+      await user.click(within(editor).getByRole("checkbox", { name: title }));
+    }
+    await user.click(screen.getByRole("button", { name: "그룹 만들기" }));
+  }
+
+  it("그룹을 만들면 합친 암기율이 한 줄로 바로 보인다", async () => {
+    const user = userEvent.setup();
+    render(<MasteryByBook data={DATA} />);
+    await user.click(screen.getByRole("button", { name: "단어장 고르기" }));
+
+    await makeGroup(user, "가나", ["가", "나"]);
+
+    // 가(5장 중 OK 5) + 나(50장 중 OK 35) → 40 ÷ 55 = 72.7 → 73%
+    const chart = screen.getByRole("list", { name: "단어장별 암기율 비교" });
+    const groupRow = within(chart)
+      .getAllByRole("listitem")
+      .find((li) => li.textContent?.startsWith("가나"))!;
+    expect(groupRow.textContent).toContain("73%");
+    expect(groupRow.textContent).toContain("55개");
+    expect(within(groupRow).getByLabelText("그룹")).toBeInTheDocument();
+
+    const saved = JSON.parse(window.localStorage.getItem(GROUPS_KEY)!);
+    expect(saved).toHaveLength(1);
+    expect(saved[0].name).toBe("가나");
+    expect(saved[0].bookIds).toEqual(["a", "b"]);
+  });
+
+  it("이름이 없거나 단어장이 하나뿐이면 만들지 않는다", async () => {
+    const user = userEvent.setup();
+    render(<MasteryByBook data={DATA} />);
+    await user.click(screen.getByRole("button", { name: "단어장 고르기" }));
+
+    await makeGroup(user, "하나뿐", ["가"]);
+
+    expect(
+      screen.getByText("이름을 적고 단어장을 2개 이상 골라 주세요."),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem(GROUPS_KEY)).toBeNull();
+  });
+
+  it("편집하면 이름과 단어장이 바뀐다", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(
+      GROUPS_KEY,
+      JSON.stringify([{ id: "group:g", name: "옛이름", bookIds: ["a", "b"] }]),
+    );
+    render(<MasteryByBook data={DATA} />);
+    await user.click(screen.getByRole("button", { name: "단어장 고르기" }));
+
+    await user.click(screen.getByRole("button", { name: "편집" }));
+    const name = screen.getByRole("textbox", { name: "그룹 이름" });
+    await user.clear(name);
+    await user.type(name, "새이름");
+    const editor = name.parentElement!;
+    await user.click(within(editor).getByRole("checkbox", { name: "다" }));
+    await user.click(screen.getByRole("button", { name: "그룹 저장" }));
+
+    const saved = JSON.parse(window.localStorage.getItem(GROUPS_KEY)!);
+    expect(saved).toEqual([
+      { id: "group:g", name: "새이름", bookIds: ["a", "b", "c"] },
+    ]);
+  });
+
+  it("지우면 목록과 그래프에서 빠지고 단어장은 그대로다", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    window.localStorage.setItem(
+      GROUPS_KEY,
+      JSON.stringify([{ id: "group:g", name: "묶음", bookIds: ["a", "b"] }]),
+    );
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(["group:g", "c"]));
+    render(<MasteryByBook data={DATA} />);
+    expect(shownTitles()).toContain("묶음▸");
+
+    await user.click(screen.getByRole("button", { name: "단어장 고르기" }));
+    await user.click(screen.getByRole("button", { name: "삭제" }));
+
+    expect(shownTitles()).toEqual(["다"]);
+    expect(JSON.parse(window.localStorage.getItem(GROUPS_KEY)!)).toEqual([]);
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([
+      "c",
+    ]);
+  });
+
+  it("그룹도 곡선에 한 줄로 나온다", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(
+      GROUPS_KEY,
+      JSON.stringify([{ id: "group:g", name: "묶음", bookIds: ["a", "b"] }]),
+    );
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(["group:g", "c"]));
+    const { container } = render(<MasteryByBook data={DATA} />);
+
+    await user.click(screen.getByRole("button", { name: "곡선" }));
+
+    expect(container.querySelectorAll("path")).toHaveLength(2);
+    const legend = screen.getByRole("list", { name: "범례" });
+    expect(
+      within(legend)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual(["묶음", "다"]);
+  });
+
+  it("단어장이 다 지워진 그룹은 비어 있음으로 남고 고를 수 없다", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(
+      GROUPS_KEY,
+      JSON.stringify([{ id: "group:g", name: "옛날", bookIds: ["gone"] }]),
+    );
+    render(<MasteryByBook data={DATA} />);
+
+    await user.click(screen.getByRole("button", { name: "단어장 고르기" }));
+
+    expect(screen.getByText("비어 있음")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "옛날 (단어장 0개)" }),
+    ).toBeDisabled();
   });
 });

@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { SubtleButton } from "@/components/ui";
+import { GhostButton, SubtleButton, TextInput } from "@/components/ui";
+import {
+  computeGroupRow,
+  isGroupId,
+  loadGroups,
+  newGroupId,
+  saveGroups,
+  type MasteryGroup,
+} from "@/lib/mastery-groups";
 import type { MasteryRow } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 
@@ -20,13 +28,17 @@ import { cn } from "@/lib/utils";
 /** 고른 적이 없을 때 보여줄 개수. 단어 많은 단어장부터. */
 const DEFAULT_COUNT = 3;
 
+/** 그래프에 한꺼번에 보일 수 있는 줄 수. 단어장과 그룹을 합쳐서 센다. */
+const MAX_SHOWN = 5;
+
 const STORAGE_KEY = "nyaki.stats.masteryBooks";
 
 /** 서버 집계(stages)와 같은 순서. api/app/vocab/services.py STAGE_LABELS */
 const STAGE_LABELS = ["새 카드", "학습 중", "1일", "3일", "1주", "1달+"];
 
 /**
- * 고른 단어장 id. 고른 적이 없으면 null — 빈 배열(전부 뺐다)과 구분한다.
+ * 고른 단어장 · 그룹 id(고른 순서). 고른 적이 없으면 null — 빈 배열(전부
+ * 뺐다)과 구분한다. 그룹 id는 "group:"으로 시작해 단어장 id와 섞여도 구분된다.
  *
  * 이 브라우저에만 남는 화면 설정이다. 다른 기기에서는 기본 3개로 보인다.
  */
@@ -61,11 +73,21 @@ function defaultIds(data: MasteryRow[]): string[] {
 
 type View = "bar" | "curve";
 
+/** 그룹 편집 중인 내용. id가 없으면 새 그룹이다. */
+interface GroupDraft {
+  id?: string;
+  name: string;
+  bookIds: string[];
+}
+
 export function MasteryByBook({ data }: { data: MasteryRow[] }) {
   // 초기값으로 읽는다 — 이펙트에서 읽으면 기본 3개가 한 프레임 보였다 바뀐다.
   const [selected, setSelected] = useState<string[] | null>(loadSelected);
+  const [groups, setGroups] = useState<MasteryGroup[]>(loadGroups);
   const [picking, setPicking] = useState(false);
   const [view, setView] = useState<View>("bar");
+  const [draft, setDraft] = useState<GroupDraft | null>(null);
+  const [draftError, setDraftError] = useState<string>();
 
   if (data.length === 0) {
     return (
@@ -75,19 +97,74 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
     );
   }
 
-  // 저장된 id 중 지워졌거나 비게 된 단어장은 data에 없으니 자연히 빠진다.
-  const shown = new Set(selected ?? defaultIds(data));
-  // data는 암기율 높은 순이다. 거르기만 하니 순서가 그대로 남는다.
-  const rows = data.filter((row) => shown.has(row.id));
+  const groupRows = groups.map((group) => computeGroupRow(group, data));
+  const known = new Set([...data, ...groupRows].map((row) => row.id));
 
-  function toggle(id: string) {
-    const next = new Set(shown);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    // 지금 보이는 단어장들의 순서대로 남긴다.
-    const ids = data.map((row) => row.id).filter((rowId) => next.has(rowId));
+  // 저장된 id 중 지워진 단어장 · 그룹은 빠진다. 예전에 5개보다 많이 골라둔
+  // 경우는 앞의 5개만 쓴다.
+  const shownIds = (selected ?? defaultIds(data))
+    .filter((id) => known.has(id))
+    .slice(0, MAX_SHOWN);
+  const shown = new Set(shownIds);
+  const full = shownIds.length >= MAX_SHOWN;
+
+  // 단어장과 그룹을 섞어 암기율 높은 순으로. 비어 있는 그룹은 그리지 않는다.
+  const rows: MasteryRow[] = [...data, ...groupRows]
+    .filter((row) => shown.has(row.id) && row.itemCount > 0)
+    .sort((a, b) => b.rate - a.rate);
+
+  function select(ids: string[]) {
     setSelected(ids);
     saveSelected(ids);
+  }
+
+  function toggle(id: string) {
+    if (shown.has(id)) select(shownIds.filter((shownId) => shownId !== id));
+    else if (!full) select([...shownIds, id]);
+  }
+
+  function storeGroups(next: MasteryGroup[]) {
+    setGroups(next);
+    saveGroups(next);
+  }
+
+  function saveDraft() {
+    if (!draft) return;
+    const name = draft.name.trim();
+    const bookIds = data
+      .map((row) => row.id)
+      .filter((id) => draft.bookIds.includes(id));
+    if (!name || bookIds.length < 2) {
+      setDraftError("이름을 적고 단어장을 2개 이상 골라 주세요.");
+      return;
+    }
+
+    if (draft.id) {
+      storeGroups(
+        groups.map((group) =>
+          group.id === draft.id ? { ...group, name, bookIds } : group,
+        ),
+      );
+    } else {
+      const group = { id: newGroupId(), name, bookIds };
+      storeGroups([...groups, group]);
+      // 방금 만든 그룹은 자리가 있으면 바로 그래프에 띄운다.
+      if (!full) select([...shownIds, group.id]);
+    }
+    setDraft(null);
+    setDraftError(undefined);
+  }
+
+  function deleteGroup(group: MasteryGroup) {
+    if (
+      !window.confirm(`"${group.name}" 그룹을 지울까요? 단어장은 그대로예요.`)
+    ) {
+      return;
+    }
+    storeGroups(groups.filter((item) => item.id !== group.id));
+    if (shown.has(group.id)) {
+      select(shownIds.filter((id) => id !== group.id));
+    }
   }
 
   return (
@@ -127,21 +204,132 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
       </div>
 
       {picking ? (
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-          {data.map((row) => (
-            <label
-              key={row.id}
-              className="flex items-center gap-1.5 text-xs text-ink/70"
-            >
-              <input
-                type="checkbox"
-                checked={shown.has(row.id)}
-                onChange={() => toggle(row.id)}
-                className="accent-ink"
-              />
-              {row.title}
-            </label>
-          ))}
+        <div className="mt-4 space-y-4">
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[11px] font-medium text-ink/35">단어장</p>
+              <p className="text-[11px] tabular-nums text-ink/35">
+                {shownIds.length} / {MAX_SHOWN}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {data.map((row) => (
+                <Choice
+                  key={row.id}
+                  label={row.title}
+                  checked={shown.has(row.id)}
+                  disabled={full && !shown.has(row.id)}
+                  onChange={() => toggle(row.id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-2 text-[11px] font-medium text-ink/35">그룹</p>
+            {groupRows.length > 0 ? (
+              <ul className="mb-2 space-y-1.5">
+                {groupRows.map((row, index) => {
+                  const group = groups[index]!;
+                  return (
+                    <li key={row.id} className="flex items-center gap-3">
+                      <Choice
+                        label={`${row.title} (단어장 ${row.memberCount}개)`}
+                        checked={shown.has(row.id)}
+                        disabled={
+                          (full && !shown.has(row.id)) || row.memberCount === 0
+                        }
+                        onChange={() => toggle(row.id)}
+                      />
+                      {row.memberCount === 0 ? (
+                        <span className="text-[11px] text-umber/40">
+                          비어 있음
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDraft({
+                            id: group.id,
+                            name: group.name,
+                            bookIds: group.bookIds,
+                          });
+                          setDraftError(undefined);
+                        }}
+                        className="text-[11px] text-umber/45 transition hover:text-ink"
+                      >
+                        편집
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteGroup(group)}
+                        className="text-[11px] text-umber/45 transition hover:text-red-700"
+                      >
+                        삭제
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+
+            {draft ? (
+              <div className="space-y-3 rounded-lg border border-taupe/30 px-3 py-3">
+                <TextInput
+                  value={draft.name}
+                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  placeholder="그룹 이름"
+                  aria-label="그룹 이름"
+                  className="py-1.5 text-xs"
+                />
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  {data.map((row) => (
+                    <Choice
+                      key={row.id}
+                      label={row.title}
+                      checked={draft.bookIds.includes(row.id)}
+                      onChange={() =>
+                        setDraft({
+                          ...draft,
+                          bookIds: draft.bookIds.includes(row.id)
+                            ? draft.bookIds.filter((id) => id !== row.id)
+                            : [...draft.bookIds, row.id],
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+                {draftError ? (
+                  <p className="text-xs text-red-700">{draftError}</p>
+                ) : null}
+                <div className="flex items-center gap-1.5">
+                  <SubtleButton className="py-1 text-xs" onClick={saveDraft}>
+                    {draft.id ? "그룹 저장" : "그룹 만들기"}
+                  </SubtleButton>
+                  <GhostButton
+                    className="py-1 text-xs"
+                    onClick={() => {
+                      setDraft(null);
+                      setDraftError(undefined);
+                    }}
+                  >
+                    취소
+                  </GhostButton>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft({ name: "", bookIds: [] });
+                  setDraftError(undefined);
+                }}
+                className="text-xs text-umber/50 transition hover:text-ink"
+              >
+                + 그룹 만들기
+              </button>
+            )}
+          </div>
         </div>
       ) : null}
 
@@ -158,6 +346,36 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
   );
 }
 
+function Choice({
+  label,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex items-center gap-1.5 text-xs text-ink/70",
+        disabled && "text-ink/30",
+      )}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+        className="accent-ink"
+      />
+      {label}
+    </label>
+  );
+}
+
 function BarView({ rows }: { rows: MasteryRow[] }) {
   return (
     <ul className="mt-5 space-y-5" aria-label="단어장별 암기율 비교">
@@ -169,6 +387,12 @@ function BarView({ rows }: { rows: MasteryRow[] }) {
         >
           <span className="w-24 shrink-0 truncate text-xs text-ink/70 sm:w-36">
             {row.title}
+            {/* 그룹은 여러 단어장을 합친 줄이다 */}
+            {isGroupId(row.id) ? (
+              <span className="ml-1 text-ink/30" aria-label="그룹">
+                ▸
+              </span>
+            ) : null}
           </span>
           {/* 50% 기준선 — 상한이 정해진 값이라 눈금이 고정이다 */}
           <div className="relative h-[10px] min-w-0 flex-1 rounded-full bg-taupe/30">

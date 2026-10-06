@@ -212,11 +212,24 @@ function DailyLimits({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  /** 숫자 왼쪽에 붙는 24px 이미지. 앱 홈의 재화 표시와 같은 모양이다. */
+  icon?: string;
+}) {
   return (
     <Card className="bg-card">
       <p className="text-xs text-umber/45">{label}</p>
-      <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-ink">
+      <p className="mt-1.5 flex items-center gap-1.5 text-2xl font-semibold tabular-nums tracking-tight text-ink">
+        {icon ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={icon} alt="" width={24} height={24} className="size-6" />
+        ) : null}
         {value}
       </p>
     </Card>
@@ -288,10 +301,12 @@ export default function MyPage() {
         {/* 재화 — 하루 한도와 같은 /v1/progress 응답이다. 받기 전에는 — */}
         <Stat
           label="츄르"
+          icon="/churu.png"
           value={progress ? `${progress.churuBalance}` : "—"}
         />
         <Stat
           label="열빙어"
+          icon="/capelin.png"
           value={progress ? `${progress.capelinBalance}` : "—"}
         />
       </div>

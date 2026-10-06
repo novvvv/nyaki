@@ -14,7 +14,7 @@ import { useAuth } from "@/components/auth-provider";
 
 
 import {
-  completeQuest,
+  // completeQuest, // 웹에서 츄르를 주지 않는다 — 아래 createWord 참고
   fetchBookSummaries,
   fetchPackImports,
   importPack as postPackImport,
@@ -412,10 +412,13 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       ),
     );
 
+    // 단어 추가 퀘스트(츄르 +5)는 웹에서 일단 끈다. 앱은 그대로 준다.
+    // 다시 켜려면 위 import와 이 줄의 주석을 푼다.
+    //
     // 퀘스트 완료 신고는 best-effort — 실패해도 단어 생성 자체는 이미
     // 끝난 뒤라 사용자에게 영향 없음(오늘 이미 완료했으면 서버가 idempotent
     // 처리하니 매번 호출해도 안전).
-    void completeQuest(token, "add_word").catch(() => {});
+    // void completeQuest(token, "add_word").catch(() => {});
 
     // 항목 수·암기율은 서버가 센다 — 추가한 뒤 다시 받아야 목록 숫자가 맞는다.
     await syncSummaries();

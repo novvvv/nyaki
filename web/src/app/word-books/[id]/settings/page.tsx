@@ -21,12 +21,14 @@ import { useVocab } from "@/lib/vocab-store";
 export default function WordBookSettingsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { getWordBook, updateWordBook } = useVocab();
+  const { getWordBook, updateWordBook, folders, moveWordBook } = useVocab();
 
   const book = getWordBook(params.id);
 
   const [title, setTitle] = useState(book?.title ?? "");
   const [description, setDescription] = useState(book?.description ?? "");
+  // 빈 값이면 폴더 밖이다. 좁은 화면에는 끌어서 옮길 사이드바가 없어서 여기서 고른다.
+  const [folderId, setFolderId] = useState(book?.folderId ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -39,14 +41,23 @@ export default function WordBookSettingsPage() {
   }
 
   const trimmed = title.trim();
+  const currentFolder = book.folderId ?? "";
+  const folderChanged = folderId !== currentFolder;
   const changed =
-    trimmed !== book.title || description.trim() !== (book.description ?? "");
+    trimmed !== book.title ||
+    description.trim() !== (book.description ?? "") ||
+    folderChanged;
 
   async function save() {
     if (!book || saving || trimmed.length === 0) return;
     setSaving(true);
     setError(undefined);
     try {
+      // 폴더 이동은 사이드바 드래그와 같은 길로 — 옮긴 폴더의 맨 뒤 자리도 같이
+      // 잡는다. **이름 저장보다 먼저 한다.** moveWordBook은 화면이 들고 있던
+      // 이름 · 설명을 같이 보내서, 나중에 부르면 방금 바꾼 이름을 되돌린다.
+      // 이름 저장은 폴더를 안 보내니(서버가 기존 값 유지) 이동이 지워지지 않는다.
+      if (folderChanged) await moveWordBook(book.id, folderId || null);
       await updateWordBook(book.id, {
         title: trimmed,
         description: description.trim() || undefined,
@@ -82,6 +93,22 @@ export default function WordBookSettingsPage() {
             onChange={(event) => setDescription(event.target.value)}
             rows={3}
           />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-ink">폴더</span>
+          <select
+            value={folderId}
+            onChange={(event) => setFolderId(event.target.value)}
+            className="w-full rounded-lg border border-taupe/45 bg-cream px-3 py-2 text-sm text-ink outline-none transition focus:border-ink/25 focus:ring-2 focus:ring-taupe/35"
+          >
+            <option value="">폴더 없음</option>
+            {folders.map((folder) => (
+              <option key={folder.id} value={folder.id}>
+                {folder.title}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 

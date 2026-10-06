@@ -117,6 +117,7 @@ export default function WordBookDetailPage() {
     summaries,
     patchSummary,
     refresh,
+    folders,
   } = useVocab();
   const { getToken } = useAuth();
   const [clozeNotes, setClozeNotes] = useState<ClozeNote[]>([]);
@@ -264,8 +265,25 @@ export default function WordBookDetailPage() {
     }
   };
 
+  const folder = book.folderId
+    ? folders.find((item) => item.id === book.folderId)
+    : undefined;
+
   return (
     <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
+      {/* 이 단어장이 어디에 들어 있는지. 좁은 화면에는 사이드바가 없어 여기서만 보인다. */}
+      <div className="mb-7 flex items-center gap-1.5 text-xs text-umber/40">
+        <Link href="/word-books" className="transition-colors hover:text-ink">
+          단어장
+        </Link>
+        {folder ? (
+          <>
+            <span aria-hidden>/</span>
+            <span>{folder.title}</span>
+          </>
+        ) : null}
+      </div>
+
       <PageHeader
         title={book.title}
         description={book.description}

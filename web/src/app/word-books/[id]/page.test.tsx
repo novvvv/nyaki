@@ -49,6 +49,9 @@ vi.mock("@/lib/vocab-store", () => ({
     patchSummary: (...args: unknown[]) => patchSummary(...args),
     syncSummaries: vi.fn(),
     refresh: (...args: unknown[]) => refresh(...args),
+    folders: [
+      { id: "f1", title: "정보처리기사", createdAt: "x", updatedAt: "x" },
+    ],
   }),
   activeWords: (value: WordBook) => value.words.filter((w) => !w.isDeleted),
 }));
@@ -154,5 +157,20 @@ describe("삭제", () => {
     );
 
     expect(removeClozeNote).not.toHaveBeenCalled();
+  });
+
+  it("위쪽 경로에 이 단어장이 든 폴더가 보인다", async () => {
+    book.folderId = "f1";
+    try {
+      const { default: Page } = await import("./page");
+      render(<Page />);
+
+      expect(
+        await screen.findByRole("link", { name: "단어장" }),
+      ).toHaveAttribute("href", "/word-books");
+      expect(screen.getByText("정보처리기사")).toBeInTheDocument();
+    } finally {
+      book.folderId = undefined;
+    }
   });
 });

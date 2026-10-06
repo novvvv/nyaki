@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { EmptyState, PageHeader } from "@/components/ui";
+import type { BookSummary } from "@/lib/api-client";
+import type { WordBook } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
 /** 새 폴더. 단어장과 같은 모양의 별도 화면으로 보낸다. */
@@ -28,8 +32,59 @@ function NewBookLink() {
   );
 }
 
+/** 단어장 한 줄. 폴더 안이면 들여쓴다. */
+function BookRow({
+  book,
+  summary,
+  nested,
+}: {
+  book: WordBook;
+  summary: BookSummary | undefined;
+  nested: boolean;
+}) {
+  return (
+    <li>
+      <Link
+        href={`/word-books/${book.id}`}
+        className={cn(
+          "group flex items-center justify-between gap-6 py-4",
+          nested && "pl-5",
+        )}
+      >
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-ink transition-colors group-hover:text-umber">
+            {book.title}
+          </p>
+          {book.description ? (
+            <p className="mt-0.5 truncate text-xs text-umber/45">
+              {book.description}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          {/* 숫자는 서버가 센 값을 쓴다 — 빈칸 노트도 항목으로 잡힌다. */}
+          <span className="text-xs tabular-nums text-umber/45">
+            {summary?.itemCount ?? 0}개
+          </span>
+        </div>
+      </Link>
+    </li>
+  );
+}
+
 export default function WordBooksPage() {
-  const { wordBooks, summaries, loading, error } = useVocab();
+  const { wordBooks, folders, summaries, loading, error } = useVocab();
+  // 접어둔 폴더. 처음에는 모두 펼친다.
+  const [collapsed, setCollapsed] = useState<string[]>([]);
+
+  // 사이드바와 같은 구성 — 폴더들 먼저, 그다음 폴더 밖 단어장.
+  // 폴더 id가 남아 있는데 그 폴더를 못 찾으면(동기화 중 등) 밖으로 보여준다.
+  // 숨기면 그 단어장으로 들어갈 길이 없어진다.
+  const folderIds = new Set(folders.map((folder) => folder.id));
+  const loose = wordBooks.filter(
+    (book) => !book.folderId || !folderIds.has(book.folderId),
+  );
 
   return (
     <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
@@ -63,35 +118,63 @@ export default function WordBooksPage() {
           </p>
 
           <ul className="divide-y divide-taupe/25 border-t border-taupe/25 lg:hidden">
-            {wordBooks.map((book) => {
-              // 숫자는 서버가 센 값을 쓴다 — 빈칸 노트도 항목으로 잡힌다.
-              const summary = summaries[book.id];
+            {folders.map((folder) => {
+              const books = wordBooks.filter(
+                (book) => book.folderId === folder.id,
+              );
+              const open = !collapsed.includes(folder.id);
               return (
-                <li key={book.id}>
-                  <Link
-                    href={`/word-books/${book.id}`}
-                    className="group flex items-center justify-between gap-6 py-4"
+                <li key={folder.id}>
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() =>
+                      setCollapsed((prev) =>
+                        open
+                          ? [...prev, folder.id]
+                          : prev.filter((id) => id !== folder.id),
+                      )
+                    }
+                    className="flex w-full items-center justify-between gap-6 py-4 text-left"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink transition-colors group-hover:text-umber">
-                        {book.title}
-                      </p>
-                      {book.description ? (
-                        <p className="mt-0.5 truncate text-xs text-umber/45">
-                          {book.description}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-3">
-                      <span className="text-xs tabular-nums text-umber/45">
-                        {summary?.itemCount ?? 0}개
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="w-3 shrink-0 text-xs text-ink/35"
+                      >
+                        {open ? "▾" : "▸"}
                       </span>
-                    </div>
-                  </Link>
+                      <span className="truncate text-sm font-semibold text-ink">
+                        {folder.title}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs tabular-nums text-umber/45">
+                      단어장 {books.length}개
+                    </span>
+                  </button>
+                  {open && books.length > 0 ? (
+                    <ul className="divide-y divide-taupe/15 border-t border-taupe/15">
+                      {books.map((book) => (
+                        <BookRow
+                          key={book.id}
+                          book={book}
+                          summary={summaries[book.id]}
+                          nested
+                        />
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               );
             })}
+            {loose.map((book) => (
+              <BookRow
+                key={book.id}
+                book={book}
+                summary={summaries[book.id]}
+                nested={false}
+              />
+            ))}
           </ul>
         </>
       )}

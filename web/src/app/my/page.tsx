@@ -68,7 +68,12 @@ function Field({
  * 안 된다. 입력은 문자열로 들고 있다가 저장할 때만 숫자로 바꾼다 — 지우는
  * 도중(빈 문자열)에 0으로 튀는 걸 막는다.
  */
-function DailyLimits() {
+function DailyLimits({
+  onProgress,
+}: {
+  /** 받은 진행도를 위로 올린다 — 같은 응답으로 재화 잔액도 보여준다. */
+  onProgress: (value: Progress) => void;
+}) {
   const { getToken } = useAuth();
   const [progress, setProgress] = useState<Progress>();
   const [newText, setNewText] = useState("");
@@ -81,8 +86,9 @@ function DailyLimits() {
     if (!token) return;
     const value = await fetchProgress(token);
     setProgress(value);
+    onProgress(value);
     apply(value);
-  }, [getToken]);
+  }, [getToken, onProgress]);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +132,7 @@ function DailyLimits() {
         dailyReviewLimit: clamp(reviewText, progress.dailyReviewLimit),
       });
       setProgress(saved);
+      onProgress(saved);
       apply(saved);
       setMessage("저장했다냥");
     } catch (reason) {
@@ -240,6 +247,8 @@ export default function MyPage() {
   const router = useRouter();
   const { user, signOutUser } = useAuth();
   const { wordBooks } = useVocab();
+  // 아래 하루 한도 칸이 받아온 진행도. 재화 잔액을 같이 보여준다.
+  const [progress, setProgress] = useState<Progress>();
 
   const wordCount = wordBooks.reduce(
     (sum, book) => sum + bookMeta(book).count,
@@ -273,12 +282,21 @@ export default function MyPage() {
         </div>
       </div>
 
-      <div className="mb-12 grid gap-4 sm:grid-cols-2">
+      <div className="mb-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="단어장" value={`${wordBooks.length}`} />
         <Stat label="모은 단어" value={`${wordCount}`} />
+        {/* 재화 — 하루 한도와 같은 /v1/progress 응답이다. 받기 전에는 — */}
+        <Stat
+          label="츄르"
+          value={progress ? `${progress.churuBalance}` : "—"}
+        />
+        <Stat
+          label="열빙어"
+          value={progress ? `${progress.capelinBalance}` : "—"}
+        />
       </div>
 
-      <DailyLimits />
+      <DailyLimits onProgress={setProgress} />
 
       <section>
         <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">

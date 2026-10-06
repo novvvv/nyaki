@@ -404,12 +404,6 @@ export default function ReviewPage() {
           </button>
         </div>
 
-        <p className="mb-6 flex items-center justify-end gap-2 text-ink">
-          {/* 픽셀 폰트는 한자·한글이 없다 — 이 가나 문구에만 쓴다 */}
-          <span className="font-pixel text-base">がんばろう！</span>
-          <span className="text-base font-semibold">✧/ᐠ-ꞈ-ᐟ\</span>
-        </p>
-
         <div className="flex items-center gap-4">
           <span className="shrink-0 text-xs tabular-nums text-ink/35">
             {finished} / {sessionSize}

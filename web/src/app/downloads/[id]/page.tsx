@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
+import { useAuth } from "@/components/auth-provider";
 import { Badge, PageHeader, SubtleButton } from "@/components/ui";
 import { getPack, LEVEL_TONE } from "@/lib/packs";
 import { cn } from "@/lib/utils";
 
 export default function PackDetailPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const pack = getPack(params.id);
 
@@ -37,7 +39,13 @@ export default function PackDetailPage() {
         actions={
           <SubtleButton
             className="py-1.5 text-xs"
-            onClick={() => router.push(`/downloads/${pack.id}/save`)}
+            onClick={() => {
+              const save = `/downloads/${pack.id}/save`;
+              // 로그인 전이면 로그인 화면을 거쳐 담기 화면으로 돌아온다.
+              router.push(
+                user ? save : `/login?next=${encodeURIComponent(save)}`,
+              );
+            }}
           >
             내 단어장에 담기
           </SubtleButton>

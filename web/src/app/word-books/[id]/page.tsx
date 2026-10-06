@@ -292,8 +292,9 @@ export default function WordBookDetailPage() {
 
       {summary && summary.itemCount > 0 ? (
         <p className="mb-8 text-xs tabular-nums text-umber/45">
-          {summary.itemCount}개 · 카드 {summary.cardCount}장 · 암기{" "}
-          {summary.masteryRate}%
+          {/* OK = 외운 카드, X = 아직 · 다시 배우는 카드. 서버가 센 OK 비율이라 합이 100이다. */}
+          {summary.itemCount}개 · 카드 {summary.cardCount}장 · OK{" "}
+          {summary.masteryRate}% · X {100 - summary.masteryRate}%
         </p>
       ) : null}
 

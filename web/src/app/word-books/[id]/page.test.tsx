@@ -93,9 +93,11 @@ describe("단어장 상세", () => {
     const { default: Page } = await import("./page");
     render(<Page />);
 
-    // 빈칸 노트도 항목으로 세고, 암기율도 카드 기준이다.
+    // 빈칸 노트도 항목으로 세고, 암기율도 카드 기준이다. X는 OK의 나머지다.
     await waitFor(() =>
-      expect(screen.getByText(/1개 · 카드 1장 · 암기 20%/)).toBeInTheDocument(),
+      expect(
+        screen.getByText(/1개 · 카드 1장 · OK 20% · X 80%/),
+      ).toBeInTheDocument(),
     );
   });
 

@@ -1,4 +1,3 @@
-import math
 import re
 from datetime import datetime, time, timedelta, timezone
 
@@ -464,27 +463,23 @@ def sync_cards_for_word(session: Session, user_id: str, word: WordModel) -> None
 # 갈린다 — 실제로 웹은 단어만 세어 빈칸 노트가 빠졌고, 암기율은 words.srs_*를
 # 읽어 빈칸 카드를 아예 무시했다.
 
-MASTERY_DAYS = 30
-
-
-def _card_score(interval_days: int) -> float:
-    """카드 1장의 암기 점수(0~100).
-
-    SM-2 간격이 1 → 3 → 8 → 20일로 지수적으로 늘어나므로 로그로 환산해야
-    단계가 20 / 40 / 64 / 89로 고르게 벌어진다. 선형이면 첫 성공이 3점이다.
-    """
-    if interval_days <= 0:
-        return 0.0
-    ratio = math.log(1 + interval_days) / math.log(1 + MASTERY_DAYS)
-    return min(ratio, 1.0) * 100
-
-
 def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
     """단어장별 항목 수와 암기율.
 
     항목 = 단어 + 빈칸 노트. 사용자에게는 둘 다 "외울 거리 하나"다.
-    암기율 = 그 단어장에 속한 **카드** 점수의 평균 — 아직 안 한 카드는 0점으로
-    분모에 들어간다.
+
+    암기율 = 외운(OK) 카드 ÷ 전체 카드 × 100. 카드는 OK 아니면 X 둘 중 하나다.
+    - OK: 학습 단계를 통과해 다음 복습이 1일 이상 뒤로 잡힌 카드
+      (srs_interval_days ≥ 1)
+    - X: 새 카드, 학습 단계(분 단위) 중인 카드, 틀려서 다시 배우는 카드.
+      틀리면 간격이 0으로 돌아가 X가 된다.
+
+    **복습일이 돌아와도 OK다.** 그걸 X로 치면 아무것도 안 했는데 아침마다
+    암기율이 떨어지고, 복습을 마치면 다시 튀어 올라 "아는가"가 아니라 "오늘
+    숙제를 했나"를 보여주는 숫자가 된다. 오늘 할 개수는 /review/due/count가 센다.
+
+    전에는 간격을 로그로 점수화해 평균냈는데(1일 = 20점), 다 외워도 한동안 낮게
+    나와 숫자가 직관적이지 않았다.
     """
     summaries: dict[str, dict[str, int]] = {}
 
@@ -511,7 +506,7 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
         note_book_of[note_id] = book_id
         bucket(book_id)["item_count"] += 1
 
-    totals: dict[str, float] = {}
+    ok: dict[str, int] = {}
     for word_id, note_id, interval in session.execute(
         select(
             CardModel.word_id, CardModel.note_id, CardModel.srs_interval_days
@@ -521,11 +516,14 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict[str, int]]:
         if book_id is None:
             continue
         bucket(book_id)["card_count"] += 1
-        totals[book_id] = totals.get(book_id, 0.0) + _card_score(interval)
+        if interval >= 1:
+            ok[book_id] = ok.get(book_id, 0) + 1
 
     for book_id, summary in summaries.items():
         if summary["card_count"] > 0:
-            summary["mastery_rate"] = round(totals.get(book_id, 0.0) / summary["card_count"])
+            summary["mastery_rate"] = round(
+                ok.get(book_id, 0) * 100 / summary["card_count"]
+            )
 
     return summaries
 

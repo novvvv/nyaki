@@ -322,8 +322,8 @@ def test_summary_mastery_counts_cloze_cards() -> None:
         if s["word_book_id"] == BOOK
     )
 
-    # 간격 1일 → 20점, 카드가 하나뿐이라 그대로 암기율이 된다.
-    assert summary["mastery_rate"] == 20
+    # 맞혀서 간격이 1일이 됐다 → OK. 카드가 하나뿐이라 100%.
+    assert summary["mastery_rate"] == 100
 
     app.dependency_overrides.clear()
 

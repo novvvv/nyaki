@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { Badge, PageHeader, SubtleButton } from "@/components/ui";
@@ -13,6 +14,9 @@ export default function PackDetailPage() {
   const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const pack = getPack(params.id);
+  // 로그인 전에 담기를 누르면 바로 넘기지 않고 안내부터 한다 — 둘러보던 흐름을
+  // 끊지 않고, 로그인할지는 사용자가 고른다.
+  const [loginHint, setLoginHint] = useState(false);
 
   if (!pack) {
     return (
@@ -37,18 +41,31 @@ export default function PackDetailPage() {
         title={pack.title}
         description={`${pack.source} · ${pack.words.length}개 · ${pack.updatedAt} 업데이트`}
         actions={
-          <SubtleButton
-            className="py-1.5 text-xs"
-            onClick={() => {
-              const save = `/downloads/${pack.id}/save`;
-              // 로그인 전이면 로그인 화면을 거쳐 담기 화면으로 돌아온다.
-              router.push(
-                user ? save : `/login?next=${encodeURIComponent(save)}`,
-              );
-            }}
-          >
-            내 단어장에 담기
-          </SubtleButton>
+          <div className="flex flex-col items-end gap-1.5">
+            <SubtleButton
+              className="py-1.5 text-xs"
+              onClick={() => {
+                if (user) router.push(`/downloads/${pack.id}/save`);
+                else setLoginHint(true);
+              }}
+            >
+              내 단어장에 담기
+            </SubtleButton>
+            {loginHint ? (
+              <p className="text-xs text-umber/45">
+                로그인 후 이용할 수 있어요.{" "}
+                {/* 로그인을 마치면 담기 화면으로 바로 돌아온다. */}
+                <Link
+                  href={`/login?next=${encodeURIComponent(
+                    `/downloads/${pack.id}/save`,
+                  )}`}
+                  className="text-ink/60 underline decoration-taupe/50 underline-offset-2 transition hover:text-ink"
+                >
+                  로그인 →
+                </Link>
+              </p>
+            ) : null}
+          </div>
         }
       />
 

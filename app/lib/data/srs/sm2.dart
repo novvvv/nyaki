@@ -118,6 +118,12 @@ double _roundHalfUp2(double x) => roundHalfUp(x * 100) / 100;
 // ===================================================================== //
 const Duration relearningStep = Duration.zero;
 
+// 간격 상한(일) — 100년. 안키의 Maximum interval 기본값과 같다.
+// 상한이 없으면 연속으로 맞힐 때마다 2.5배씩 커져 끝없이 늘어난다(서버에서는
+// 17번째에 서기 9999년을 넘어 계산이 터졌다).
+// 서버(api/app/vocab/srs.py MAX_INTERVAL_DAYS)와 같은 값이어야 한다.
+const int maxIntervalDays = 36500;
+
 // ======================== ✨ gradeAgain Method ✨ ======================== //
 // 🗒️ summary : Again(모름) Button 클릭 시 다음 SRS 상태를 계산하는 메서드
 // 모름(Again) 채점.
@@ -242,7 +248,10 @@ Sm2GradeResult gradeGood(
   } else if (state.repetitions == 1) {
     interval = 3;
   } else {
-    interval = roundHalfUp(state.intervalDays * state.easeFactor);
+    interval = math.min(
+      roundHalfUp(state.intervalDays * state.easeFactor),
+      maxIntervalDays,
+    );
   }
 
   final repetitions = state.repetitions + 1;

@@ -22,6 +22,12 @@ ReviewGrade = Literal["again", "good"]
 MIN_EASE_FACTOR = 1.3
 EASE_PENALTY = 0.20
 RELEARNING_STEP = timedelta(0)
+# 간격 상한(일) — 100년. 안키의 Maximum interval 기본값과 같다.
+# 상한이 없으면 연속으로 맞힐 때마다 2.5배씩 커져 17번째에 다음 복습일이 서기
+# 9999년을 넘어 계산이 터진다. 사람이 실제로 도달할 수는 없지만, 동기화로 큰 간격을
+# 가진 카드가 올라오면 그 카드가 든 채점 요청 전체가 실패했다.
+# 앱(lib/data/srs/sm2.dart maxIntervalDays)과 같은 값이어야 한다.
+MAX_INTERVAL_DAYS = 36500
 
 
 @dataclass(frozen=True)
@@ -205,6 +211,7 @@ def grade_good(
         interval = 3
     else:
         interval = round_half_up(state.interval_days * state.ease_factor)
+    interval = min(interval, MAX_INTERVAL_DAYS)
 
     repetitions = state.repetitions + 1
 

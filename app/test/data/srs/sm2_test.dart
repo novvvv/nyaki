@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:nyaki/data/srs/sm2.dart';
@@ -123,6 +125,35 @@ void main() {
       );
       final result = gradeAgain(low, now); // 1.35 - 0.20 = 1.15 → clamp
       expect(result.state.easeFactor, 1.3);
+    });
+  });
+
+  group('간격 상한 — 100년(서버 MAX_INTERVAL_DAYS와 같다)', () {
+    test('연속으로 맞혀도 36500일에서 멈춘다', () {
+      var state = initial;
+      var at = now;
+      final intervals = <int>[];
+      for (var i = 0; i < 30; i++) {
+        state = gradeGood(state, at).state;
+        intervals.add(state.intervalDays);
+        at = state.dueAt;
+      }
+      expect(intervals.reduce(math.max), maxIntervalDays);
+      expect(intervals.sublist(intervals.length - 3),
+          [maxIntervalDays, maxIntervalDays, maxIntervalDays]);
+    });
+
+    test('동기화로 받은 큰 간격도 상한으로 내려온다', () {
+      final huge = Sm2State(
+        easeFactor: 2.5,
+        intervalDays: 2000000,
+        repetitions: 20,
+        lapses: 0,
+        dueAt: now,
+      );
+      final result = gradeGood(huge, now);
+      expect(result.state.intervalDays, maxIntervalDays);
+      expect(result.state.dueAt, now.add(const Duration(days: maxIntervalDays)));
     });
   });
 }

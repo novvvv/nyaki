@@ -351,6 +351,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * 사이드바 이름 왼쪽의 16px 아이콘. 원본은 32px이라 선명한 화면에서도 깨끗하다.
+ * 장식이라 읽어주지 않는다(이름이 이미 있다). 브라우저 기본 이미지 끌기가
+ * 줄 끌기(dnd-kit)와 겹치지 않게 막는다.
+ */
+function SidebarIcon({ src }: { src: string }) {
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={src}
+      alt=""
+      aria-hidden
+      width={16}
+      height={16}
+      draggable={false}
+      className="size-4 shrink-0"
+    />
+  );
+}
+
 /** 커서를 따라다니는 줄. 목록 안의 줄과 같은 모양이되 그림자만 얹는다. */
 function DragPreview({ label }: { label: string }) {
   return (
@@ -414,6 +434,14 @@ function FolderRow({
           <span aria-hidden className="text-[10px] text-ink/30">
             {open ? "▾" : "▸"}
           </span>
+          {/* 펼친 폴더는 채운 아이콘, 접은 폴더는 빈 아이콘 */}
+          <SidebarIcon
+            src={
+              open
+                ? "/sidebar/folder_clicked.png"
+                : "/sidebar/folder_unclicked.png"
+            }
+          />
           <span className="truncate font-medium">{folder.title}</span>
         </button>
 
@@ -546,7 +574,15 @@ function BookRow({
             : "text-umber/65 hover:bg-subtle/70 hover:text-ink",
         )}
       >
-        <span className="truncate">{book.title}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          {/* 지금 보고 있는 단어장만 채운 아이콘 */}
+          <SidebarIcon
+            src={
+              active ? "/sidebar/doc_clicked.png" : "/sidebar/doc_unclicked.png"
+            }
+          />
+          <span className="truncate">{book.title}</span>
+        </span>
         <span className="ml-2 shrink-0 text-xs text-ink/35">{meta}</span>
       </Link>
     </div>

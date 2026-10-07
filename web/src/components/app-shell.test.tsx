@@ -18,8 +18,10 @@ const deleteFolder = vi.fn();
 let folders: Folder[] = [];
 let wordBooks: WordBook[] = [];
 
+let pathname = "/word-books";
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/word-books",
+  usePathname: () => pathname,
 }));
 
 vi.mock("@/lib/vocab-store", () => ({
@@ -68,6 +70,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   folders = [folder("f1", "시험")];
   wordBooks = [book("inside", "f1"), book("loose")];
+  pathname = "/word-books";
 });
 
 afterEach(() => {
@@ -188,5 +191,43 @@ describe("사이드바 폭", () => {
 
     expect(sidebar()).toHaveStyle({ width: `${SIDEBAR_DEFAULT}px` });
     expect(window.localStorage.getItem(KEY)).toBe(String(SIDEBAR_DEFAULT));
+  });
+});
+
+describe("사이드바 아이콘", () => {
+  function iconIn(element: HTMLElement): string {
+    return element.querySelector("img")!.getAttribute("src")!;
+  }
+
+  it("펼친 폴더는 채운 아이콘, 접으면 빈 아이콘", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>본문</AppShell>);
+    const toggle = screen.getByRole("button", { name: "시험" });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(iconIn(toggle)).toBe("/sidebar/folder_clicked.png");
+
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(iconIn(toggle)).toBe("/sidebar/folder_unclicked.png");
+  });
+
+  it("지금 보고 있는 단어장만 채운 아이콘", () => {
+    pathname = "/word-books/loose";
+    render(<AppShell>본문</AppShell>);
+
+    expect(iconIn(screen.getByRole("link", { name: /loose/ }))).toBe(
+      "/sidebar/doc_clicked.png",
+    );
+    expect(iconIn(screen.getByRole("link", { name: /inside/ }))).toBe(
+      "/sidebar/doc_unclicked.png",
+    );
+  });
+
+  it("아이콘은 장식이라 읽어주지 않는다", () => {
+    render(<AppShell>본문</AppShell>);
+
+    expect(screen.queryAllByRole("img")).toHaveLength(0);
   });
 });

@@ -224,11 +224,21 @@ function Stat({
 }) {
   return (
     <Card className="bg-card">
-      <p className="text-xs text-umber/45">{label}</p>
+      {/* 이미지가 있으면 이름은 화면에서 감춘다 — 이미지가 곧 이름이다. 자리는
+          남겨 옆 카드들과 숫자 높이를 맞추고, 화면 읽기에는 숫자 앞에서 읽힌다. */}
+      <p
+        className={cn("text-xs text-umber/45", icon && "invisible")}
+        aria-hidden={icon ? true : undefined}
+      >
+        {label}
+      </p>
       <p className="mt-1.5 flex items-center gap-1.5 text-2xl font-semibold tabular-nums tracking-tight text-ink">
         {icon ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={icon} alt="" width={24} height={24} className="size-6" />
+          <>
+            <span className="sr-only">{label}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={icon} alt="" width={24} height={24} className="size-6" />
+          </>
         ) : null}
         {value}
       </p>

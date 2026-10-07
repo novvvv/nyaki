@@ -28,6 +28,39 @@ import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
 /**
+ * 사이드바 폭. 경계선을 끌어 바꾸고, 이 브라우저에 기억한다.
+ *
+ * 긴 단어장 이름이 "정보처리기사 20…"처럼 잘려서 넓힐 수 있게 했다. 너무 좁으면
+ * 개수 칸과 이름이 겹치고, 너무 넓으면 본문을 밀어내서 범위를 묶는다.
+ */
+export const SIDEBAR_MIN = 180;
+export const SIDEBAR_MAX = 400;
+export const SIDEBAR_DEFAULT = 240;
+const SIDEBAR_KEY = "nyaki.sidebarWidth";
+
+export function clampSidebarWidth(value: number): number {
+  if (!Number.isFinite(value)) return SIDEBAR_DEFAULT;
+  return Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, value)));
+}
+
+function loadSidebarWidth(): number {
+  try {
+    const raw = window.localStorage.getItem(SIDEBAR_KEY);
+    return raw === null ? SIDEBAR_DEFAULT : clampSidebarWidth(Number(raw));
+  } catch {
+    return SIDEBAR_DEFAULT;
+  }
+}
+
+function saveSidebarWidth(value: number) {
+  try {
+    window.localStorage.setItem(SIDEBAR_KEY, String(value));
+  } catch {
+    // 사생활 보호 모드 등에서 막힐 수 있다. 기억 못 해도 동작에는 지장 없다.
+  }
+}
+
+/**
  * 끌고 난 뒤의 클릭을 삼킨다.
  *
  * 줄 전체를 잡아 끌게 하면 손을 뗄 때 클릭이 한 번 더 발생해서, 옮기자마자
@@ -86,6 +119,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   } = useVocab();
 
   const [collapsed, setCollapsed] = useState<string[]>([]);
+  // 초기값으로 읽는다 — 이펙트에서 읽으면 기본 폭이 한 프레임 보였다 바뀐다.
+  const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth);
+  const [resizing, setResizing] = useState(false);
+  const resizeStart = useRef<{ x: number; width: number } | null>(null);
   // 끌고 있는 줄. 커서에 붙여 따로 그린다(DragOverlay).
   const [dragging, setDragging] = useState<string | null>(null);
   const showSidebar = pathname !== "/word-books/overview";
@@ -195,9 +232,51 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-8.5rem)] w-full max-w-7xl">
+    // 사이드바는 화면 왼쪽 끝에 붙인다. 예전에는 사이드바와 본문을 함께 최대 폭
+    // 상자 안에서 가운데 정렬해서, 넓은 화면에서 사이드바 왼쪽이 비었다.
+    // 본문은 각 화면이 남은 영역 안에서 스스로 가운데 정렬한다(mx-auto max-w-*).
+    <div className="flex min-h-[calc(100vh-8.5rem)] w-full">
       {showSidebar ? (
-        <aside className="hidden w-52 shrink-0 border-r border-taupe/30 py-14 pl-6 pr-3 lg:block">
+        <aside
+          style={{ width: sidebarWidth }}
+          className="relative hidden shrink-0 border-r border-taupe/30 py-14 pl-6 pr-3 lg:block"
+        >
+          {/* 오른쪽 경계선을 끌어 폭을 바꾼다. 두 번 누르면 기본 폭으로. */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="사이드바 폭 조절"
+            aria-valuemin={SIDEBAR_MIN}
+            aria-valuemax={SIDEBAR_MAX}
+            aria-valuenow={sidebarWidth}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+              resizeStart.current = { x: event.clientX, width: sidebarWidth };
+              setResizing(true);
+            }}
+            onPointerMove={(event) => {
+              const start = resizeStart.current;
+              if (!start) return;
+              setSidebarWidth(
+                clampSidebarWidth(start.width + event.clientX - start.x),
+              );
+            }}
+            onPointerUp={() => {
+              if (!resizeStart.current) return;
+              resizeStart.current = null;
+              setResizing(false);
+              saveSidebarWidth(sidebarWidth);
+            }}
+            onDoubleClick={() => {
+              setSidebarWidth(SIDEBAR_DEFAULT);
+              saveSidebarWidth(SIDEBAR_DEFAULT);
+            }}
+            className={cn(
+              "absolute -right-[3px] top-0 z-10 h-full w-1.5 cursor-col-resize select-none transition-colors",
+              resizing && "bg-taupe/60",
+            )}
+          />
           {/* 폴더 만들기는 "단어장" 화면 헤더에 있다 — 여기 구석의 `+`는
               글자 하나짜리라 눈에 안 띄었다. */}
           <p className="mb-2 px-2.5 text-[11px] font-medium uppercase tracking-wider text-ink/35">

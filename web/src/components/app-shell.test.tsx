@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -36,7 +36,13 @@ vi.mock("@/lib/vocab-store", () => ({
   }),
 }));
 
-import { AppShell } from "./app-shell";
+import {
+  AppShell,
+  SIDEBAR_DEFAULT,
+  SIDEBAR_MAX,
+  SIDEBAR_MIN,
+  clampSidebarWidth,
+} from "./app-shell";
 
 function book(id: string, folderId?: string): WordBook {
   return {
@@ -121,5 +127,66 @@ describe("사이드바", () => {
       expect.not.stringContaining("함께 삭제됩니다"),
     );
   });
+});
 
+describe("사이드바 폭", () => {
+  const KEY = "nyaki.sidebarWidth";
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  function sidebar() {
+    return screen.getByRole("separator", { name: "사이드바 폭 조절" })
+      .parentElement!;
+  }
+
+  it("범위 밖이나 이상한 값은 최소 · 최대 · 기본으로 묶는다", () => {
+    expect(clampSidebarWidth(50)).toBe(SIDEBAR_MIN);
+    expect(clampSidebarWidth(9999)).toBe(SIDEBAR_MAX);
+    expect(clampSidebarWidth(Number.NaN)).toBe(SIDEBAR_DEFAULT);
+    expect(clampSidebarWidth(251.6)).toBe(252);
+  });
+
+  it("처음에는 기본 폭, 저장된 폭이 있으면 그 폭으로 연다", () => {
+    const { unmount } = render(<AppShell>본문</AppShell>);
+    expect(sidebar()).toHaveStyle({ width: `${SIDEBAR_DEFAULT}px` });
+    unmount();
+
+    window.localStorage.setItem(KEY, "320");
+    render(<AppShell>본문</AppShell>);
+    expect(sidebar()).toHaveStyle({ width: "320px" });
+  });
+
+  it("경계선을 끌면 폭이 바뀌고, 손을 떼면 기억한다", () => {
+    render(<AppShell>본문</AppShell>);
+    const handle = screen.getByRole("separator", { name: "사이드바 폭 조절" });
+
+    fireEvent.pointerDown(handle, { clientX: 240, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientX: 300, pointerId: 1 });
+    expect(sidebar()).toHaveStyle({ width: "300px" });
+
+    // 최대를 넘겨 끌어도 최대에서 멈춘다.
+    fireEvent.pointerMove(handle, { clientX: 2000, pointerId: 1 });
+    expect(sidebar()).toHaveStyle({ width: `${SIDEBAR_MAX}px` });
+
+    fireEvent.pointerUp(handle, { clientX: 2000, pointerId: 1 });
+    expect(window.localStorage.getItem(KEY)).toBe(String(SIDEBAR_MAX));
+
+    // 손을 뗀 뒤 움직임은 무시한다.
+    fireEvent.pointerMove(handle, { clientX: 100, pointerId: 1 });
+    expect(sidebar()).toHaveStyle({ width: `${SIDEBAR_MAX}px` });
+  });
+
+  it("두 번 누르면 기본 폭으로 돌아간다", () => {
+    window.localStorage.setItem(KEY, "380");
+    render(<AppShell>본문</AppShell>);
+
+    fireEvent.doubleClick(
+      screen.getByRole("separator", { name: "사이드바 폭 조절" }),
+    );
+
+    expect(sidebar()).toHaveStyle({ width: `${SIDEBAR_DEFAULT}px` });
+    expect(window.localStorage.getItem(KEY)).toBe(String(SIDEBAR_DEFAULT));
+  });
 });

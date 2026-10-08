@@ -7,6 +7,7 @@ from .account.routes import router as account_router
 from .content.routes import router as content_router
 from .core.auth import initialize_firebase
 from .core.config import get_settings
+from .gamification.routes import attendance_router
 from .gamification.routes import router as gamification_router
 from .vocab.routes import router
 
@@ -33,6 +34,7 @@ app.add_middleware(
 app.include_router(router)
 app.include_router(content_router)
 app.include_router(gamification_router)
+app.include_router(attendance_router)
 app.include_router(account_router)
 
 

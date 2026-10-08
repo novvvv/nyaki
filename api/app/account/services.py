@@ -14,6 +14,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from ..models import (
+    AttendanceLogModel,
     CardModel,
     ClozeNoteModel,
     FolderModel,
@@ -39,6 +40,7 @@ USER_TABLES = (
     SyncChangeModel,
     UserProgressModel,
     QuestStateModel,
+    AttendanceLogModel,
 )
 
 

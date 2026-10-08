@@ -109,9 +109,12 @@
 
 | Method | Path | 설명 | 상세 |
 |---|---|---|---|
-| GET | `/v1/progress` | 잔액 · 오늘 완료한 퀘스트 · 설정 | |
+| GET | `/v1/progress` | 잔액 · 오늘 완료한 퀘스트 · 설정 · 출석(`attendance`) | |
 | PUT | `/v1/progress/settings` | 하루 한도 · 복습 단계 변경 | |
 | POST | `/v1/progress/quests/{quest_id}/complete` | 퀘스트 완료 (하루 1회, 재전송 안전) | |
+| POST | `/v1/attendance` | 출석. 하루(KST) 한 번 츄르 5. 본문 없음, 날짜는 서버가 정한다. 두 번째부터 `granted: 0` (재전송 · 동시 요청 안전) | |
+
+`attendance` = `{checked_in_today, streak, next_reset_at}`. `streak`은 오늘 출석 전이면 어제까지의 연속, `next_reset_at`은 다음 KST 자정(UTC).
 
 | `quest_id` | 보상 | 시간 (KST) |
 |---|---|---|

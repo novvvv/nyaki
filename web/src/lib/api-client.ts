@@ -563,6 +563,30 @@ export interface Progress {
   relearningSteps: number[];
   /** 마지막 단계를 통과했을 때의 간격(일) */
   graduatingIntervalDays: number;
+  /** 출석 상태. 서버가 아직 안 보내면(배포 전) undefined */
+  attendance?: Attendance;
+}
+
+export interface Attendance {
+  checkedInToday: boolean;
+  /** 오늘까지 연속 출석 일수. 오늘 출석 전이면 어제까지로 센다 */
+  streak: number;
+  /** 다음 출석이 열리는 시각(KST 자정, ISO). 화면은 이 시각까지 남은 시간만 보여준다 */
+  nextResetAt: string;
+}
+
+type ApiAttendance = {
+  checked_in_today: boolean;
+  streak: number;
+  next_reset_at: string;
+};
+
+function toAttendance(value: ApiAttendance): Attendance {
+  return {
+    checkedInToday: value.checked_in_today,
+    streak: value.streak,
+    nextResetAt: value.next_reset_at,
+  };
 }
 
 type ApiProgress = {
@@ -574,6 +598,7 @@ type ApiProgress = {
   learning_steps: number[];
   relearning_steps: number[];
   graduating_interval_days: number;
+  attendance?: ApiAttendance;
 };
 
 function toProgress(value: ApiProgress): Progress {
@@ -586,6 +611,43 @@ function toProgress(value: ApiProgress): Progress {
     learningSteps: value.learning_steps,
     relearningSteps: value.relearning_steps,
     graduatingIntervalDays: value.graduating_interval_days,
+    attendance: value.attendance ? toAttendance(value.attendance) : undefined,
+  };
+}
+
+export interface CheckInResult {
+  /** 이번 요청으로 받은 츄르. 이미 출석했으면 0 */
+  granted: number;
+  /** 서버가 정한 출석 날짜(KST, YYYY-MM-DD) */
+  date: string;
+  churuBalance: number;
+  attendance: Attendance;
+}
+
+/**
+ * 오늘 출석한다. 다시 불러도 안전하다(같은 날이면 granted 0).
+ *
+ * 날짜를 보내지 않는다 — "오늘"은 서버가 자기 시각(KST)으로 정한다. 기기 시계를
+ * 바꿔도 하루 한 번이다.
+ */
+export async function checkIn(token: string): Promise<CheckInResult> {
+  const body = await request<{
+    checked_in: boolean;
+    granted: number;
+    date: string;
+    streak: number;
+    next_reset_at: string;
+    churu_balance: number;
+  }>("/v1/attendance", token, { method: "POST" });
+  return {
+    granted: body.granted,
+    date: body.date,
+    churuBalance: body.churu_balance,
+    attendance: {
+      checkedInToday: body.checked_in,
+      streak: body.streak,
+      nextResetAt: body.next_reset_at,
+    },
   };
 }
 

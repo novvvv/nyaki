@@ -78,3 +78,25 @@ class QuestStateModel(Base):
         onupdate=func.now(),
         nullable=False,
     )
+
+
+# ==================== ✨ AttendanceLogModel ✨ ==================== #
+# 출석 기록 — 하루 한 줄. 출석하면 츄르를 준다.
+#   - user_id (PK) : 유저 식별자
+#   - date (PK)    : 출석한 날(KST). 서버가 받은 시각으로 정한다 — 클라이언트는
+#                    날짜를 보낼 수 없다
+#   - reward       : 그날 준 츄르. 보상이 나중에 바뀌어도 기록이 맞게 남는다
+#   - created_at   : 서버가 받은 시각(UTC)
+# (user_id, date) 기본키가 같은 날 두 번째 출석을 DB에서 막는다. 그래서 출석은
+# "읽고 판단하기" 없이 INSERT 한 번으로 판정한다. 연속 출석은 이 기록으로 센다.
+# ================================================================= #
+
+class AttendanceLogModel(Base):
+    __tablename__ = "attendance_logs"
+
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    reward: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )

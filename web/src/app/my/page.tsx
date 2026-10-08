@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Card, PageHeader, SubtleButton, TextInput } from "@/components/ui";
 import {
+  checkIn,
   fetchProgress,
   updateSettings,
   type Progress,
@@ -246,6 +247,106 @@ function Stat({
   );
 }
 
+/** "다음 출석까지 5시간 12분". 화면 표시용이라 기기 시계를 쓴다 — 판정은 서버가 한다. */
+function untilLabel(nextResetAt: string, now: number): string {
+  const minutes = Math.max(
+    0,
+    Math.ceil((new Date(nextResetAt).getTime() - now) / 60000),
+  );
+  const hours = Math.floor(minutes / 60);
+  return hours > 0 ? `${hours}시간 ${minutes % 60}분` : `${minutes}분`;
+}
+
+/**
+ * 출석 버튼. 하루 한 번 츄르 5개.
+ *
+ * "오늘"은 서버가 정한다(KST 자정). 화면은 서버가 준 다음 리셋 시각까지 남은
+ * 시간만 보여주고, 그 시각이 지나면 진행도를 다시 받아 버튼을 되살린다 —
+ * 자정을 넘겨 켜둔 화면이 "출석 완료"에 멈춰 있지 않게.
+ */
+function CheckIn({
+  progress,
+  onChange,
+}: {
+  progress: Progress;
+  onChange: (value: Progress) => void;
+}) {
+  const { getToken } = useAuth();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
+  const [now, setNow] = useState(() => Date.now());
+  const attendance = progress.attendance!;
+
+  // 남은 시간 표시를 1분마다 갱신한다.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  // 다음 리셋 시각이 지나면 서버에 다시 묻는다.
+  useEffect(() => {
+    const wait = new Date(attendance.nextResetAt).getTime() - Date.now();
+    const timer = window.setTimeout(
+      () => {
+        void (async () => {
+          const token = await getToken();
+          if (!token) return;
+          try {
+            onChange(await fetchProgress(token));
+          } catch {
+            // 다음에 화면을 열 때 다시 받는다.
+          }
+        })();
+      },
+      // 자정 직후 서버와 몇 초 어긋날 수 있어 조금 늦게 묻는다.
+      Math.max(wait, 0) + 2_000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [attendance.nextResetAt, getToken, onChange]);
+
+  async function handleCheckIn() {
+    if (pending || attendance.checkedInToday) return;
+    setPending(true);
+    setError(undefined);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+      const result = await checkIn(token);
+      onChange({
+        ...progress,
+        churuBalance: result.churuBalance,
+        attendance: result.attendance,
+      });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "출석하지 못했어요.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      {error ? <p className="text-xs text-red-700">{error}</p> : null}
+      {attendance.checkedInToday ? (
+        <p className="text-xs tabular-nums text-umber/45">
+          다음 출석까지 {untilLabel(attendance.nextResetAt, now)}
+        </p>
+      ) : null}
+      <SubtleButton
+        className="py-1.5 text-xs"
+        disabled={attendance.checkedInToday || pending}
+        onClick={() => void handleCheckIn()}
+      >
+        {attendance.checkedInToday
+          ? `출석 완료 · ${attendance.streak}일 연속`
+          : pending
+            ? "출석하는 중…"
+            : "출석하기"}
+      </SubtleButton>
+    </div>
+  );
+}
+
 function Row({
   label,
   value,
@@ -305,7 +406,7 @@ export default function MyPage() {
         </div>
       </div>
 
-      <div className="mb-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="단어장" value={`${wordBooks.length}`} />
         <Stat label="모은 단어" value={`${wordCount}`} />
         {/* 재화 — 하루 한도와 같은 /v1/progress 응답이다. 받기 전에는 — */}
@@ -319,6 +420,12 @@ export default function MyPage() {
           icon="/capelin.png"
           value={progress ? `${progress.capelinBalance}` : "—"}
         />
+      </div>
+
+      <div className="mb-12">
+        {progress?.attendance ? (
+          <CheckIn progress={progress} onChange={setProgress} />
+        ) : null}
       </div>
 
       <DailyLimits onProgress={setProgress} />

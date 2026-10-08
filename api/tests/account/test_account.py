@@ -37,7 +37,7 @@ def _now() -> str:
 
 
 def _fill(client: TestClient) -> None:
-    """사용자 테이블 10개에 전부 한 줄 이상 남긴다."""
+    """사용자 테이블 전부에 한 줄 이상 남긴다."""
     stamp = {"created_at": _now(), "updated_at": _now()}
     # 폴더
     assert client.put("/v1/folders/f1", json={"id": "f1", "title": "폴더", **stamp}).status_code == 200
@@ -69,6 +69,8 @@ def _fill(client: TestClient) -> None:
             "words": [{"id": "w2", "word_book_id": "b1", "term": "犬", "meaning": "개", **stamp}],
         },
     ).status_code == 201
+    # 출석
+    assert client.post("/v1/attendance").status_code == 200
 
 
 def _counts(user: str) -> dict[str, int]:
@@ -161,6 +163,18 @@ def test_missing_firebase_user_is_not_an_error(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(auth, "delete_user", already_gone)
 
     assert _client(_user()).delete("/v1/account").status_code == 204
+
+
+def test_every_table_with_user_id_is_deleted_on_withdrawal() -> None:
+    """user_id가 있는 테이블을 새로 만들고 삭제 목록에 안 넣으면 여기서 걸린다.
+
+    빠뜨리면 탈퇴한 사용자의 데이터가 남는다. 위 테스트는 목록에 **있는** 테이블만
+    보므로 빠진 테이블을 못 잡는다.
+    """
+    have = {model.__tablename__ for model in USER_TABLES}
+    need = {table.name for table in Base.metadata.sorted_tables if "user_id" in table.c}
+
+    assert need - have == set(), f"탈퇴 삭제 목록에 없는 테이블: {need - have}"
 
 
 def test_withdrawal_needs_login() -> None:

@@ -10,7 +10,7 @@ default vs server_default
                 (FolderModel, WordBookModel, WordModel, ClozeNoteModel, CardModel,
                  ReviewLogModel, PackImportModel)
   sync.py     — Hub sync 변경 로그 (SyncChangeModel)
-  gamification.py — 게이미피케이션 (UserProgressModel, QuestStateModel)
+  gamification.py — 게이미피케이션 (UserProgressModel, QuestStateModel, AttendanceLogModel)
   content.py  — nyaki-web 블로그 콘텐츠 (ArtistModel, PostModel)
 
 기존 코드는 `from .models import WordBookModel` 형태로 이 패키지를 그대로 쓴다 —
@@ -18,7 +18,7 @@ default vs server_default
 """
 
 from .content import ArtistModel, PostModel
-from .gamification import QuestStateModel, UserProgressModel
+from .gamification import AttendanceLogModel, QuestStateModel, UserProgressModel
 from .sync import SyncChangeModel
 from .vocab import (
     CardModel,
@@ -41,6 +41,7 @@ __all__ = [
     "SyncChangeModel",
     "UserProgressModel",
     "QuestStateModel",
+    "AttendanceLogModel",
     "ArtistModel",
     "PostModel",
 ]

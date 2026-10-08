@@ -1,7 +1,9 @@
-from datetime import date, datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import date, datetime, time, timedelta, timezone
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from ..models import QuestStateModel, UserProgressModel
+from ..models import AttendanceLogModel, QuestStateModel, UserProgressModel
 from ..vocab.services import (
     DEFAULT_LEARNING_STEPS,
     DEFAULT_NEW_LIMIT,
@@ -9,7 +11,7 @@ from ..vocab.services import (
     DEFAULT_REVIEW_LIMIT,
     steps_or_default,
 )
-from .schemas import ProgressResponse, ProgressSettingsRequest
+from .schemas import AttendanceInfo, ProgressResponse, ProgressSettingsRequest
 
 # 재화 식별자 — 앱 quest_screen.dart의 currency 값과 같은 문자열을 쓴다.
 CHURU = "churu"
@@ -153,6 +155,16 @@ def _response(
             if progress is not None and progress.graduating_interval_days is not None
             else 1
         ),
+        attendance=_attendance_info(session, user_id),
+    )
+
+
+def _attendance_info(session: Session, user_id: str) -> AttendanceInfo:
+    status = attendance_status(session, user_id)
+    return AttendanceInfo(
+        checked_in_today=status.checked_in_today,
+        streak=status.streak,
+        next_reset_at=status.next_reset_at,
     )
 
 
@@ -219,3 +231,100 @@ def update_settings(
         setattr(progress, field, value)
     session.flush()
     return _response(session, user_id, progress)
+
+
+# ====================== 출석 ====================== #
+#
+# 하루 한 번 버튼을 누르면 츄르를 준다. 규칙은 루트 check_in_plan.md 참고.
+#
+# - "오늘"은 서버가 정한다(KST 자정 기준, 서버 수신 시각). 클라이언트는 날짜를
+#   보낼 길이 없다 — 기기 시계를 바꿔도 통하지 않는다.
+# - 같은 날 두 번 주지 않는 건 attendance_logs의 (user_id, date) 기본키가 한다.
+#   "있나 먼저 읽고 없으면 쓰기"를 하지 않는다 — 동시 요청 두 개가 둘 다 "없음"을
+#   읽고 둘 다 지급한다. INSERT를 먼저 하고, 기본키 충돌이면 이미 출석한 것이다.
+# - 출석 기록과 츄르는 같은 트랜잭션에 들어간다. 커밋은 라우트가 한다.
+
+CHECK_IN_REWARD = 5
+
+# 연속 출석을 셀 때 거슬러 보는 최대 일수. 이보다 길게 연속이면 이 값에서 멈춘다.
+STREAK_LOOKBACK_DAYS = 400
+
+
+def next_reset_at() -> datetime:
+    """다음 KST 자정(UTC). 화면이 "다음 출석까지"를 계산하는 기준이다.
+
+    클라이언트 시계로 자정을 계산하면 기기 시계 · 시간대에 따라 어긋난다.
+    """
+    tomorrow = _today() + timedelta(days=1)
+    return datetime.combine(tomorrow, time.min, tzinfo=_KST).astimezone(timezone.utc)
+
+
+@dataclass(frozen=True)
+class AttendanceStatus:
+    checked_in_today: bool
+    streak: int
+    next_reset_at: datetime
+
+
+def attendance_status(session: Session, user_id: str) -> AttendanceStatus:
+    """오늘 출석했나, 연속 며칠인가.
+
+    연속은 오늘부터 거꾸로 센다. 오늘 아직 출석 전이면 어제부터 센다 — 자정이
+    지났다고 어제까지의 연속이 바로 0으로 보이면 안 된다(오늘 누르면 이어진다).
+    """
+    today = _today()
+    dates = set(
+        session.scalars(
+            select(AttendanceLogModel.date)
+            .where(
+                AttendanceLogModel.user_id == user_id,
+                AttendanceLogModel.date
+                > today - timedelta(days=STREAK_LOOKBACK_DAYS),
+            )
+            .order_by(AttendanceLogModel.date.desc())
+        )
+    )
+    checked_in_today = today in dates
+
+    streak = 0
+    cursor = today if checked_in_today else today - timedelta(days=1)
+    while cursor in dates:
+        streak += 1
+        cursor -= timedelta(days=1)
+
+    return AttendanceStatus(
+        checked_in_today=checked_in_today,
+        streak=streak,
+        next_reset_at=next_reset_at(),
+    )
+
+
+def check_in(session: Session, user_id: str) -> tuple[int, date, UserProgressModel]:
+    """오늘 출석한다. (이번에 준 츄르, 오늘 날짜, 잔액 행)
+
+    다시 불러도 안전하다 — 이미 출석했으면 아무것도 주지 않고 0을 돌려준다.
+    """
+    today = _today()
+
+    # INSERT로 판정한다. 같은 날 두 번째면 기본키 충돌이다. 세이브포인트 안에서
+    # 해서 충돌이 나도 바깥 트랜잭션은 살아 있다.
+    try:
+        with session.begin_nested():
+            session.add(
+                AttendanceLogModel(
+                    user_id=user_id,
+                    date=today,
+                    reward=CHECK_IN_REWARD,
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+    except IntegrityError:
+        return 0, today, _get_or_create_progress(session, user_id)
+
+    progress = _get_or_create_progress(session, user_id)
+    # 잔액은 SQL 안에서 더한다(churu = churu + 5). 파이썬에서 읽고 더해 쓰면, 같은
+    # 순간 다른 퀘스트 보상이 들어올 때 한쪽 증가가 사라진다.
+    progress.churu_balance = UserProgressModel.churu_balance + CHECK_IN_REWARD
+    session.flush()
+    session.refresh(progress)
+    return CHECK_IN_REWARD, today, progress

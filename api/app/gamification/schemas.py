@@ -1,4 +1,16 @@
+from datetime import date, datetime
+
 from pydantic import BaseModel, Field
+
+
+class AttendanceInfo(BaseModel):
+    """출석 상태. 진행도 응답에 함께 실려 화면이 따로 묻지 않아도 된다."""
+
+    checked_in_today: bool
+    # 오늘까지 연속 출석 일수. 오늘 출석 전이면 어제까지로 센다.
+    streak: int
+    # 다음 KST 자정(UTC). 화면은 이 시각까지 남은 시간만 보여주고, 지나면 다시 묻는다.
+    next_reset_at: datetime
 
 
 # ProgressResponse DTO
@@ -21,6 +33,7 @@ class ProgressResponse(BaseModel):
     learning_steps: list[int]
     relearning_steps: list[int]
     graduating_interval_days: int
+    attendance: AttendanceInfo
 
 
 class ProgressSettingsRequest(BaseModel):
@@ -32,3 +45,16 @@ class ProgressSettingsRequest(BaseModel):
     learning_steps: str | None = Field(default=None, max_length=120)
     relearning_steps: str | None = Field(default=None, max_length=120)
     graduating_interval_days: int | None = Field(default=None, ge=1, le=365)
+
+
+class CheckInResponse(BaseModel):
+    """출석 결과. 다시 불러도 같은 날이면 granted만 0이 된다."""
+
+    checked_in: bool
+    # 이번 요청으로 준 츄르. 이미 출석했으면 0.
+    granted: int
+    # 서버가 정한 출석 날짜(KST)
+    date: date
+    streak: int
+    next_reset_at: datetime
+    churu_balance: int

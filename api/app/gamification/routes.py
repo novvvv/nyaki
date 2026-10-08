@@ -3,8 +3,14 @@ from sqlalchemy.orm import Session
 
 from ..core.auth import get_current_user_id
 from ..core.database import get_session
-from .schemas import ProgressResponse, ProgressSettingsRequest
-from .services import complete_quest, get_progress, update_settings
+from .schemas import CheckInResponse, ProgressResponse, ProgressSettingsRequest
+from .services import (
+    attendance_status,
+    check_in,
+    complete_quest,
+    get_progress,
+    update_settings,
+)
 
 # router definition
 # - 모든 라우터 경로 앞에 /v1/prgoresss 
@@ -54,3 +60,28 @@ def put_progress_settings(
     result = update_settings(session, user_id, payload)
     session.commit()
     return result
+
+
+# [API] 출석
+#   - method : POST /v1/attendance
+#   - 하루 한 번 츄르를 준다. 다시 불러도 안전하다(같은 날이면 granted 0).
+#   - 본문을 받지 않는다 — 날짜 · 보상을 클라이언트가 정할 여지를 없앤다.
+attendance_router = APIRouter(prefix="/v1/attendance", tags=["progress"])
+
+
+@attendance_router.post("", response_model=CheckInResponse)
+def post_check_in(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> CheckInResponse:
+    granted, today, progress = check_in(session, user_id)
+    session.commit()
+    status = attendance_status(session, user_id)
+    return CheckInResponse(
+        checked_in=True,
+        granted=granted,
+        date=today,
+        streak=status.streak,
+        next_reset_at=status.next_reset_at,
+        churu_balance=progress.churu_balance,
+    )

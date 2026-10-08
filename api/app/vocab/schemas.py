@@ -122,7 +122,9 @@ class ClozeNotePayload(BaseModel):
 
     id: str = Field(min_length=1, max_length=80)
     word_book_id: str = Field(min_length=1, max_length=80)
-    text: str = Field(min_length=1)
+    # 길이 제한은 ReDoS 패치(security_review.md 2-2)의 두 번째 벽이다.
+    # 정규식을 고쳤어도 입력이 한없이 길면 처리 · 저장 비용이 따라 커진다.
+    text: str = Field(min_length=1, max_length=5000)
     created_at: datetime
     updated_at: datetime
     is_deleted: bool = False

@@ -10,8 +10,10 @@
 문법은 안키와 같은 `{{cN::답}}`이고, 번호는 어디를 가릴지 표시하는 용도다.
 """
 
+import time
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user_id
@@ -43,6 +45,52 @@ def test_parser_hides_every_blank() -> None:
 def test_parser_shows_hint_when_given() -> None:
     front, _ = render_cloze("답은 {{c1::42::숫자}}")
     assert front == "답은 [ 숫자 ]"
+
+
+@pytest.mark.security
+@pytest.mark.parametrize(
+    "text",
+    [
+        "{{c1::" * 500,  # 닫지 않은 빈칸만 반복
+        "{{c1::a::" * 333,  # 답 · 힌트 구분자까지 반복
+        "{{c1::a}b" * 333,  # 닫는 괄호를 하나만 섞기
+    ],
+)
+def test_parser_is_fast_on_unclosed_blanks(text: str) -> None:
+    """닫히지 않은 빈칸이 많아도 정규식이 폭주하지 않는다.
+
+    ReDoS (CWE-1333) — security_review.md 2-2. 예전 정규식은 답 · 힌트가 둘 다
+    "아무 글자나"라서 닫는 }}가 없으면 끊는 자리의 조합을 전부 시도했다(O(n³)).
+    약 3,000자에서 예전 것은 이 테스트 하나에 5~10초, 지금 것은 0.001초 아래다. 2만 자로 하면
+    예전 것으로 되돌아갔을 때 실패 대신 CI가 몇십 분 멈추므로 이 길이로 둔다.
+    """
+    started = time.perf_counter()
+    cloze_count(text)
+    render_cloze(text)
+    assert time.perf_counter() - started < 0.1
+
+
+@pytest.mark.parametrize(
+    ("text", "back"),
+    [
+        ("{{c1::std::vector}}", "std"),  # '::' 뒤는 힌트다
+        ("{{c1::여러\n줄}}", "여러\n줄"),  # 줄바꿈도 답이다
+        ("{{c1::a}b}}", "a}b"),  # 닫는 괄호 하나는 답에 들어간다
+        ("{{c1::a::b::c}}", "a"),  # 힌트는 'b::c'
+    ],
+)
+def test_parser_keeps_answers(text: str, back: str) -> None:
+    """정규식을 바꿔도(ReDoS 패치) 헷갈리기 쉬운 문장의 답은 그대로다."""
+    assert render_cloze(text)[1] == back
+
+
+def test_parser_does_not_swallow_the_next_blank() -> None:
+    """닫지 않은 빈칸이 뒤 빈칸까지 삼키지 않는다 — 뒤 빈칸만 빈칸이다.
+
+    ReDoS 패치 전에는 답을 'A {{c2'로 잡았다. 답이 '{{'를 넘지 못하게 바꾸면서
+    달라진 동작이다.
+    """
+    assert render_cloze("{{c1::A {{c2::B}}")[1] == "{{c1::A B"
 
 
 # ==================== API ====================
@@ -356,5 +404,45 @@ def test_due_cards_carry_their_word_book() -> None:
 
     card = _due(client)[0]
     assert card["word_book_id"] == BOOK
+
+    app.dependency_overrides.clear()
+
+
+def test_note_of_5000_chars_is_saved() -> None:
+    """길이 제한 바로 아래까지는 평소처럼 저장되고 카드도 생긴다."""
+    client = _client("firebase-user-cloze-max-length")
+    text = "{{c1::답}}" + "가" * (5000 - len("{{c1::답}}"))
+    assert len(text) == 5000
+
+    _put_note(client, "n1", text)
+
+    assert [card["kind"] for card in _due(client)] == ["cloze"]
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.security
+def test_note_over_5000_chars_is_rejected() -> None:
+    """5,000자를 넘는 노트는 422로 거절하고 저장하지 않는다.
+
+    ReDoS (CWE-1333) — security_review.md 2-2. 정규식을 고친 뒤에도 두는 두 번째 벽이다.
+    """
+    client = _client("firebase-user-cloze-too-long")
+    now = datetime.now(timezone.utc).isoformat()
+
+    response = client.put(
+        f"/v1/word-books/{BOOK}/cloze-notes/n1",
+        json={
+            "id": "n1",
+            "word_book_id": BOOK,
+            "text": "{{c1::" * 834,  # 5,004자 — 공격 입력 모양 그대로
+            "created_at": now,
+            "updated_at": now,
+            "is_deleted": False,
+        },
+    )
+
+    assert response.status_code == 422
+    assert client.get(f"/v1/word-books/{BOOK}/cloze-notes").json() == []
 
     app.dependency_overrides.clear()

@@ -333,8 +333,16 @@ def list_words(session: Session, user_id: str, word_book_id: str) -> list[WordMo
 CARD_KINDS = ("recognition", "recall")
 DEFAULT_CARD_KINDS = ("recognition",)
 
+# !!! Security Patch !!!
 # 안키와 같은 문법. `{{c1::답}}` · `{{c2::답::힌트}}`
-CLOZE_PATTERN = re.compile(r"\{\{c(\d+)::(.+?)(?:::(.+?))?\}\}", re.DOTALL)
+
+CLOZE_PATTERN = re.compile(
+    r"\{\{c(\d+)::"
+    r"((?:(?!::|\{\{|\}\}).)+)"  # 답: '::' · '{{' · '}}'가 나오기 전까지만
+    r"(?:::((?:(?!\{\{|\}\}).)+))?"  # 힌트: '{{' · '}}'가 나오기 전까지만
+    r"\}\}",
+    re.DOTALL,
+)
 
 
 def cloze_count(text: str) -> int:

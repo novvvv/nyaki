@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nyaki/data/srs/sm2.dart';
 import 'package:nyaki/models/word.dart';
 
-/// 학습 단계 — 서버 `api/tests/test_srs_steps.py`와 **같은 입출력**이어야 한다.
+/// 학습 단계 — 서버 `api/tests/vocab/srs/test_srs_steps.py`와 **같은 입출력**이어야 한다.
 /// 같은 단어를 앱과 웹에서 채점했을 때 다음 복습일이 갈리면 사용자가 바로 알아챈다.
 void main() {
   final now = DateTime.utc(2026, 9, 23, 12, 0);

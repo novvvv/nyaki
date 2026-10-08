@@ -1,7 +1,7 @@
 # 단어 묶음 담기
 
 > 단어 다운로드의 "내 단어장에 담기".
-> 서버: `api/app/vocab/routes.py` · `services.py` · 테스트 `api/tests/test_pack_imports.py`
+> 서버: `api/app/vocab/routes.py` · `services.py` · 테스트 `api/tests/vocab/library/test_pack_imports.py`
 > 기본 정보(주소·인증·에러 형식)는 [API.md](../API.md).
 
 ## 엔드포인트

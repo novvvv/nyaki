@@ -9,7 +9,7 @@
 
 어떻게 확인하는가:
 - Firebase 로그인 없이 로컬에서 돌리려고, 관리자 인증(require_admin_id)을
-  가짜 함수로 바꿔치기해서 토큰 검증을 건너뜀 (tests/test_sync.py와 같은 방식)
+  가짜 함수로 바꿔치기해서 토큰 검증을 건너뜀 (tests/sync/test_sync.py와 같은 방식)
 - 실제 HTTP 요청처럼 FastAPI TestClient로 PUT/GET/DELETE를 순서대로 호출
 """
 

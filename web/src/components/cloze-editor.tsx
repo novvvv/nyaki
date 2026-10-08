@@ -8,6 +8,7 @@ import {
   insertBlank,
   insertBold,
   insertHighlight,
+  MAX_CLOZE_LENGTH,
   parseCloze,
   type ClozeToken,
   type Edit,
@@ -37,6 +38,8 @@ export function ClozeEditor({
     const area = areaRef.current;
     if (!area) return;
     const next = edit(value, area.selectionStart, area.selectionEnd);
+    // maxLength는 손으로 치는 것만 막는다. 마크업을 끼워 넣어 넘치면 서버가 422로 거절한다.
+    if (next.text.length > MAX_CLOZE_LENGTH) return;
     onChange(next.text);
     // 값이 반영된 뒤에 커서를 옮겨야 한다. 지금 옮기면 리렌더가 되돌린다.
     requestAnimationFrame(() => {
@@ -75,6 +78,7 @@ export function ClozeEditor({
           ref={areaRef}
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          maxLength={MAX_CLOZE_LENGTH}
           placeholder={placeholder}
           rows={12}
           aria-label="빈칸 문장"

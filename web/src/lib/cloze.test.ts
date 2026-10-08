@@ -64,6 +64,34 @@ describe("parseCloze — 빈칸", () => {
   });
 });
 
+// ReDoS (CWE-1333) — security_review.md 2-2. 서버 tests/vocab/cards/test_cloze_notes.py와 같은 입력.
+describe("parseCloze — 닫히지 않은 빈칸", () => {
+  it.each([
+    ["닫지 않은 빈칸만 반복", "{{c1::".repeat(834)],
+    ["답 · 힌트 구분자까지 반복", "{{c1::a::".repeat(555)],
+    ["닫는 괄호를 하나만 섞기", "{{c1::a}b".repeat(555)],
+  ])("%s — 5,000자여도 바로 끝난다", (_name, raw) => {
+    const started = performance.now();
+    parseCloze(raw);
+    countBlanks(raw);
+    expect(performance.now() - started).toBeLessThan(100);
+  });
+
+  it.each([
+    ["{{c1::std::vector}}", "std"], // '::' 뒤는 힌트다
+    ["{{c1::a}b}}", "a}b"], // 닫는 괄호 하나는 답에 들어간다
+    ["{{c1::a::b::c}}", "a"], // 힌트는 'b::c'
+  ])("헷갈리기 쉬운 문장의 답은 서버와 같다 — %s", (raw, answer) => {
+    const blanks = parseCloze(raw).filter((t) => t.blank);
+    expect(blanks.map((t) => t.text).join("")).toBe(answer);
+  });
+
+  it("닫지 않은 빈칸이 뒤 빈칸까지 삼키지 않는다 — 뒤 빈칸만 빈칸이다", () => {
+    const blanks = parseCloze("{{c1::A {{c2::B}}").filter((t) => t.blank);
+    expect(blanks.map((t) => t.text)).toEqual(["B"]);
+  });
+});
+
 describe("nextBlankNumber — 번호 자동 증가", () => {
   it("처음이면 1", () => {
     expect(nextBlankNumber("빈칸 없음")).toBe(1);

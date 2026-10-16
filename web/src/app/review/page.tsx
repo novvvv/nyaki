@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import { Chevron, ItemIcon } from "@/components/tree-icons";
 import { PrimaryButton, SubtleButton } from "@/components/ui";
 import {
   fetchDueCounts,
@@ -213,6 +214,29 @@ function saveSelection(ids: string[]) {
     window.localStorage.setItem(SELECTION_KEY, JSON.stringify(ids));
   } catch {
     // 사생활 보호 모드 등에서 막힐 수 있다. 저장 못 해도 동작에는 지장 없다.
+  }
+}
+
+const COLLAPSED_KEY = "nyaki.review.collapsedFolders";
+
+/** 단어장 목록에서 접어 둔 폴더. 사이드바와 따로 기억한다 — 쓰임이 다르다. */
+function loadCollapsedFolders(): string[] {
+  try {
+    const raw = window.localStorage.getItem(COLLAPSED_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCollapsedFolders(ids: string[]) {
+  try {
+    window.localStorage.setItem(COLLAPSED_KEY, JSON.stringify(ids));
+  } catch {
+    // 사생활 보호 모드 등에서 막힐 수 있다. 기억 못 해도 동작에는 지장 없다.
   }
 }
 
@@ -527,6 +551,10 @@ export default function ReviewPage() {
   // 테스트 중 저장(즐겨찾기)한 것. 카드가 실어 온 값 위에 덮어 쓴다 — 누르자마자
   // 바뀌어 보이고, 세션 안에서 같은 단어가 다시 나와도 맞게 보이게.
   const [saved, setSaved] = useState<Record<string, boolean>>({});
+  // 단어장 목록에서 접어 둔 폴더. 초기값으로 읽는다(목록은 단어장을 받은 뒤 그려진다).
+  const [collapsedFolders, setCollapsedFolders] = useState<string[]>(
+    loadCollapsedFolders,
+  );
   const [result, setResult] = useState({ again: 0, good: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -734,6 +762,16 @@ export default function ReviewPage() {
       again: formatDelay(card.preview.againSeconds),
       good: formatDelay(card.preview.goodSeconds),
     };
+  }
+
+  function toggleCollapsed(folderId: string) {
+    setCollapsedFolders((prev) => {
+      const next = prev.includes(folderId)
+        ? prev.filter((id) => id !== folderId)
+        : [...prev, folderId];
+      saveCollapsedFolders(next);
+      return next;
+    });
   }
 
   /** 폴더 머리줄 — 폴더 안 단어장이 다 켜져 있으면 다 끄고, 아니면 다 켠다. */
@@ -1059,7 +1097,7 @@ export default function ReviewPage() {
         SCREEN,
         "mx-auto grid w-full max-w-3xl items-center gap-12 px-6 py-14",
         // 넓으면 왼쪽에 시작 흐름, 오른쪽에 단어장 목록. 좁으면 위아래로 쌓인다.
-        showBookPicker ? "sm:grid-cols-[1fr_15.5rem]" : "max-w-xl",
+        showBookPicker ? "sm:grid-cols-[1fr_17rem]" : "max-w-xl",
       )}
     >
       <div className="flex flex-col items-center text-center">
@@ -1149,64 +1187,109 @@ export default function ReviewPage() {
           {bookGroups.map((group) => {
             const ids = group.books.map((book) => book.id);
             const allOn = ids.every((id) => selected.includes(id));
+            const someOn = ids.some((id) => selected.includes(id));
             const due = ids.reduce((sum, id) => sum + (counts?.byBook[id] ?? 0), 0);
+            const open =
+              !group.folder || !collapsedFolders.includes(group.folder.id);
             return (
               <div key={group.folder?.id ?? "loose"}>
                 {group.folder ? (
-                  <button
-                    type="button"
-                    onClick={() => toggleFolder(ids)}
-                    aria-pressed={allOn}
+                  <div className="mb-0.5 flex items-center gap-1">
+                    {/* 폴더 줄을 누르면 안의 단어장을 한꺼번에 고른다. 다 켜졌으면
+                        단어장 줄처럼 칠하고, 일부만 켜졌으면 옅게 칠한다. */}
+                    <button
+                      type="button"
+                      onClick={() => toggleFolder(ids)}
+                      aria-pressed={allOn}
+                      className={cn(
+                        "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium transition",
+                        allOn
+                          ? "bg-ink text-cream"
+                          : someOn
+                            ? "bg-subtle text-ink/70 hover:text-ink"
+                            : "text-ink/35 hover:text-ink/60",
+                      )}
+                    >
+                      <ItemIcon
+                        src={
+                          open
+                            ? "/sidebar/folder_clicked.png"
+                            : "/sidebar/folder_unclicked.png"
+                        }
+                        onFilled={allOn}
+                      />
+                      <span className="min-w-0 flex-1 truncate">
+                        {group.folder.title}
+                      </span>
+                      <span
+                        className={cn(
+                          "shrink-0 tabular-nums",
+                          allOn ? "text-cream/55" : "text-ink/25",
+                        )}
+                      >
+                        {due}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleCollapsed(group.folder!.id)}
+                      aria-expanded={open}
+                      aria-label={`${group.folder.title} ${open ? "접기" : "펼치기"}`}
+                      className="shrink-0 rounded-md p-1.5 text-ink/45 transition hover:bg-subtle hover:text-ink"
+                    >
+                      <Chevron open={open} />
+                    </button>
+                  </div>
+                ) : null}
+                {open ? (
+                  <ul
                     className={cn(
-                      "mb-0.5 flex w-full items-baseline gap-3 px-3 py-1 text-left text-[11px] font-medium transition",
-                      allOn ? "text-ink/70" : "text-ink/40 hover:text-ink/60",
+                      "flex flex-col gap-0.5",
+                      // 폴더 안 단어장은 사이드바처럼 한 칸 들여 선을 긋는다.
+                      group.folder && "ml-3 border-l border-taupe/30 pl-1.5",
                     )}
                   >
-                    <span className="min-w-0 flex-1 truncate">
-                      {group.folder.title}
-                    </span>
-                    <span className="shrink-0 tabular-nums text-ink/25">{due}</span>
-                  </button>
-                ) : null}
-                <ul
-                  className={cn(
-                    "flex flex-col gap-0.5",
-                    // 폴더 안 단어장은 사이드바처럼 한 칸 들여 선을 긋는다.
-                    group.folder && "ml-3 border-l border-taupe/30 pl-1.5",
-                  )}
-                >
-                  {group.books.map((book) => {
-                    const n = counts?.byBook[book.id] ?? 0;
-                    const on = selected.includes(book.id);
-                    return (
-                      <li key={book.id}>
-                        <button
-                          type="button"
-                          onClick={() => toggleBook(book.id)}
-                          aria-pressed={on}
-                          className={cn(
-                            "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-xs transition",
-                            // 켜진 줄은 행 전체를 Obsidian으로 채운다.
-                            // 디자인 토큰의 "선택은 Obsidian 채움" 규칙 그대로다.
-                            on
-                              ? "bg-ink text-cream"
-                              : "text-ink/35 hover:text-ink/60",
-                          )}
-                        >
-                          <span className="min-w-0 flex-1 truncate">{book.title}</span>
-                          <span
+                    {group.books.map((book) => {
+                      const n = counts?.byBook[book.id] ?? 0;
+                      const on = selected.includes(book.id);
+                      return (
+                        <li key={book.id}>
+                          <button
+                            type="button"
+                            onClick={() => toggleBook(book.id)}
+                            aria-pressed={on}
                             className={cn(
-                              "shrink-0 tabular-nums",
-                              on ? "text-cream/55" : "text-ink/25",
+                              "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition",
+                              // 켜진 줄은 행 전체를 Obsidian으로 채운다.
+                              // 디자인 토큰의 "선택은 Obsidian 채움" 규칙 그대로다.
+                              on
+                                ? "bg-ink text-cream"
+                                : "text-ink/35 hover:text-ink/60",
                             )}
                           >
-                            {n}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                            <ItemIcon
+                              src={
+                                on
+                                  ? "/sidebar/doc_clicked.png"
+                                  : "/sidebar/doc_unclicked.png"
+                              }
+                              onFilled={on}
+                            />
+                            <span className="min-w-0 flex-1 truncate">{book.title}</span>
+                            <span
+                              className={cn(
+                                "shrink-0 tabular-nums",
+                                on ? "text-cream/55" : "text-ink/25",
+                              )}
+                            >
+                              {n}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
               </div>
             );
           })}

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -431,28 +431,27 @@ describe("단어장 고르기 — 폴더별 묶음", () => {
     });
   });
 
-  it("폴더 이름 아래에 그 폴더의 단어장이 모이고, 폴더 밖 단어장은 뒤에 온다", async () => {
+  // 폴더 줄은 두 버튼이다 — 이름(한꺼번에 고르기)과 꺾쇠(접기).
+  const FOLDER = /^정보처리기사\s*\d+$/;
+
+  async function renderPage() {
     const { default: ReviewPage } = await import("./page");
     render(<ReviewPage />);
+    return screen.findByRole("button", { name: FOLDER });
+  }
 
-    const folder = await screen.findByRole("button", { name: /정보처리기사/ });
-    // 폴더 머리줄의 숫자는 안의 단어장 개수의 합이다.
+  it("폴더 아래에 그 폴더의 단어장이 모이고, 숫자는 합이다", async () => {
+    const folder = await renderPage();
     expect(folder).toHaveTextContent("3");
-
-    const names = screen
-      .getAllByRole("button", { pressed: true })
-      .concat(screen.getAllByRole("button", { pressed: false }))
-      .map((button) => button.textContent ?? "");
-    expect(names.some((name) => name.startsWith("2020 기출"))).toBe(true);
-    expect(names.some((name) => name.startsWith("비즈니스 일본어"))).toBe(true);
+    expect(screen.getByRole("button", { name: /2020 기출/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /비즈니스 일본어/ }),
+    ).toBeInTheDocument();
   });
 
   it("폴더 이름을 누르면 안의 단어장을 한꺼번에 끄고 켠다", async () => {
     const user = userEvent.setup();
-    const { default: ReviewPage } = await import("./page");
-    render(<ReviewPage />);
-
-    const folder = await screen.findByRole("button", { name: /정보처리기사/ });
+    const folder = await renderPage();
     // 고른 적이 없으면 낼 게 있는 단어장이 다 켜져 있다.
     await waitFor(() => expect(folder).toHaveAttribute("aria-pressed", "true"));
 
@@ -475,5 +474,40 @@ describe("단어장 고르기 — 폴더별 묶음", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("일부만 켜져 있으면 폴더는 켜짐이 아니다 — 누르면 나머지까지 켠다", async () => {
+    const user = userEvent.setup();
+    const folder = await renderPage();
+    await waitFor(() => expect(folder).toHaveAttribute("aria-pressed", "true"));
+
+    await user.click(screen.getByRole("button", { name: /2021 기출/ }));
+    expect(folder).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(folder);
+    expect(screen.getByRole("button", { name: /2021 기출/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("꺾쇠로 접으면 안의 단어장이 숨고, 다시 와도 접혀 있다", async () => {
+    const user = userEvent.setup();
+    await renderPage();
+
+    await user.click(screen.getByRole("button", { name: "정보처리기사 접기" }));
+    expect(screen.queryByRole("button", { name: /2020 기출/ })).toBeNull();
+    // 접어도 고른 것은 그대로다 — 폴더 줄은 여전히 켜짐이다.
+    expect(screen.getByRole("button", { name: FOLDER })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    cleanup();
+    await renderPage();
+    expect(
+      screen.getByRole("button", { name: "정보처리기사 펼치기" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /2020 기출/ })).toBeNull();
   });
 });

@@ -25,6 +25,8 @@ import { useRef, useState } from "react";
 
 import type { Folder, WordBook } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+import { Chevron, ItemIcon as SidebarIcon } from "./tree-icons";
 import { useVocab } from "@/lib/vocab-store";
 
 /**
@@ -381,27 +383,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * 사이드바 이름 왼쪽의 16px 아이콘. 원본은 32px이라 선명한 화면에서도 깨끗하다.
- * 장식이라 읽어주지 않는다(이름이 이미 있다). 브라우저 기본 이미지 끌기가
- * 줄 끌기(dnd-kit)와 겹치지 않게 막는다.
- */
-function SidebarIcon({ src }: { src: string }) {
-  return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img
-      src={src}
-      alt=""
-      aria-hidden
-      width={16}
-      height={16}
-      draggable={false}
-      // 검은 선 아이콘이라 다크에서는 뒤집어 밝게 그린다.
-      className="size-4 shrink-0 dark:invert"
-    />
-  );
-}
-
 /** 커서를 따라다니는 줄. 목록 안의 줄과 같은 모양이되 그림자만 얹는다. */
 function DragPreview({ label }: { label: string }) {
   return (
@@ -462,9 +443,6 @@ function FolderRow({
           aria-expanded={open}
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-umber/75"
         >
-          <span aria-hidden className="text-[10px] text-ink/30">
-            {open ? "▾" : "▸"}
-          </span>
           {/* 펼친 폴더는 채운 아이콘, 접은 폴더는 빈 아이콘 */}
           <SidebarIcon
             src={
@@ -473,7 +451,11 @@ function FolderRow({
                 : "/sidebar/folder_unclicked.png"
             }
           />
-          <span className="truncate font-medium">{folder.title}</span>
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {folder.title}
+          </span>
+          {/* 접기 표시는 오른쪽 끝에 — 줄 어디를 눌러도 접히고 펼쳐진다 */}
+          <Chevron open={open} className="text-ink/45" />
         </button>
 
         <button

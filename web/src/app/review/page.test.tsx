@@ -20,12 +20,15 @@ const pushGrades = vi.fn().mockResolvedValue({
 });
 const fetchDueWords = vi.fn();
 const fetchDueCounts = vi.fn();
+const setClozeNoteBookmark = vi.fn().mockResolvedValue({});
+const updateWord = vi.fn().mockResolvedValue({});
 
 vi.mock("@/lib/api-client", () => ({
   fetchDueWords: (...args: unknown[]) => fetchDueWords(...args),
   fetchDueCounts: (...args: unknown[]) => fetchDueCounts(...args),
   pushGrades: (...args: unknown[]) => pushGrades(...args),
   pushGradesBeacon: vi.fn(),
+  setClozeNoteBookmark: (...args: unknown[]) => setClozeNoteBookmark(...args),
 }));
 
 vi.mock("@/components/auth-provider", () => ({
@@ -38,6 +41,7 @@ vi.mock("@/lib/vocab-store", () => ({
       { id: "b1", title: "냐키", words: [] },
       { id: "b2", title: "비어있음", words: [] },
     ],
+    updateWord: (...args: unknown[]) => updateWord(...args),
   }),
 }));
 
@@ -345,5 +349,61 @@ describe("출제 개수", () => {
 
     const input = await screen.findByLabelText("출제할 단어 개수");
     await waitFor(() => expect(input).toHaveValue(1));
+  });
+});
+
+describe("테스트 중 저장", () => {
+  it("단어 카드는 단어 즐겨찾기를 켠다 — 다른 칸은 그대로 보낸다", async () => {
+    const user = userEvent.setup();
+    await startSession(user);
+
+    const term = screen.getByText(/cat|nap/).textContent!;
+    await user.click(screen.getByRole("button", { name: "☆ 저장" }));
+
+    expect(screen.getByRole("button", { name: "★ 저장됨" })).toBeInTheDocument();
+    expect(updateWord).toHaveBeenCalledTimes(1);
+    const [bookId, , input] = updateWord.mock.calls[0]!;
+    expect(bookId).toBe("b1");
+    expect(input).toMatchObject({
+      term,
+      meaning: `${term} 뜻`,
+      isBookmarked: true,
+    });
+  });
+
+  it("실패하면 표시를 되돌린다", async () => {
+    updateWord.mockResolvedValueOnce(undefined);
+    const user = userEvent.setup();
+    await startSession(user);
+
+    await user.click(screen.getByRole("button", { name: "☆ 저장" }));
+
+    expect(await screen.findByRole("button", { name: "☆ 저장" })).toBeInTheDocument();
+  });
+
+  it("빈칸 카드는 노트 즐겨찾기를 켜고, 이미 저장한 노트는 저장됨으로 시작한다", async () => {
+    fetchDueWords.mockResolvedValue({
+      cards: [
+        {
+          id: "n1:c1",
+          kind: "c1",
+          sourceType: "cloze" as const,
+          wordBookId: "b1",
+          cloze: {
+            noteId: "n1",
+            segments: [{ text: "TCP", blank: true }],
+            isBookmarked: true,
+          },
+          preview: { againSeconds: 60, goodSeconds: 600 },
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    await startSession(user);
+
+    await user.click(screen.getByRole("button", { name: "★ 저장됨" }));
+
+    expect(setClozeNoteBookmark).toHaveBeenCalledWith("test-token", "b1", "n1", false);
+    expect(screen.getByRole("button", { name: "☆ 저장" })).toBeInTheDocument();
   });
 });

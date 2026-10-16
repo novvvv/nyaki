@@ -10,6 +10,7 @@ import {
   fetchDueWords,
   pushGrades,
   pushGradesBeacon,
+  setClozeNoteBookmark,
   type ClozeSegment,
   type DueCard,
   type DueCounts,
@@ -501,9 +502,16 @@ function NoteSheet({
   );
 }
 
+/** 저장 버튼이 가리키는 것 — 단어 카드는 단어, 빈칸 카드는 노트. */
+function saveKey(card: DueCard): string {
+  return card.cloze
+    ? `note:${card.cloze.noteId}`
+    : `word:${card.word?.id ?? card.id}`;
+}
+
 export default function ReviewPage() {
   const { getToken } = useAuth();
-  const { wordBooks } = useVocab();
+  const { wordBooks, updateWord } = useVocab();
 
   const [phase, setPhase] = useState<Phase>("setup");
   // 출제 개수. null은 "아직 안 건드림" = 고를 수 있는 걸 전부 낸다는 뜻이다.
@@ -516,6 +524,9 @@ export default function ReviewPage() {
   const [finished, setFinished] = useState(0);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // 테스트 중 저장(즐겨찾기)한 것. 카드가 실어 온 값 위에 덮어 쓴다 — 누르자마자
+  // 바뀌어 보이고, 세션 안에서 같은 단어가 다시 나와도 맞게 보이게.
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [result, setResult] = useState({ again: 0, good: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -744,6 +755,55 @@ export default function ReviewPage() {
     void flush();
   }
 
+  function isSaved(card: DueCard): boolean {
+    return (
+      saved[saveKey(card)] ??
+      card.cloze?.isBookmarked ??
+      card.word?.isBookmarked ??
+      false
+    );
+  }
+
+  /**
+   * 저장 — 단어는 단어 즐겨찾기, 빈칸 카드는 노트 즐겨찾기를 켜고 끈다. 단어장의
+   * 즐겨찾기 탭에 모인다. 먼저 바꿔 보여주고, 실패하면 되돌린다.
+   */
+  async function toggleSave(card: DueCard) {
+    const key = saveKey(card);
+    const next = !isSaved(card);
+    setSaved((prev) => ({ ...prev, [key]: next }));
+    try {
+      if (card.cloze) {
+        const token = await getToken();
+        if (!token) throw new Error("로그인이 필요합니다.");
+        await setClozeNoteBookmark(
+          token,
+          card.wordBookId,
+          card.cloze.noteId,
+          next,
+        );
+      } else if (card.word) {
+        const word = card.word;
+        // 단어 수정은 모든 칸을 다시 보낸다 — 빠진 칸은 비워진다. 카드에 실려
+        // 온 값을 그대로 넘기고 즐겨찾기만 바꾼다.
+        const updated = await updateWord(card.wordBookId, word.id, {
+          term: word.term,
+          meaning: word.meaning,
+          pronunciation: word.pronunciation,
+          description: word.description,
+          example: word.example,
+          exampleMeaning: word.exampleMeaning,
+          tags: word.tags,
+          memorizationStatus: word.memorizationStatus,
+          isBookmarked: next,
+        });
+        if (!updated) throw new Error("단어를 찾지 못했어요.");
+      }
+    } catch {
+      setSaved((prev) => ({ ...prev, [key]: !next }));
+    }
+  }
+
   const delays = current ? delaysFor(current) : { again: "", good: "" };
 
   if (phase === "session" && current) {
@@ -753,7 +813,20 @@ export default function ReviewPage() {
         <main
           className={cn(SCREEN, "mx-auto flex w-full max-w-xl flex-col px-6 py-10")}
         >
-          <div className="mb-6 flex justify-end">
+          <div className="mb-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => void toggleSave(current)}
+              aria-pressed={isSaved(current)}
+              className={cn(
+                "whitespace-nowrap rounded-lg border px-4 py-1.5 text-xs transition",
+                isSaved(current)
+                  ? "border-ink/40 text-ink"
+                  : "border-taupe text-ink/50 hover:border-ink/40 hover:text-ink",
+              )}
+            >
+              {isSaved(current) ? "★ 저장됨" : "☆ 저장"}
+            </button>
             <button
               type="button"
               onClick={stop}

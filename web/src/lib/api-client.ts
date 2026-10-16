@@ -195,6 +195,8 @@ type ApiClozeNote = {
   id: string;
   word_book_id: string;
   text: string;
+  /** 예전 서버는 안 보낸다 */
+  is_bookmarked?: boolean;
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
@@ -205,6 +207,7 @@ function toClozeNote(value: ApiClozeNote): ClozeNote {
     id: value.id,
     wordBookId: value.word_book_id,
     text: value.text,
+    isBookmarked: value.is_bookmarked ?? false,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
   };
@@ -330,6 +333,30 @@ export async function putClozeNote(
         updated_at: now(),
         is_deleted: false,
       }),
+    },
+  );
+  return toClozeNote(note);
+}
+
+/**
+ * 노트 저장(즐겨찾기)만 켜고 끈다 — 테스트 화면의 저장 버튼.
+ *
+ * putClozeNote로는 못 한다. 테스트 화면은 노트 원문이 없고(서버가 조각으로 잘라
+ * 보낸다), 원문 없이 보내면 노트가 지워진다. putClozeNote는 이 칸을 보내지
+ * 않으므로 편집해도 저장 표시는 그대로 남는다.
+ */
+export async function setClozeNoteBookmark(
+  token: string,
+  wordBookId: string,
+  id: string,
+  isBookmarked: boolean,
+): Promise<ClozeNote> {
+  const note = await request<ApiClozeNote>(
+    `/v1/word-books/${wordBookId}/cloze-notes/${id}/bookmark`,
+    token,
+    {
+      method: "PUT",
+      body: JSON.stringify({ is_bookmarked: isBookmarked }),
     },
   );
   return toClozeNote(note);
@@ -469,6 +496,8 @@ export interface ClozeFace {
    * 파싱은 서버가 한 번만 한다 — 웹·앱이 각자 하면 렌더가 갈린다.
    */
   segments: ClozeSegment[];
+  /** 테스트 중 저장한 노트인가. 예전 서버는 안 보낸다. */
+  isBookmarked: boolean;
 }
 
 export interface DueCard {
@@ -505,6 +534,7 @@ export async function fetchDueWords(
       cloze: {
         note_id: string;
         segments: { text: string; blank: boolean; hint: string | null }[];
+        is_bookmarked?: boolean;
       } | null;
       preview: { again_seconds: number; good_seconds: number };
     }[];
@@ -525,6 +555,7 @@ export async function fetchDueWords(
               blank: segment.blank,
               hint: segment.hint ?? undefined,
             })),
+            isBookmarked: card.cloze.is_bookmarked ?? false,
           }
         : undefined,
       preview: {

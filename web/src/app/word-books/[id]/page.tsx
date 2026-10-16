@@ -201,7 +201,6 @@ export default function WordBookDetailPage() {
   }
 
   const words = activeWords(book);
-  const bookmarkedWords = words.filter((word) => word.isBookmarked);
 
   // 단어와 빈칸 노트를 한 목록으로 섞는다. 사용자에게는 둘 다 "외울 거리"다 —
   // 어디에 저장되는지는 알 바가 아니다.
@@ -223,12 +222,14 @@ export default function WordBookDetailPage() {
       primary: clozePreview(note.text),
       secondary: "",
       href: `/word-books/${book.id}/cloze-notes/${note.id}`,
-      bookmarked: false,
+      // 빈칸 노트는 테스트 화면의 저장 버튼으로 즐겨찾기한다.
+      bookmarked: note.isBookmarked,
     })),
   ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const bookmarkedItems = items.filter((item) => item.bookmarked);
   // 앱 '정보' 탭과 같은 계산 — 단어별 점수(SM-2 간격 기반)의 평균이다.
   const visibleItems =
-    filter === "bookmarked" ? items.filter((item) => item.bookmarked) : items;
+    filter === "bookmarked" ? bookmarkedItems : items;
   const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedItems = visibleItems.slice(
@@ -356,7 +357,7 @@ export default function WordBookDetailPage() {
                 {
                   key: "bookmarked",
                   label: "즐겨찾기",
-                  count: bookmarkedWords.length,
+                  count: bookmarkedItems.length,
                 },
               ] as const
             ).map((tab) => (

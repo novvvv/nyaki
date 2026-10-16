@@ -209,6 +209,10 @@ class ClozeNoteModel(Base):
     user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
     word_book_id: Mapped[str] = mapped_column(String(80))
     text: Mapped[str] = mapped_column(Text)
+    # 테스트 중 저장한 노트. 단어의 is_bookmarked와 같다(0021).
+    is_bookmarked: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

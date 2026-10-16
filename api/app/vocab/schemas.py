@@ -127,6 +127,9 @@ class ClozeNotePayload(BaseModel):
     # 길이 제한은 ReDoS 패치(security_review.md 2-2)의 두 번째 벽이다.
     # 정규식을 고쳤어도 입력이 한없이 길면 처리 · 저장 비용이 따라 커진다.
     text: str = Field(min_length=1, max_length=5000)
+    # 보내지 않으면 지금 값을 그대로 둔다(upsert가 exclude_unset으로 덮는다) —
+    # 이 칸을 모르는 예전 클라이언트가 노트를 고쳐도 저장한 표시가 안 지워진다.
+    is_bookmarked: bool = False
     created_at: datetime
     updated_at: datetime
     is_deleted: bool = False
@@ -241,6 +244,15 @@ class ClozeFaceResponse(BaseModel):
     front: str
     back: str
     segments: list[ClozeSegmentResponse] = []
+    # 테스트 화면의 저장 버튼이 처음부터 저장됨으로 보이게. 단어 카드는 word에 있다.
+    is_bookmarked: bool = False
+
+
+class ClozeNoteBookmarkPayload(BaseModel):
+    """테스트 중 저장 버튼. 노트 전체를 다시 보내지 않고 이 칸만 바꾼다 —
+    테스트 화면은 노트 원문을 갖고 있지 않다(서버가 조각으로 잘라 보낸다)."""
+
+    is_bookmarked: bool
 
 
 class ReviewDueResponse(BaseModel):

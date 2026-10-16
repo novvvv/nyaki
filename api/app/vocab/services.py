@@ -786,6 +786,25 @@ def upsert_cloze_note(
     return entity, _new_change(session, user_id, "cloze_note", payload.id)
 
 
+def set_cloze_note_bookmark(
+    session: Session, user_id: str, word_book_id: str, note_id: str, value: bool
+) -> tuple[ClozeNoteModel | None, int | None]:
+    """노트 저장(즐겨찾기)만 바꾼다. 테스트 화면의 저장 버튼이 쓴다.
+
+    updated_at을 올리고 변경 기록을 남긴다 — 다른 기기가 동기화로 받아 가게.
+    값이 같으면 아무것도 쓰지 않는다. 없거나 지웠거나 다른 단어장의 노트면 None.
+    """
+    entity = session.get(ClozeNoteModel, {"id": note_id, "user_id": user_id})
+    if entity is None or entity.is_deleted or entity.word_book_id != word_book_id:
+        return None, None
+    if entity.is_bookmarked == value:
+        return entity, None
+    entity.is_bookmarked = value
+    entity.updated_at = utc_now()
+    session.flush()
+    return entity, _new_change(session, user_id, "cloze_note", note_id)
+
+
 def delete_cloze_note(
     session: Session, user_id: str, note_id: str
 ) -> tuple[ClozeNoteModel | None, int | None]:

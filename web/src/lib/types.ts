@@ -70,6 +70,8 @@ export interface ClozeNote {
   id: string;
   wordBookId: string;
   text: string;
+  /** 테스트 중 저장한 노트. 단어의 isBookmarked와 같다. */
+  isBookmarked: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -446,3 +446,58 @@ def test_note_over_5000_chars_is_rejected() -> None:
     assert client.get(f"/v1/word-books/{BOOK}/cloze-notes").json() == []
 
     app.dependency_overrides.clear()
+
+
+# ==================== 저장(즐겨찾기) ====================
+
+
+def _notes(client: TestClient) -> dict[str, dict]:
+    response = client.get(f"/v1/word-books/{BOOK}/cloze-notes")
+    assert response.status_code == 200, response.text
+    return {note["id"]: note for note in response.json()}
+
+
+def test_bookmark_from_the_test_screen() -> None:
+    """테스트 화면의 저장 버튼 — 노트 원문 없이 저장만 켜고 끈다."""
+    client = _client("firebase-user-cloze-bookmark")
+    _put_note(client, "b1", TEXT)
+    assert _notes(client)["b1"]["is_bookmarked"] is False
+
+    response = client.put(
+        f"/v1/word-books/{BOOK}/cloze-notes/b1/bookmark", json={"is_bookmarked": True}
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["is_bookmarked"] is True
+    assert _notes(client)["b1"]["is_bookmarked"] is True
+
+    # 출제 카드에도 실려서 저장 버튼이 처음부터 저장됨으로 보인다.
+    (card,) = [c for c in _due(client) if c["cloze"]["note_id"] == "b1"]
+    assert card["cloze"]["is_bookmarked"] is True
+
+    client.put(
+        f"/v1/word-books/{BOOK}/cloze-notes/b1/bookmark", json={"is_bookmarked": False}
+    )
+    assert _notes(client)["b1"]["is_bookmarked"] is False
+
+
+def test_editing_without_the_field_keeps_the_bookmark() -> None:
+    """이 칸을 모르는 클라이언트(예전 웹 · 앱)가 노트를 고쳐도 저장은 남는다."""
+    client = _client("firebase-user-cloze-bookmark-keep")
+    _put_note(client, "k1", TEXT)
+    client.put(
+        f"/v1/word-books/{BOOK}/cloze-notes/k1/bookmark", json={"is_bookmarked": True}
+    )
+
+    _put_note(client, "k1", TEXT + " (고침)")  # is_bookmarked를 안 보낸다
+
+    note = _notes(client)["k1"]
+    assert note["text"].endswith("(고침)")
+    assert note["is_bookmarked"] is True
+
+
+def test_bookmark_unknown_or_other_book_note_is_404() -> None:
+    client = _client("firebase-user-cloze-bookmark-404")
+    response = client.put(
+        f"/v1/word-books/{BOOK}/cloze-notes/nope/bookmark", json={"is_bookmarked": True}
+    )
+    assert response.status_code == 404

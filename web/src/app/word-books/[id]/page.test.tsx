@@ -66,6 +66,7 @@ const note: ClozeNote = {
   id: "n1",
   wordBookId: "b1",
   text: "TCP는 {{c1::연결 지향}} 프로토콜이다",
+  isBookmarked: false,
   createdAt: "2026-09-24T00:00:00Z",
   updatedAt: "2026-09-24T00:00:00Z",
 };

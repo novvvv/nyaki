@@ -23,6 +23,7 @@ from .schemas import (
     FolderPayload,
     FolderResponse,
     ClozeFaceResponse,
+    ClozeNoteBookmarkPayload,
     ClozeNotePayload,
     ClozeNoteResponse,
     ClozeSegmentResponse,
@@ -64,6 +65,7 @@ from .services import (
     delete_card,
     delete_cloze_note,
     list_cloze_notes,
+    set_cloze_note_bookmark,
     cloze_segments,
     render_cloze,
     load_step_config,
@@ -313,6 +315,29 @@ def put_cloze_note(
     return ClozeNoteResponse.model_validate(entity)
 
 
+@router.put(
+    "/word-books/{word_book_id}/cloze-notes/{note_id}/bookmark",
+    response_model=ClozeNoteResponse,
+)
+def put_cloze_note_bookmark(
+    word_book_id: str,
+    note_id: str,
+    payload: ClozeNoteBookmarkPayload,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> ClozeNoteResponse:
+    """노트 저장(즐겨찾기)만 켜고 끈다 — 테스트 화면의 저장 버튼."""
+    _get_word_book(session, user_id, word_book_id)
+    entity, _ = set_cloze_note_bookmark(
+        session, user_id, word_book_id, note_id, payload.is_bookmarked
+    )
+    if entity is None:
+        raise HTTPException(status_code=404, detail="빈칸 노트를 찾을 수 없습니다.")
+    session.commit()
+    session.refresh(entity)
+    return ClozeNoteResponse.model_validate(entity)
+
+
 @router.delete(
     "/word-books/{word_book_id}/cloze-notes/{note_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -446,6 +471,7 @@ def get_review_due(
                             ClozeSegmentResponse(text=chunk, blank=is_blank, hint=hint)
                             for chunk, is_blank, hint in cloze_segments(note.text)
                         ],
+                        is_bookmarked=note.is_bookmarked,
                     ),
                     preview=preview_value,
                 )

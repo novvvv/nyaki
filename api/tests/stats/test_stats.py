@@ -292,6 +292,21 @@ def test_same_card_twice_a_day_counts_once() -> None:
     assert _reviewed(client) == {today: 2}
 
 
+def test_reviews_count_every_grade() -> None:
+    """넘긴 횟수는 채점 기록을 그대로 센다 — 같은 카드를 두 번 보면 2번이다."""
+    user = "firebase-user-stats-reviewed-times"
+    client = _client(user)
+    now = datetime.now(timezone.utc)
+    _log(user, "t1", "w1:recognition", now)
+    _log(user, "t2", "w1:recognition", now - timedelta(minutes=1))
+    _log(user, "t3", "w2:recognition", now)
+
+    response = client.get(f"/v1/stats/daily-reviewed?days=30&tz_offset={KST}")
+    assert response.status_code == 200, response.text
+    today = (now + timedelta(minutes=KST)).date().isoformat()
+    assert response.json() == [{"date": today, "count": 2, "reviews": 3}]
+
+
 def test_reviews_are_grouped_by_local_date() -> None:
     """UTC 15시 = KST 다음 날 0시. 저장 날짜가 아니라 한국 날짜로 묶는다."""
     user = "firebase-user-stats-reviewed-kst"

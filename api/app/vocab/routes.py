@@ -263,14 +263,17 @@ def get_daily_reviewed(
     session: Session = Depends(get_session),
     user_id: str = Depends(get_current_user_id),
 ) -> list[DailyReviewedResponse]:
-    """날짜별 복습한 카드 수. 같은 카드를 하루에 여러 번 채점해도 1개다.
+    """날짜별 복습 수 — 카드 수(count)와 넘긴 횟수(reviews).
 
-    daily-added와 달리 기간이 필수다(최대 1년) — 복습 기록은 쌓이기만 해서
-    전체를 읽게 두면 오래 쓴 사용자일수록 느려진다.
+    카드 수는 같은 카드를 하루에 여러 번 채점해도 1개다. daily-added와 달리
+    기간이 필수다(최대 1년) — 복습 기록은 쌓이기만 해서 전체를 읽게 두면 오래
+    쓴 사용자일수록 느려진다.
     """
     return [
-        DailyReviewedResponse(date=date, count=count)
-        for date, count in daily_reviewed_counts(session, user_id, days, tz_offset)
+        DailyReviewedResponse(date=date, count=count, reviews=reviews)
+        for date, count, reviews in daily_reviewed_counts(
+            session, user_id, days, tz_offset
+        )
     ]
 
 

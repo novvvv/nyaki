@@ -619,11 +619,13 @@ def daily_reviewed_counts(
     user_id: str,
     days: int,
     tz_offset_minutes: int = 0,
-) -> list[tuple[str, int]]:
-    """날짜별로 복습한 카드 수. 통계 화면의 "복습한 단어" 막대가 쓴다.
+) -> list[tuple[str, int, int]]:
+    """날짜별 (복습한 카드 수, 넘긴 횟수). 통계 화면의 "복습한 단어" 막대가 쓴다.
 
-    **같은 카드를 하루에 여러 번 채점해도 1개다.** 학습 단계에서 1분 · 10분 뒤
-    다시 보면 채점이 여러 번 남는데, 사용자가 궁금한 건 "몇 개를 봤나"다.
+    카드 수는 **같은 카드를 하루에 여러 번 채점해도 1개다.** 학습 단계에서
+    1분 · 10분 뒤 다시 보면 채점이 여러 번 남는데, "몇 개를 봤나"를 보여준다.
+    넘긴 횟수는 채점 기록을 그대로 센다 — "얼마나 했나". 화면이 둘 중 하나를
+    고른다. 같은 기록을 한 번 읽어 둘 다 세므로 따로 부를 때보다 가볍다.
 
     날짜는 daily_added_counts와 같이 로컬 날짜로 묶고, 묶기는 파이썬에서 한다.
     다만 기간 하한은 SQL에 건다 — review_logs는 오래 쓸수록 쌓이기만 해서,
@@ -638,7 +640,8 @@ def daily_reviewed_counts(
     since = datetime.combine(floor, time.min, tzinfo=timezone.utc) - offset
 
     seen: set[tuple[str, str]] = set()
-    counts: dict[str, int] = {}
+    cards: dict[str, int] = {}
+    reviews: dict[str, int] = {}
     for created_at, card_id, word_id in session.execute(
         select(
             ReviewLogModel.created_at, ReviewLogModel.card_id, ReviewLogModel.word_id
@@ -647,14 +650,15 @@ def daily_reviewed_counts(
         )
     ):
         key = (_as_utc(created_at) + offset).date().isoformat()
+        reviews[key] = reviews.get(key, 0) + 1
         # 카드 도입 전 기록은 card_id가 없어 단어로 센다.
         card = card_id or word_id
         if (key, card) in seen:
             continue
         seen.add((key, card))
-        counts[key] = counts.get(key, 0) + 1
+        cards[key] = cards.get(key, 0) + 1
 
-    return sorted(counts.items())
+    return [(key, cards[key], reviews[key]) for key in sorted(cards)]
 
 
 def upsert_card(

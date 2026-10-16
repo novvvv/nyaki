@@ -10,6 +10,7 @@ import {
   fetchDailyAdded,
   fetchDailyReviewed,
   type DailyAdded,
+  type DailyReviewed,
 } from "@/lib/api-client";
 import {
   computeMasteryByBook,
@@ -21,6 +22,17 @@ import { useVocab } from "@/lib/vocab-store";
 
 /** "복습한 단어" 차트 기간(일) */
 const REVIEW_DAYS = 30;
+
+/**
+ * "복습한 단어" 차트가 세는 것. 카드 수는 같은 카드를 하루에 여러 번 봐도 1개,
+ * 넘긴 횟수는 채점한 만큼 센다.
+ */
+type ReviewMetric = "cards" | "reviews";
+
+const REVIEW_METRICS: { key: ReviewMetric; label: string }[] = [
+  { key: "cards", label: "카드 수" },
+  { key: "reviews", label: "넘긴 횟수" },
+];
 
 const RANGE_OPTIONS: { key: RangePreset; label: string }[] = [
   { key: 7, label: "7일" },
@@ -34,7 +46,8 @@ export default function OverviewPage() {
   const { getToken } = useAuth();
   const [range, setRange] = useState<RangePreset>(30);
   const [added, setAdded] = useState<DailyAdded[]>([]);
-  const [reviewed, setReviewed] = useState<DailyAdded[]>([]);
+  const [reviewed, setReviewed] = useState<DailyReviewed[]>([]);
+  const [reviewMetric, setReviewMetric] = useState<ReviewMetric>("cards");
 
   // 날짜별 개수는 서버가 센다 — 단어와 빈칸 노트를 함께 세려면 여기서는 셀 수 없다.
   // 이펙트 본문에서 곧바로 setState가 일어나지 않도록 async 블록으로 감싼다
@@ -91,8 +104,16 @@ export default function OverviewPage() {
     [added, range],
   );
   const reviewCounts = useMemo(
-    () => fillDailyCounts(reviewed, REVIEW_DAYS),
-    [reviewed],
+    () =>
+      fillDailyCounts(
+        reviewed.map((row) => ({
+          date: row.date,
+          // 예전 서버는 넘긴 횟수를 안 보낸다 — 그때는 카드 수로 둔다.
+          count: reviewMetric === "reviews" ? (row.reviews ?? row.count) : row.count,
+        })),
+        REVIEW_DAYS,
+      ),
+    [reviewed, reviewMetric],
   );
   // 빈 날짜까지 채운 목록의 마지막 칸이 오늘이다.
   const reviewedToday = reviewCounts.at(-1)?.count ?? 0;
@@ -142,12 +163,37 @@ export default function OverviewPage() {
           </Card>
 
           <Card className="px-5 py-5">
+            <div className="mb-4 flex items-center gap-3.5">
+              {REVIEW_METRICS.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setReviewMetric(opt.key)}
+                  aria-pressed={reviewMetric === opt.key}
+                  className={`text-xs transition ${
+                    reviewMetric === opt.key
+                      ? "font-semibold text-ink"
+                      : "font-medium text-umber/45 hover:text-umber/70"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
             <WordAddedTrend
               data={reviewCounts}
               title="복습한 단어"
-              valueLabel="복습한 단어"
-              ariaLabel="최근 30일 날짜별 복습한 단어 수"
-              note={`오늘 ${reviewedToday}개`}
+              valueLabel={reviewMetric === "reviews" ? "넘긴 횟수" : "복습한 단어"}
+              ariaLabel={
+                reviewMetric === "reviews"
+                  ? "최근 30일 날짜별 넘긴 횟수"
+                  : "최근 30일 날짜별 복습한 단어 수"
+              }
+              note={
+                reviewMetric === "reviews"
+                  ? `오늘 ${reviewedToday}번`
+                  : `오늘 ${reviewedToday}개`
+              }
               highlightLast
             />
           </Card>

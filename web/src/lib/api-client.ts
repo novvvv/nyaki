@@ -278,19 +278,25 @@ export async function fetchDailyAdded(
   return request<DailyAdded[]>(`/v1/stats/daily-added?${params}`, token);
 }
 
+/** 하루치 복습 수. count는 카드 수(같은 카드를 여러 번 채점해도 1개)다. */
+export interface DailyReviewed extends DailyAdded {
+  /** 넘긴 횟수(채점 기록 그대로). 예전 서버는 안 보낸다 — 없으면 카드 수로 본다. */
+  reviews?: number;
+}
+
 /**
- * 날짜별 복습한 카드 수(최근 days일). 같은 카드를 하루에 여러 번 채점해도 1개다.
+ * 날짜별 복습 수(최근 days일) — 카드 수와 넘긴 횟수.
  * 0개인 날은 오지 않는다 — 빈 날짜는 화면이 채운다. 시차는 fetchDailyAdded와 같다.
  */
 export async function fetchDailyReviewed(
   token: string,
   days: number,
-): Promise<DailyAdded[]> {
+): Promise<DailyReviewed[]> {
   const params = new URLSearchParams({
     days: String(days),
     tz_offset: String(-new Date().getTimezoneOffset()),
   });
-  return request<DailyAdded[]>(`/v1/stats/daily-reviewed?${params}`, token);
+  return request<DailyReviewed[]>(`/v1/stats/daily-reviewed?${params}`, token);
 }
 
 export async function fetchClozeNotes(

@@ -108,13 +108,15 @@ class DailyAddedResponse(BaseModel):
 
 
 class DailyReviewedResponse(BaseModel):
-    """하루치 복습한 카드 수. 같은 카드를 여러 번 채점해도 1개다.
+    """하루치 복습 수. count는 카드 수(같은 카드를 여러 번 채점해도 1개),
+    reviews는 넘긴 횟수(채점 기록 그대로)다.
 
     0개인 날은 오지 않는다 — 빈 날짜 채우기는 클라이언트 몫이다.
     """
 
     date: str  # YYYY-MM-DD, 요청한 시차 기준
     count: int
+    reviews: int
 
 
 class ClozeNotePayload(BaseModel):

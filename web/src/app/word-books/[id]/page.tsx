@@ -12,6 +12,7 @@ import {
 } from "@/components/ui";
 import { useAuth } from "@/components/auth-provider";
 import { fetchClozeNotes, removeClozeNote } from "@/lib/api-client";
+import { stripInline } from "@/lib/cloze";
 import type { ClozeNote } from "@/lib/types";
 import { WORD_PAGE_SIZE as PAGE_SIZE } from "@/lib/constants";
 import { activeWords, useVocab } from "@/lib/vocab-store";
@@ -118,7 +119,8 @@ function clozePreview(text: string): string {
   const flat = text
     .replaceAll(/\{\{c\d+::(.+?)(?:::.+?)?\}\}/g, "[ $1 ]")
     .split("\n")
-    .map(flattenTableLine)
+    // 굵게 · 형광 · 밑줄 기호(**, ==, ++)는 목록에서 보일 필요가 없다.
+    .map((line) => flattenTableLine(stripInline(line)))
     .join("\n")
     .replaceAll(/\s+/g, " ")
     .trim();

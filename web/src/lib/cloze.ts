@@ -1,7 +1,7 @@
 /**
  * 빈칸 노트의 마크업.
  *
- * `{{c1::답}}` 빈칸 · `**굵게**` · `==형광==` · `| 칸 | 칸 |` 표
+ * `{{c1::답}}` 빈칸 · `**굵게**` · `==형광==` · `++밑줄++` · `| 칸 | 칸 |` 표
  *
  * 빈칸 문법은 서버와 같다(`api/app/vocab/services.py`의 CLOZE_PATTERN). 서버는
  * `{{cN::}}`만 보고 문장을 조각으로 자르므로, 굵게·형광 마커는 조각 안의 글자로
@@ -17,7 +17,7 @@
 // 칠 때마다 이걸 돌린다. 서버 CLOZE_PATTERN과 같은 모양이어야 미리보기와 출제가 같다.
 const CLOZE_RE =
   /\{\{c(\d+)::((?:(?!::|\{\{|\}\})[\s\S])+)(?:::((?:(?!\{\{|\}\})[\s\S])+))?\}\}/g;
-const INLINE_RE = /\*\*([\s\S]+?)\*\*|==([\s\S]+?)==/g;
+const INLINE_RE = /\*\*([\s\S]+?)\*\*|==([\s\S]+?)==|\+\+([\s\S]+?)\+\+/g;
 
 /**
  * 가린 빈칸 자리에 채우는 글자 — 밑줄을 긋기 위한 전각 공백 세 칸.
@@ -35,7 +35,12 @@ export interface InlineToken {
   text: string;
   bold: boolean;
   highlight: boolean;
+  underline: boolean;
 }
+
+type InlineFlags = Omit<InlineToken, "text">;
+
+const PLAIN: InlineFlags = { bold: false, highlight: false, underline: false };
 
 export interface ClozeToken extends InlineToken {
   /** 이 자리가 가려지는가. */
@@ -44,29 +49,46 @@ export interface ClozeToken extends InlineToken {
   hint?: string;
 }
 
-/** `**굵게**` · `==형광==`을 조각으로. 마커가 없으면 통째로 한 조각이다. */
-export function parseInline(text: string): InlineToken[] {
+/**
+ * `**굵게**` · `==형광==` · `++밑줄++`을 조각으로. 마커가 없으면 통째로 한 조각이다.
+ *
+ * 겹친 서식(`**++굵은 밑줄++**`)도 푼다 — 안쪽을 다시 풀면서 바깥 서식을
+ * 물려준다. 서식 편집기에서는 굵게와 밑줄을 함께 거는 일이 흔하다.
+ */
+export function parseInline(
+  text: string,
+  outer: InlineFlags = PLAIN,
+): InlineToken[] {
   const out: InlineToken[] = [];
   let cursor = 0;
 
   for (const match of text.matchAll(INLINE_RE)) {
     const start = match.index ?? 0;
     if (start > cursor) {
-      out.push({ text: text.slice(cursor, start), bold: false, highlight: false });
+      out.push({ ...outer, text: text.slice(cursor, start) });
     }
-    const bold = match[1] !== undefined;
-    out.push({
-      text: bold ? match[1]! : match[2]!,
-      bold,
-      highlight: !bold,
-    });
+    const inner = match[1] ?? match[2] ?? match[3]!;
+    out.push(
+      ...parseInline(inner, {
+        bold: outer.bold || match[1] !== undefined,
+        highlight: outer.highlight || match[2] !== undefined,
+        underline: outer.underline || match[3] !== undefined,
+      }),
+    );
     cursor = start + match[0].length;
   }
 
   if (cursor < text.length) {
-    out.push({ text: text.slice(cursor), bold: false, highlight: false });
+    out.push({ ...outer, text: text.slice(cursor) });
   }
   return out;
+}
+
+/** 서식 마커를 모두 걷어낸 글자. 목록 한 줄 미리보기처럼 글자만 보일 때 쓴다. */
+export function stripInline(text: string): string {
+  return parseInline(text)
+    .map((token) => token.text)
+    .join("");
 }
 
 /**
@@ -150,6 +172,10 @@ export function insertBold(raw: string, start: number, end: number): Edit {
 
 export function insertHighlight(raw: string, start: number, end: number): Edit {
   return wrap(raw, start, end, "==", "==");
+}
+
+export function insertUnderline(raw: string, start: number, end: number): Edit {
+  return wrap(raw, start, end, "++", "++");
 }
 
 // ── 표 ──────────────────────────────────────────────────────────────────────

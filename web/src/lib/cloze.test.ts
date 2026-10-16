@@ -10,31 +10,55 @@ import {
   nextBlankNumber,
   parseCloze,
   parseInline,
+  stripInline,
   toBlocks,
   toPieces,
   type ClozeBlock,
 } from "./cloze";
 
-describe("parseInline — 굵게·형광", () => {
+describe("parseInline — 굵게·형광·밑줄", () => {
+  const plain = { bold: false, highlight: false, underline: false };
+
   it("마커가 없으면 통째로 한 조각", () => {
-    expect(parseInline("그냥 글")).toEqual([
-      { text: "그냥 글", bold: false, highlight: false },
-    ]);
+    expect(parseInline("그냥 글")).toEqual([{ ...plain, text: "그냥 글" }]);
   });
 
   it("굵게와 형광을 갈라낸다", () => {
     expect(parseInline("앞 **굵게** 뒤 ==형광==")).toEqual([
-      { text: "앞 ", bold: false, highlight: false },
-      { text: "굵게", bold: true, highlight: false },
-      { text: " 뒤 ", bold: false, highlight: false },
-      { text: "형광", bold: false, highlight: true },
+      { ...plain, text: "앞 " },
+      { ...plain, text: "굵게", bold: true },
+      { ...plain, text: " 뒤 " },
+      { ...plain, text: "형광", highlight: true },
     ]);
   });
 
   it("짝이 안 맞는 마커는 그냥 글자로 둔다", () => {
     expect(parseInline("**닫지 않음")).toEqual([
-      { text: "**닫지 않음", bold: false, highlight: false },
+      { ...plain, text: "**닫지 않음" },
     ]);
+  });
+
+  it("밑줄은 ++로 감싼다", () => {
+    expect(parseInline("a ++밑줄++ b")).toEqual([
+      { ...plain, text: "a " },
+      { ...plain, text: "밑줄", underline: true },
+      { ...plain, text: " b" },
+    ]);
+  });
+
+  it("겹친 서식을 함께 푼다 — 굵은 밑줄, 형광 속 굵게", () => {
+    expect(parseInline("**++둘 다++**")).toEqual([
+      { ...plain, text: "둘 다", bold: true, underline: true },
+    ]);
+    expect(parseInline("==앞 **굵게** 뒤==")).toEqual([
+      { ...plain, text: "앞 ", highlight: true },
+      { ...plain, text: "굵게", highlight: true, bold: true },
+      { ...plain, text: " 뒤", highlight: true },
+    ]);
+  });
+
+  it("stripInline은 마커를 걷고 글자만 남긴다", () => {
+    expect(stripInline("**굵게** ==형광== ++밑줄++")).toBe("굵게 형광 밑줄");
   });
 });
 

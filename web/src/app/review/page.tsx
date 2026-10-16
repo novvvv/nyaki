@@ -187,6 +187,7 @@ function Marked({ text }: { text: string }) {
           className={cn(
             token.bold && "font-semibold",
             token.highlight && "bg-highlight",
+            token.underline && "underline decoration-1 underline-offset-[3px]",
           )}
         >
           {token.text}

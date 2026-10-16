@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  convertSheet,
   countBlanks,
   insertBlank,
   insertBold,
   insertHighlight,
+  insertTable,
   nextBlankNumber,
   parseCloze,
   parseInline,
+  toBlocks,
+  toPieces,
+  type ClozeBlock,
 } from "./cloze";
 
 describe("parseInline — 굵게·형광", () => {
@@ -127,5 +132,137 @@ describe("툴바 편집", () => {
   it("굵게와 형광도 같은 방식으로 감싼다", () => {
     expect(insertBold("가나다", 1, 2).text).toBe("가**나**다");
     expect(insertHighlight("가나다", 1, 2).text).toBe("가==나==다");
+  });
+});
+
+/** 칸을 글자로 — 빈칸은 [답]으로 적는다. 비교를 읽기 쉽게. */
+function cellText(cell: { text: string; blank: boolean }[]): string {
+  return cell.map((piece) => (piece.blank ? `[${piece.text}]` : piece.text)).join("");
+}
+
+function tableOf(blocks: ClozeBlock[]) {
+  const table = blocks.find((block) => block.kind === "table");
+  if (!table || table.kind !== "table") throw new Error("표가 없다");
+  return {
+    header: table.header?.map(cellText) ?? null,
+    rows: table.rows.map((row) => row.map(cellText)),
+  };
+}
+
+describe("toPieces — 서버와 같은 자르기", () => {
+  it("빈칸 자리에서 끊고 힌트를 싣는다", () => {
+    expect(toPieces("가 {{c1::나::힌트}} 다")).toEqual([
+      { text: "가 ", blank: false },
+      { text: "나", blank: true, hint: "힌트" },
+      { text: " 다", blank: false },
+    ]);
+  });
+});
+
+describe("toBlocks — 표", () => {
+  it("표가 없으면 조각이 그대로 한 덩어리다", () => {
+    const pieces = toPieces("첫 줄\n**둘째\n줄** {{c1::답}}");
+    const blocks = toBlocks(pieces);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toEqual({ kind: "text", pieces });
+  });
+
+  it("구분 줄 위의 행이 제목 행이다", () => {
+    const raw = "| 구분 | 내용 |\n|---|---|\n| RTO | 목표 복구 시간 |";
+
+    expect(tableOf(toBlocks(toPieces(raw)))).toEqual({
+      header: ["구분", "내용"],
+      rows: [["RTO", "목표 복구 시간"]],
+    });
+  });
+
+  it("칸 안의 빈칸을 그 칸에 둔다 — 조각이 칸 경계에서 끊겨 와도", () => {
+    const raw = "| 용어 | 뜻 |\n|---|---|\n| {{c1::RTO}} | 목표 {{c2::복구}} 시간 |";
+
+    expect(tableOf(toBlocks(toPieces(raw))).rows).toEqual([
+      ["[RTO]", "목표 [복구] 시간"],
+    ]);
+  });
+
+  it("빈칸 답 안의 |로는 칸을 나누지 않는다", () => {
+    const raw = "| 가 | 나 |\n| {{c1::a|b}} | 다 |";
+
+    expect(tableOf(toBlocks(toPieces(raw))).rows).toEqual([
+      ["가", "나"],
+      ["[a|b]", "다"],
+    ]);
+  });
+
+  it("구분 줄이 없으면 제목 행 없이 전부 내용 행이다", () => {
+    const raw = "| 가 | 나 |\n| 다 | 라 |";
+
+    expect(tableOf(toBlocks(toPieces(raw)))).toEqual({
+      header: null,
+      rows: [
+        ["가", "나"],
+        ["다", "라"],
+      ],
+    });
+  });
+
+  it("칸이 모자란 행은 빈 칸으로 채운다", () => {
+    const raw = "| 가 | 나 | 다 |\n|---|---|---|\n| 라 |";
+
+    expect(tableOf(toBlocks(toPieces(raw))).rows).toEqual([["라", "", ""]]);
+  });
+
+  it("| 로 감싼 줄이 하나뿐이면 표가 아니라 글이다", () => {
+    const blocks = toBlocks(toPieces("앞\n| 강조 |\n뒤"));
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]!.kind).toBe("text");
+  });
+
+  it("표 앞뒤의 글은 따로 두고, 사이의 빈 줄은 버린다", () => {
+    const raw = "앞 글\n\n| 가 | 나 |\n|---|---|\n| 다 | 라 |\n\n뒤 글";
+    const blocks = toBlocks(toPieces(raw));
+
+    expect(blocks.map((block) => block.kind)).toEqual(["text", "table", "text"]);
+    expect(blocks[0]).toEqual({ kind: "text", pieces: [{ text: "앞 글", blank: false }] });
+    expect(blocks[2]).toEqual({ kind: "text", pieces: [{ text: "뒤 글", blank: false }] });
+  });
+});
+
+describe("표 넣기", () => {
+  it("열×행 빈 틀을 넣는다 — 행은 제목 행을 포함한다", () => {
+    const edit = insertTable("", 0, 0, 2, 3);
+
+    expect(edit.text).toBe("|   |   |\n| --- | --- |\n|   |   |\n|   |   |");
+    expect(tableOf(toBlocks(toPieces(edit.text)))).toEqual({
+      header: ["", ""],
+      rows: [
+        ["", ""],
+        ["", ""],
+      ],
+    });
+  });
+
+  it("커서를 첫 칸에 둔다", () => {
+    const edit = insertTable("", 0, 0, 2, 2);
+    expect(edit.selectionStart).toBe(2);
+    expect(edit.selectionEnd).toBe(2);
+  });
+
+  it("글 중간에 넣으면 앞뒤로 줄을 바꾼다", () => {
+    const edit = insertTable("앞뒤", 1, 1, 1, 2);
+
+    expect(edit.text).toBe("앞\n|   |\n| --- |\n|   |\n뒤");
+    expect(edit.selectionStart).toBe(4); // "앞\n| " 뒤
+  });
+
+  it("시트에서 복사한 표를 표 문법으로 바꾼다 — 첫 줄이 제목 행", () => {
+    const raw = "용어\t뜻\nRTO\t목표 복구 시간\nRPO\t\n";
+    const edit = convertSheet(raw, 0, raw.length);
+
+    expect(edit.text).toBe(
+      "| 용어 | 뜻 |\n| --- | --- |\n| RTO | 목표 복구 시간 |\n| RPO |   |",
+    );
+    expect(edit.selectionStart).toBe(edit.text.length);
   });
 });

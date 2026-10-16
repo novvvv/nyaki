@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Serif_KR } from "next/font/google";
 import localFont from "next/font/local";
 
 import { AppProviders } from "@/components/app-providers";
@@ -17,6 +17,14 @@ const donguri = localFont({
   src: "./fonts/x10y12pxDonguriDuel.ttf",
   variable: "--font-donguri",
   display: "swap",
+});
+
+// 명조 — 테스트 화면 노트 스킨의 본문 전용. 한글·한자·가나가 모두 있다.
+// 한중일 글꼴은 글자 범위별로 잘게 나뉘어 있어 미리 받을 수 없고, 노트 스킨을
+// 켠 사람만 쓰므로 그럴 필요도 없다.
+const notoSerifKr = Noto_Serif_KR({
+  variable: "--font-noto-serif-kr",
+  preload: false,
 });
 
 const TITLE = "Nyaki — 단어장";
@@ -48,7 +56,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${inter.variable} ${donguri.variable} h-full`}>
+    <html
+      lang="ko"
+      className={`${inter.variable} ${donguri.variable} ${notoSerifKr.variable} h-full`}
+    >
       <body className="min-h-full antialiased">
         <AppProviders>{children}</AppProviders>
       </body>

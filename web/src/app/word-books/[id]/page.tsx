@@ -95,10 +95,31 @@ function Row({
 /** 목록에 보여줄 한 줄 — 빈칸은 답을 괄호로 감싼다. */
 const PREVIEW_LIMIT = 80;
 
+/**
+ * 표 한 줄을 목록용 글자로. 구분 줄(`|---|---|`)은 지우고, 칸은 ` · `로 잇는다.
+ * 표가 아닌 줄은 그대로 둔다.
+ */
+function flattenTableLine(line: string): string {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("|") || !trimmed.endsWith("|") || trimmed.length < 2) {
+    return line;
+  }
+  if (/^[|:\-\s]+$/.test(trimmed) && trimmed.includes("-")) return "";
+  return trimmed
+    .slice(1, -1)
+    .split("|")
+    .map((cell) => cell.trim())
+    .filter(Boolean)
+    .join(" · ");
+}
+
 /** 목록 한 줄 미리보기 — 빈칸은 답을 괄호로 감싸고, 줄바꿈은 공백으로 편다. */
 function clozePreview(text: string): string {
   const flat = text
     .replaceAll(/\{\{c\d+::(.+?)(?:::.+?)?\}\}/g, "[ $1 ]")
+    .split("\n")
+    .map(flattenTableLine)
+    .join("\n")
     .replaceAll(/\s+/g, " ")
     .trim();
   return flat.length > PREVIEW_LIMIT

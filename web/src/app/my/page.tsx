@@ -11,7 +11,13 @@ import {
   updateSettings,
   type Progress,
 } from "@/lib/api-client";
-import { loadShowDelays, saveShowDelays } from "@/lib/review";
+import {
+  loadShowDelays,
+  loadSkin,
+  saveShowDelays,
+  saveSkin,
+  type ReviewSkin,
+} from "@/lib/review";
 import { cn } from "@/lib/utils";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
 
@@ -40,6 +46,46 @@ function DelayHintToggle() {
     >
       {on ? "켜짐" : "꺼짐"}
     </SubtleButton>
+  );
+}
+
+const SKINS: { value: ReviewSkin; label: string }[] = [
+  { value: "plain", label: "기본" },
+  { value: "note", label: "노트" },
+];
+
+/**
+ * 테스트 화면 스킨.
+ *
+ * 다음 복습 시각 표시와 같이 이 브라우저에만 남는 화면 설정이라 누르는 즉시
+ * 반영된다. 기본은 지금의 흰 화면이다.
+ */
+function SkinPicker() {
+  // 초기값으로 읽는다 — 이펙트에서 읽으면 기본이 한 프레임 보인다.
+  const [skin, setSkin] = useState(loadSkin);
+
+  return (
+    <div className="flex gap-2">
+      {SKINS.map((option) => {
+        const on = skin === option.value;
+        return (
+          <SubtleButton
+            key={option.value}
+            aria-pressed={on}
+            onClick={() => {
+              setSkin(option.value);
+              saveSkin(option.value);
+            }}
+            className={cn(
+              "px-3.5 py-1.5 text-xs",
+              on && "border-ink bg-ink text-cream hover:text-cream",
+            )}
+          >
+            {option.label}
+          </SubtleButton>
+        );
+      })}
+    </div>
   );
 }
 
@@ -194,6 +240,9 @@ function DailyLimits({
           hint="채점 버튼 위에 즉시 · 10분처럼 띄웁니다"
         >
           <DelayHintToggle />
+        </Field>
+        <Field title="테스트 화면" hint="노트를 고르면 문제가 줄 노트 위에 나옵니다">
+          <SkinPicker />
         </Field>
       </div>
 

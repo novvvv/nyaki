@@ -50,3 +50,29 @@ export function saveShowDelays(on: boolean) {
     // 사생활 보호 모드 등에서 막힐 수 있다. 기억 못 해도 동작에는 지장 없다.
   }
 }
+
+const SKIN_KEY = "nyaki.review.skin";
+
+/** 테스트 화면 스킨. plain은 지금의 흰 화면, note는 줄 노트 종이. */
+export type ReviewSkin = "plain" | "note";
+
+/**
+ * 테스트 화면 스킨. 마이페이지에서 고른다.
+ *
+ * 기기마다 다른 화면 설정이라 서버에 두지 않았다 — 다음 복습 시각 표시와 같다.
+ */
+export function loadSkin(): ReviewSkin {
+  try {
+    return window.localStorage.getItem(SKIN_KEY) === "note" ? "note" : "plain";
+  } catch {
+    return "plain";
+  }
+}
+
+export function saveSkin(skin: ReviewSkin) {
+  try {
+    window.localStorage.setItem(SKIN_KEY, skin);
+  } catch {
+    // 사생활 보호 모드 등에서 막힐 수 있다. 기억 못 하면 기본 스킨으로 보일 뿐이다.
+  }
+}

@@ -16,8 +16,14 @@ import {
   type ReviewGrade,
   type ReviewGradeItem,
 } from "@/lib/api-client";
-import { parseInline } from "@/lib/cloze";
-import { formatDelay, loadShowDelays, shuffled } from "@/lib/review";
+import {
+  BLANK_FILL,
+  parseInline,
+  toBlocks,
+  type ClozePiece,
+  type TableRow,
+} from "@/lib/cloze";
+import { formatDelay, loadShowDelays, loadSkin, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
@@ -48,12 +54,40 @@ function back(card: DueCard): string {
 /**
  * 빈칸 문장. 뒤집기 전에는 묻는 자리를 가리고, 뒤집으면 **그 자리에** 답을 넣는다.
  * 문장을 두 벌 늘어놓지 않는 이유는 그게 사용자가 보려는 것이기 때문이다.
+ *
+ * 표가 있으면 글과 표로 나눠 그린다. 표는 서버 조각에 걸쳐 오므로 조각에서 읽는다
+ * (lib/cloze의 toBlocks).
  */
 function ClozeText({
   segments,
   revealed,
 }: {
   segments: ClozeSegment[];
+  revealed: boolean;
+}) {
+  return (
+    <>
+      {toBlocks(segments).map((block, index) =>
+        block.kind === "text" ? (
+          <ClozePieces key={index} segments={block.pieces} revealed={revealed} />
+        ) : (
+          <ClozeTable
+            key={index}
+            header={block.header}
+            rows={block.rows}
+            revealed={revealed}
+          />
+        ),
+      )}
+    </>
+  );
+}
+
+function ClozePieces({
+  segments,
+  revealed,
+}: {
+  segments: ClozePiece[];
   revealed: boolean;
 }) {
   return (
@@ -72,7 +106,7 @@ function ClozeText({
             ) : segment.hint ? (
               ` ${segment.hint} `
             ) : (
-              "　　　"
+              BLANK_FILL
             )}
           </span>
         ) : (
@@ -80,6 +114,58 @@ function ClozeText({
         ),
       )}
     </span>
+  );
+}
+
+/** 빈칸 노트 속 표. 문장은 가운데 정렬이어도 칸 안은 왼쪽부터 읽는다. */
+function ClozeTable({
+  header,
+  rows,
+  revealed,
+}: {
+  header: TableRow | null;
+  rows: TableRow[];
+  revealed: boolean;
+}) {
+  // 빈 칸도 높이를 갖게 공백 한 칸을 넣는다 — 안 넣으면 행이 납작해진다.
+  const cell = (pieces: ClozePiece[]) =>
+    pieces.length > 0 ? (
+      <ClozePieces segments={pieces} revealed={revealed} />
+    ) : (
+      " "
+    );
+
+  return (
+    <table className="mx-auto my-4 border-collapse text-left">
+      {header ? (
+        <thead>
+          <tr>
+            {header.map((pieces, index) => (
+              <th
+                key={index}
+                className="border border-taupe bg-subtle/60 px-3 py-1.5 align-top font-semibold"
+              >
+                {cell(pieces)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+      ) : null}
+      <tbody>
+        {rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {row.map((pieces, index) => (
+              <td
+                key={index}
+                className="border border-taupe px-3 py-1.5 align-top font-normal"
+              >
+                {cell(pieces)}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -146,6 +232,275 @@ function kindLabel(card: DueCard): string | null {
   return null;
 }
 
+/**
+ * 노트 스킨의 줄 상자. 모든 줄이 이 크기·높이로 글씨 밑선 자리를 잡는다.
+ *
+ * 줄 높이가 같아도 글자 크기가 다르면 밑선 자리가 달라진다(큰 글씨일수록
+ * 아래로 내려간다). 그래서 줄 상자는 늘 이 크기로 두고, 보이는 글씨는 안쪽
+ * NoteText가 제 크기로 이 밑선에 얹힌다. 크기가 달라도 글씨가 모두 노트 줄
+ * 바로 위에 앉는다. globals.css의 .note-lines 참고.
+ */
+const NOTE_LINE = "text-[15px] leading-8";
+
+/**
+ * 보이는 글씨. 줄 높이를 1로 둬서 줄 상자를 키우지 않는다 — 키우면 그 아래
+ * 줄이 전부 몇 px씩 밀려 노트 줄과 어긋난다.
+ *
+ * leading-none은 **뒤에** 둔다. cn(tailwind-merge)은 글자 크기 클래스가 뒤에
+ * 오면 앞의 줄 높이 클래스를 지운다.
+ */
+function NoteText({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return <span className={cn(className, "leading-none")}>{children}</span>;
+}
+
+/**
+ * 문장 속 빈칸 — 노트 줄 위에 진하게 그은 밑줄.
+ *
+ * 글씨가 아니라 줄 상자 위쪽에 맞춰 놓고(align-top) 높이를 정해서 밑줄이
+ * 노트 줄과 정확히 겹친다. 글씨 기준으로 놓으면 글꼴·브라우저마다 몇 px씩
+ * 어긋난다. 27px은 줄 상자 위에서 노트 줄(26~27px)까지의 거리다.
+ */
+function NoteBlank({ children }: { children?: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-block h-[27px] min-w-20 border-b-[1.5px] border-ink/50 px-1 text-center align-top",
+        NOTE_LINE,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** 노트 스킨의 빈칸 문장. ClozeText와 같되 빈칸을 노트 줄 위의 밑줄로 그린다. */
+function NoteCloze({
+  segments,
+  revealed,
+  size,
+}: {
+  segments: ClozePiece[];
+  revealed: boolean;
+  /** 문장 글자 크기. 빈칸 안의 글씨도 같은 크기로 쓴다. */
+  size: string;
+}) {
+  return (
+    <>
+      {segments.map((segment, index) =>
+        !segment.blank ? (
+          <Marked key={index} text={segment.text} />
+        ) : revealed ? (
+          // 답은 줄바꿈이 될 수 있어서 칸에 가두지 않고 글씨 밑줄로 긋는다.
+          // 3.5px은 글씨 밑선에서 노트 줄까지의 거리다.
+          <span
+            key={index}
+            className="font-semibold underline decoration-ink/50 decoration-[1.5px] underline-offset-[3.5px]"
+          >
+            <Marked text={segment.text} />
+          </span>
+        ) : (
+          <NoteBlank key={index}>
+            {segment.hint ? (
+              <NoteText className={cn(size, "font-normal text-ink/30")}>
+                {segment.hint}
+              </NoteText>
+            ) : null}
+          </NoteBlank>
+        ),
+      )}
+    </>
+  );
+}
+
+/**
+ * 노트 스킨의 표. 가로줄은 노트 줄을 그대로 쓰고 세로줄과 양옆 테두리만
+ * 긋는다 — 한 행이 노트 한 줄이다. 칸 안 글이 길어 줄이 바뀌면 그 행이 두 줄을
+ * 차지한다.
+ *
+ * 가로줄을 진하게 긋지 않는 이유는 빈칸이다. 빈칸은 노트 줄 위의 진한 밑줄이라
+ * 가로줄까지 진하면 빈칸이 묻힌다. 제목 행은 줄 대신 옅은 바탕으로 가른다.
+ *
+ * 행 상자는 노트 줄보다 6px 아래에서 시작한다(.note-lines의 위 여백). 세로줄이
+ * 노트 줄에서 노트 줄까지 닿게 표를 6px 올리고, 칸 안 글씨는 6px 내려 제자리에
+ * 둔다. relative라 자리는 그대로여서 아래 줄이 밀리지 않는다.
+ */
+function NoteTable({
+  header,
+  rows,
+  revealed,
+  size,
+}: {
+  header: TableRow | null;
+  rows: TableRow[];
+  revealed: boolean;
+  size: string;
+}) {
+  const cell = (pieces: ClozePiece[], index: number, head: boolean) => {
+    const Cell = head ? "th" : "td";
+    return (
+      <Cell
+        key={index}
+        className={cn(
+          NOTE_LINE,
+          "px-3 text-left align-top",
+          index > 0 && "border-l border-ink/30",
+          head ? "bg-ink/[0.05] font-semibold" : "font-medium",
+        )}
+      >
+        <span className="relative top-1.5">
+          {/* 빈 칸도 높이를 갖게 공백 한 칸 — 안 넣으면 행이 납작해진다. */}
+          {pieces.length > 0 ? (
+            <NoteText className={size}>
+              <NoteCloze segments={pieces} revealed={revealed} size={size} />
+            </NoteText>
+          ) : (
+            " "
+          )}
+        </span>
+      </Cell>
+    );
+  };
+
+  return (
+    // 칸 폭은 고정이다(table-fixed) — 글에 맞춰 늘면 답을 열 때 표가 출렁인다.
+    <table className="relative -top-1.5 w-full table-fixed border-separate border-spacing-0 border-x border-ink/30">
+      {header ? (
+        <thead>
+          <tr>{header.map((pieces, index) => cell(pieces, index, true))}</tr>
+        </thead>
+      ) : null}
+      <tbody>
+        {rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {row.map((pieces, index) => cell(pieces, index, false))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * 노트 스킨의 문제 영역. 누르면 뒤집힌다 — 기본 스킨의 카드 영역과 같다.
+ *
+ * 줄 친 영역이 글 길이와 상관없이 남은 높이를 다 채운다. `<button>`으로 감싸면
+ * Safari에서 안쪽이 글 폭만큼 줄어들어 줄이 잘려 보여서, 줄 배경을 이 상자에
+ * 직접 깔고 버튼 역할만 준다. 스페이스·엔터는 화면 전체에서 따로 받는다.
+ *
+ * 줄 상자의 높이와 위아래 간격은 모두 줄 간격(2rem)의 배수다. 하나라도
+ * 어긋나면 그 아래 글씨가 줄 사이에 뜬다.
+ */
+function NoteSheet({
+  card,
+  flipped,
+  onFlip,
+}: {
+  card: DueCard;
+  flipped: boolean;
+  onFlip: () => void;
+}) {
+  const word = card.word;
+  const recall = card.kind === "recall";
+  const reading = word?.pronunciation ? (
+    <NoteText className="text-ink/45">{word.pronunciation}</NoteText>
+  ) : null;
+
+  if (card.cloze) {
+    const size =
+      clozeLength(card) > 160
+        ? "text-base"
+        : clozeLength(card) > 60
+          ? "text-lg"
+          : "text-xl";
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onFlip}
+        className="note-lines my-6 flex-1 cursor-pointer font-serif text-ink"
+      >
+        {toBlocks(card.cloze.segments).map((block, index) =>
+          block.kind === "text" ? (
+            <p key={index} className={NOTE_LINE}>
+              <NoteText className={cn(size, "whitespace-pre-wrap font-medium")}>
+                <NoteCloze
+                  segments={block.pieces}
+                  revealed={flipped}
+                  size={size}
+                />
+              </NoteText>
+            </p>
+          ) : (
+            <NoteTable
+              key={index}
+              header={block.header}
+              rows={block.rows}
+              revealed={flipped}
+              size={size}
+            />
+          ),
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onFlip}
+      className="note-lines my-6 flex-1 cursor-pointer font-serif text-ink"
+    >
+      <p className={NOTE_LINE}>
+        <NoteText className="whitespace-pre-wrap text-[22px] font-semibold">
+          {front(card)}
+        </NoteText>
+      </p>
+
+      {/* 발음은 단어 바로 아래 줄. 뒤집기 전에도 줄을 비워 둬서 뒤집을 때
+          빈칸이 밀려나지 않게 한다. 거꾸로 묻는 카드는 발음이 답 쪽이라 답 아래에 둔다. */}
+      {reading && !recall ? (
+        <p className={cn(NOTE_LINE, "h-8")}>{flipped ? reading : null}</p>
+      ) : null}
+
+      {/* 답 칸 — 줄마다 노트 줄 위에 진한 밑줄을 긋는다. 답이 길어 여러 줄이
+          되어도 줄마다 그어진다. 위치는 NoteBlank와 같다(줄 상자 위에서 25.5~27px). */}
+      <p
+        className={cn(
+          NOTE_LINE,
+          "min-h-8 w-fit min-w-36 pr-2",
+          "bg-[linear-gradient(to_bottom,transparent_25.5px,rgb(17_17_17/0.5)_25.5px_27px,transparent_27px)] bg-size-[100%_2rem]",
+        )}
+      >
+        {flipped ? (
+          <NoteText className="text-lg font-semibold">{back(card)}</NoteText>
+        ) : null}
+      </p>
+
+      {reading && recall && flipped ? <p className={NOTE_LINE}>{reading}</p> : null}
+
+      {flipped && word?.example ? (
+        <p className={cn(NOTE_LINE, "mt-8")}>
+          <NoteText className="text-ink/60">{word.example}</NoteText>
+        </p>
+      ) : null}
+      {flipped && word?.exampleMeaning ? (
+        <p className={NOTE_LINE}>
+          <NoteText className="text-sm text-ink/40">
+            {word.exampleMeaning}
+          </NoteText>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function ReviewPage() {
   const { getToken } = useAuth();
   const { wordBooks } = useVocab();
@@ -170,6 +525,8 @@ export default function ReviewPage() {
   // 채점 버튼 위의 "즉시 / 10분" 표시. 마이페이지에서 켠 사람만 본다.
   // 초기값으로 읽는다 — 이펙트에서 읽으면 한 프레임 보였다가 사라진다.
   const [showDelays] = useState(loadShowDelays);
+  // 테스트 화면 스킨. 마이페이지에서 고른다. 같은 이유로 초기값으로 읽는다.
+  const [skin] = useState(loadSkin);
   // 단어장별 due 개수. /review/due(최대 200개)의 길이로 세면 201개부터 틀려서
   // 개수 전용 엔드포인트를 따로 부른다.
   const [counts, setCounts] = useState<DueCounts>();
@@ -391,142 +748,154 @@ export default function ReviewPage() {
 
   if (phase === "session" && current) {
     return (
-      <main
-        className={cn(SCREEN, "mx-auto flex w-full max-w-xl flex-col px-6 py-10")}
-      >
-        <div className="mb-6 flex justify-end">
-          <button
-            type="button"
-            onClick={stop}
-            className="whitespace-nowrap rounded-lg border border-taupe px-4 py-1.5 text-xs text-ink/50 transition hover:border-ink/40 hover:text-ink"
-          >
-            그만하기
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <span className="shrink-0 text-xs tabular-nums text-ink/35">
-            {finished} / {sessionSize}
-          </span>
-          {/* 어느 방향으로 묻는 카드인지. 기본 종류뿐이면 군더더기라 숨긴다. */}
-          {kindLabel(current) ? (
-            <span className="shrink-0 text-[11px] text-ink/35">
-              {kindLabel(current)}
-            </span>
-          ) : null}
-          <div className="h-px flex-1 bg-taupe/50">
-            <div
-              className="h-px bg-ink transition-all duration-200"
-              style={{
-                width: `${sessionSize === 0 ? 0 : (finished / sessionSize) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setFlipped((prev) => !prev)}
-          className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center"
+      // 노트 스킨은 화면 전체가 종이다. 바깥을 칠해야 가운데 단만 뜨지 않는다.
+      <div className={cn(skin === "note" && "bg-paper")}>
+        <main
+          className={cn(SCREEN, "mx-auto flex w-full max-w-xl flex-col px-6 py-10")}
         >
-          <p
-            className={cn(
-              "font-semibold tracking-tight text-ink",
-              // 줄바꿈을 적은 대로 살린다. 빈칸 노트는 여러 줄로 쓰는 일이 많다.
-              "whitespace-pre-wrap",
-              // 길이에 따라 크기를 줄인다 — 문단을 단어와 같은 크기로 두면
-              // 화면을 넘긴다.
-              current.cloze
-                ? clozeLength(current) > 160
-                  ? "text-base leading-loose"
-                  : clozeLength(current) > 60
-                    ? "text-lg leading-relaxed"
-                    : "text-2xl leading-relaxed"
-                : "text-4xl",
-            )}
-          >
-            {current.cloze ? (
-              <ClozeText segments={current.cloze.segments} revealed={flipped} />
-            ) : (
-              front(current)
-            )}
-          </p>
-
-          {flipped && !current.cloze ? (
-            <div className="space-y-3">
-              {current.word?.pronunciation ? (
-                <p className="text-base text-ink/45">
-                  {current.word.pronunciation}
-                </p>
-              ) : null}
-              <p className="text-2xl text-ink">{back(current)}</p>
-              {current.word?.example ? (
-                <p className="pt-4 text-base text-ink/55">
-                  {current.word.example}
-                </p>
-              ) : null}
-              {current.word?.exampleMeaning ? (
-                <p className="text-sm text-ink/40">
-                  {current.word.exampleMeaning}
-                </p>
-              ) : null}
-            </div>
-          ) : flipped ? null : (
-            <p className="text-xs text-ink/25">
-              {current.cloze
-                ? "눌러서 답 보기"
-                : current.kind === "recall"
-                  ? "눌러서 단어 보기"
-                  : "눌러서 뜻 보기"}
-            </p>
-          )}
-        </button>
-
-        {/* 안키가 버튼 위에 <1m / <10m를 띄우는 것과 같다. 계산은 서버가 한다. */}
-        {showDelays ? (
-          <div className="mb-1.5 grid grid-cols-2 gap-2.5 text-center text-[11px] tabular-nums text-ink/35">
-            <span>{delays.again}</span>
-            <span>{delays.good}</span>
+          <div className="mb-6 flex justify-end">
+            <button
+              type="button"
+              onClick={stop}
+              className="whitespace-nowrap rounded-lg border border-taupe px-4 py-1.5 text-xs text-ink/50 transition hover:border-ink/40 hover:text-ink"
+            >
+              그만하기
+            </button>
           </div>
-        ) : null}
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => grade("again")}
-            className="whitespace-nowrap rounded-lg border border-ink py-3.5 text-sm font-medium text-ink transition hover:bg-subtle"
-          >
-            모름
-          </button>
-          <button
-            type="button"
-            onClick={() => grade("good")}
-            className="group relative whitespace-nowrap rounded-lg border border-ink bg-ink py-3.5 text-sm font-medium text-cream transition hover:bg-ink/85"
-          >
-            <svg
-              viewBox="0 0 40 14"
-              aria-hidden
-              className="absolute -top-3 right-3 h-3.5 w-10 fill-ink transition group-hover:fill-ink/85"
-            >
-              <path d="M1.5 14 C2.6 8.5 4 4 6.2 0 C8.6 4.2 10.8 9 13 14 Z" />
-              <path d="M27 14 C29.2 9 31.4 4.2 33.8 0 C36 4 37.4 8.5 38.5 14 Z" />
-            </svg>
-            <span
-              aria-hidden
-              className="absolute right-10 top-2 flex size-2 items-center justify-center"
-            >
-              <span className="h-[2px] w-2 rounded-full bg-cream transition-all duration-200 group-hover:h-2 group-hover:w-[2px]" />
+          <div className="flex items-center gap-4">
+            <span className="shrink-0 text-xs tabular-nums text-ink/35">
+              {finished} / {sessionSize}
             </span>
-            <span
-              aria-hidden
-              className="absolute right-[22px] top-2 flex size-2 items-center justify-center"
+            {/* 어느 방향으로 묻는 카드인지. 기본 종류뿐이면 군더더기라 숨긴다. */}
+            {kindLabel(current) ? (
+              <span className="shrink-0 text-[11px] text-ink/35">
+                {kindLabel(current)}
+              </span>
+            ) : null}
+            <div className="h-px flex-1 bg-taupe/50">
+              <div
+                className="h-px bg-ink transition-all duration-200"
+                style={{
+                  width: `${sessionSize === 0 ? 0 : (finished / sessionSize) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          {skin === "note" ? (
+            <NoteSheet
+              card={current}
+              flipped={flipped}
+              onFlip={() => setFlipped((prev) => !prev)}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFlipped((prev) => !prev)}
+              className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center"
             >
-              <span className="h-[2px] w-2 rounded-full bg-cream transition-all duration-200 group-hover:h-2 group-hover:w-[2px]" />
-            </span>
-            외움
-          </button>
-        </div>
-      </main>
+              {/* div다 — 빈칸 노트에 표가 들어가면 p 안에 표를 둘 수 없다. */}
+              <div
+                className={cn(
+                  "font-semibold tracking-tight text-ink",
+                  // 줄바꿈을 적은 대로 살린다. 빈칸 노트는 여러 줄로 쓰는 일이 많다.
+                  "whitespace-pre-wrap",
+                  // 길이에 따라 크기를 줄인다 — 문단을 단어와 같은 크기로 두면
+                  // 화면을 넘긴다.
+                  current.cloze
+                    ? clozeLength(current) > 160
+                      ? "text-base leading-loose"
+                      : clozeLength(current) > 60
+                        ? "text-lg leading-relaxed"
+                        : "text-2xl leading-relaxed"
+                    : "text-4xl",
+                )}
+              >
+                {current.cloze ? (
+                  <ClozeText segments={current.cloze.segments} revealed={flipped} />
+                ) : (
+                  front(current)
+                )}
+              </div>
+
+              {flipped && !current.cloze ? (
+                <div className="space-y-3">
+                  {current.word?.pronunciation ? (
+                    <p className="text-base text-ink/45">
+                      {current.word.pronunciation}
+                    </p>
+                  ) : null}
+                  <p className="text-2xl text-ink">{back(current)}</p>
+                  {current.word?.example ? (
+                    <p className="pt-4 text-base text-ink/55">
+                      {current.word.example}
+                    </p>
+                  ) : null}
+                  {current.word?.exampleMeaning ? (
+                    <p className="text-sm text-ink/40">
+                      {current.word.exampleMeaning}
+                    </p>
+                  ) : null}
+                </div>
+              ) : flipped ? null : (
+                <p className="text-xs text-ink/25">
+                  {current.cloze
+                    ? "눌러서 답 보기"
+                    : current.kind === "recall"
+                      ? "눌러서 단어 보기"
+                      : "눌러서 뜻 보기"}
+                </p>
+              )}
+            </button>
+          )}
+
+          {/* 안키가 버튼 위에 <1m / <10m를 띄우는 것과 같다. 계산은 서버가 한다. */}
+          {showDelays ? (
+            <div className="mb-1.5 grid grid-cols-2 gap-2.5 text-center text-[11px] tabular-nums text-ink/35">
+              <span>{delays.again}</span>
+              <span>{delays.good}</span>
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => grade("again")}
+              className="whitespace-nowrap rounded-lg border border-ink py-3.5 text-sm font-medium text-ink transition hover:bg-subtle"
+            >
+              모름
+            </button>
+            <button
+              type="button"
+              onClick={() => grade("good")}
+              className="group relative whitespace-nowrap rounded-lg border border-ink bg-ink py-3.5 text-sm font-medium text-cream transition hover:bg-ink/85"
+            >
+              <svg
+                viewBox="0 0 40 14"
+                aria-hidden
+                className="absolute -top-3 right-3 h-3.5 w-10 fill-ink transition group-hover:fill-ink/85"
+              >
+                <path d="M1.5 14 C2.6 8.5 4 4 6.2 0 C8.6 4.2 10.8 9 13 14 Z" />
+                <path d="M27 14 C29.2 9 31.4 4.2 33.8 0 C36 4 37.4 8.5 38.5 14 Z" />
+              </svg>
+              <span
+                aria-hidden
+                className="absolute right-10 top-2 flex size-2 items-center justify-center"
+              >
+                <span className="h-[2px] w-2 rounded-full bg-cream transition-all duration-200 group-hover:h-2 group-hover:w-[2px]" />
+              </span>
+              <span
+                aria-hidden
+                className="absolute right-[22px] top-2 flex size-2 items-center justify-center"
+              >
+                <span className="h-[2px] w-2 rounded-full bg-cream transition-all duration-200 group-hover:h-2 group-hover:w-[2px]" />
+              </span>
+              외움
+            </button>
+          </div>
+        </main>
+      </div>
     );
   }
 

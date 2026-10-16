@@ -128,7 +128,7 @@ export function ClozeEditor({
             className="px-3 py-1.5 text-xs"
             onClick={() => apply(insertHighlight)}
           >
-            <span className="bg-[#FDF3B0] px-1">형광</span>
+            <span className="bg-highlight px-1">형광</span>
           </SubtleButton>
 
           <div className="relative">
@@ -294,7 +294,7 @@ function Inline({ text }: { text: string }) {
           key={index}
           className={cn(
             token.bold && "font-semibold",
-            token.highlight && "bg-[#FDF3B0]",
+            token.highlight && "bg-highlight",
           )}
         >
           {token.text}

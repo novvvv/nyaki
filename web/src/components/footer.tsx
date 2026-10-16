@@ -11,7 +11,8 @@ const links = [
 
 export function Footer() {
   return (
-    <footer className="w-full bg-ink text-cream">
+    // nyaki-band — 다크에서도 어두운 띠로 둔다(globals.css)
+    <footer className="nyaki-band w-full bg-ink text-cream">
       <div className="mx-auto flex max-w-7xl flex-col gap-10 px-6 py-14 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold tracking-tight">Nyaki</p>

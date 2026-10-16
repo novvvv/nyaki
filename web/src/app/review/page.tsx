@@ -184,7 +184,7 @@ function Marked({ text }: { text: string }) {
           key={index}
           className={cn(
             token.bold && "font-semibold",
-            token.highlight && "bg-[#FDF3B0]",
+            token.highlight && "bg-highlight",
           )}
         >
           {token.text}
@@ -475,7 +475,7 @@ function NoteSheet({
         className={cn(
           NOTE_LINE,
           "min-h-8 w-fit min-w-36 pr-2",
-          "bg-[linear-gradient(to_bottom,transparent_25.5px,rgb(17_17_17/0.5)_25.5px_27px,transparent_27px)] bg-size-[100%_2rem]",
+          "bg-[linear-gradient(to_bottom,transparent_25.5px,var(--nyaki-blank-line)_25.5px_27px,transparent_27px)] bg-size-[100%_2rem]",
         )}
       >
         {flipped ? (

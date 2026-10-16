@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* 다크모드는 <html class="dark">로 켠다. 시스템 설정을 따를 때도 lib/theme.ts가
+   이 클래스를 단다 — 그래야 마이페이지에서 고른 값이 시스템 설정을 이긴다. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Design.md — 2026-09-15 재확정: 무채색 미니멀 팔레트로 교체.
    따뜻한 톤(Ivory/Nude)을 걷어내고 흰 바탕 기준 그레이스케일로 통일했다.
    바탕과 카드가 모두 흰색이므로 층 구분은 면 색이 아니라 taupe 테두리가 맡는다.
@@ -16,6 +20,9 @@
   /* 테스트 화면 노트 스킨 전용 — 무채색 팔레트의 유일한 예외다 */
   --nyaki-paper: #ebe8e3; /* 노트 종이 */
   --nyaki-rule: rgba(17, 17, 17, 0.22); /* 노트 줄 */
+  --nyaki-blank-line: rgba(17, 17, 17, 0.5); /* 노트 스킨의 빈칸 밑줄 */
+  --nyaki-highlight: #fdf3b0; /* 형광펜(==형광==) */
+  --nyaki-selection: rgba(17, 17, 17, 0.12);
 
   /* shadcn/Bklit 차트가 참조하는 토큰 — nyaki 팔레트에 매핑 */
   --border: rgba(17, 17, 17, 0.12);
@@ -33,6 +40,47 @@
   --chart-5: #d4d4d4;
 }
 
+/* 다크 — 라이트를 뒤집은 그레이스케일. 바탕은 순검정 대신 #121212로 둬서 글자가
+   번지지 않게 한다. ink와 cream이 자리를 바꾸므로 "검은 칠 + 흰 글자" 버튼은
+   다크에서 "밝은 칠 + 어두운 글자"가 된다. */
+:root.dark {
+  color-scheme: dark;
+  --nyaki-cream: #121212;
+  --nyaki-ink: #ececec;
+  --nyaki-umber: #ececec;
+  --nyaki-muted: #2a2a2a;
+  --nyaki-taupe: #474747; /* 빈칸 밑줄도 이 색이라 너무 어두우면 빈칸이 안 보인다 */
+  --nyaki-card: #121212;
+  --nyaki-stroke: rgba(236, 236, 236, 0.14);
+  --nyaki-subtle: #222222;
+  --nyaki-paper: #1e1d1b;
+  --nyaki-rule: rgba(236, 236, 236, 0.14);
+  --nyaki-blank-line: rgba(236, 236, 236, 0.5);
+  --nyaki-highlight: rgba(250, 204, 21, 0.3);
+  --nyaki-selection: rgba(236, 236, 236, 0.2);
+
+  --border: rgba(236, 236, 236, 0.12);
+  --chart-foreground-muted: rgba(236, 236, 236, 0.6);
+  --chart-label: rgba(236, 236, 236, 0.62);
+  --chart-1: #ececec;
+  --chart-2: #bdbdbd;
+  --chart-3: #8f8f8f;
+  --chart-4: #626262;
+  --chart-5: #3a3a3a;
+
+  /* 오류 문구의 빨강(red-600 · 700)은 어두운 바탕에서 안 읽힌다. 쓰는 곳이 많아
+     한 곳씩 고치지 않고 다크에서만 밝은 빨강으로 바꿔 끼운다. */
+  --color-red-600: #f87171;
+  --color-red-700: #f87171;
+}
+
+/* 위 공지 띠와 푸터 — 라이트에서 검은 띠다. 다크에서 토큰이 뒤집히면 흰 띠가
+   되므로, 띠 안에서는 다크에서도 어두운 칠 · 밝은 글자로 묶어 둔다. */
+:root.dark .nyaki-band {
+  --nyaki-ink: #000000;
+  --nyaki-cream: #d9d9d9;
+}
+
 @theme inline {
   --color-cream: var(--nyaki-cream);
   --color-ink: var(--nyaki-ink);
@@ -42,6 +90,7 @@
   --color-card: var(--nyaki-card);
   --color-subtle: var(--nyaki-subtle);
   --color-paper: var(--nyaki-paper);
+  --color-highlight: var(--nyaki-highlight);
   --color-foreground: var(--foreground);
   --color-border: var(--border);
   --color-chart-label: var(--chart-label);
@@ -69,7 +118,7 @@ body {
 }
 
 ::selection {
-  background: rgba(17, 17, 17, 0.12);
+  background: var(--nyaki-selection);
 }
 
 @media (hover: none) {

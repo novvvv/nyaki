@@ -366,7 +366,8 @@ function SidebarIcon({ src }: { src: string }) {
       width={16}
       height={16}
       draggable={false}
-      className="size-4 shrink-0"
+      // 검은 선 아이콘이라 다크에서는 뒤집어 밝게 그린다.
+      className="size-4 shrink-0 dark:invert"
     />
   );
 }

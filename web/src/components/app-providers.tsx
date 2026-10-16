@@ -13,7 +13,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <div className="flex min-h-screen flex-col">
           <SiteHeader />
 
-          <div className="bg-ink text-cream">
+          {/* nyaki-band — 다크에서도 어두운 띠로 둔다(globals.css) */}
+          <div className="nyaki-band bg-ink text-cream">
             <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-6 py-2 text-center text-xs">
               <span aria-hidden>/ᐠ .⑅.ᐟ\ﾉ</span>
               <span>아직 만드는 중이냥, 조금만 기다려 달라냥</span>

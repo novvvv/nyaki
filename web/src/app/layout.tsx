@@ -3,6 +3,7 @@ import { Inter, Noto_Serif_KR } from "next/font/google";
 import localFont from "next/font/local";
 
 import { AppProviders } from "@/components/app-providers";
+import { THEME_SCRIPT } from "@/lib/theme";
 
 import "./globals.css";
 
@@ -56,10 +57,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // suppressHydrationWarning — 아래 스크립트가 리액트보다 먼저 dark 클래스를
+    // 달아서 서버가 만든 className과 달라진다. 의도한 차이라 경고를 끈다.
     <html
       lang="ko"
       className={`${inter.variable} ${donguri.variable} ${notoSerifKr.variable} h-full`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* 다크 테마를 그리기 전에 단다 — 리액트가 뜬 뒤에 달면 흰 화면이 번쩍인다.
+            next/script의 beforeInteractive는 그리기를 막지 않아 늦다. lib/theme.ts */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full antialiased">
         <AppProviders>{children}</AppProviders>
       </body>

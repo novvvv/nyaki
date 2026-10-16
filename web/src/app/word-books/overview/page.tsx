@@ -155,7 +155,7 @@ export default function OverviewPage() {
                 </button>
               ))}
             </div>
-            <WordAddedTrend data={dailyCounts} />
+            <WordAddedTrend data={dailyCounts} shapeToggle />
           </Card>
 
           <Card className="px-5 py-5">
@@ -194,7 +194,9 @@ export default function OverviewPage() {
                   ? `오늘 ${reviewedToday}번`
                   : `오늘 ${reviewedToday}개`
               }
+              unit={reviewMetric === "reviews" ? "번" : "개"}
               highlightLast
+              shapeToggle
             />
           </Card>
         </div>

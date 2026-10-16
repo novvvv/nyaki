@@ -403,3 +403,32 @@ describe("MasteryByBook — 그룹", () => {
     ).toBeDisabled();
   });
 });
+
+describe("MasteryByBook — 암기 카드 수", () => {
+  it("암기 카드 수로 바꾸면 1일 이상 카드를 세어 많은 순으로 보인다", async () => {
+    const user = userEvent.setup();
+    render(<MasteryByBook data={DATA} />);
+
+    // 기본 3개(단어 많은 순 라 · 나 · 다)는 암기율 순으로 나 · 다 · 라다.
+    expect(shownTitles()).toEqual(["나", "다", "라"]);
+
+    await user.click(screen.getByRole("button", { name: "암기 카드 수" }));
+
+    // 나 35 / 50, 라 16 / 80, 다 12 / 30 — 새 카드 · 학습 중은 빼고 센다.
+    expect(shownTitles()).toEqual(["나", "라", "다"]);
+    const list = screen.getByRole("list", { name: "단어장별 암기율 비교" });
+    const first = within(list).getAllByRole("listitem")[0]!;
+    expect(first).toHaveTextContent("35");
+    expect(first).toHaveTextContent("/ 50");
+  });
+
+  it("곡선 보기에서는 암기율 · 개수 토글이 없다", async () => {
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+    const user = userEvent.setup();
+    render(<MasteryByBook data={DATA} />);
+
+    await user.click(screen.getByRole("button", { name: "곡선" }));
+    expect(screen.queryByRole("button", { name: "암기 카드 수" })).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});

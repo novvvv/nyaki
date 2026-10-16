@@ -94,4 +94,39 @@ describe("WordAddedTrend — 일별 추가 막대", () => {
     expect(rows[0]).toHaveTextContent("2026-09-23");
     expect(rows[0]).toHaveTextContent("7");
   });
+
+  it("shapeToggle이면 표로 보기 대신 막대 · 곡선을 고른다", () => {
+    const { container } = render(<WordAddedTrend data={DATA} shapeToggle />);
+
+    expect(screen.queryByRole("button", { name: "표로 보기" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "곡선" }));
+
+    // 막대는 사라지고 선 하나(+ 아래 채움)가 생긴다. 히트 영역은 그대로다.
+    expect(bars(container)).toHaveLength(0);
+    expect(container.querySelector('path[fill="none"]')).not.toBeNull();
+    expect(bands(container)).toHaveLength(DATA.length);
+
+    fireEvent.click(screen.getByRole("button", { name: "막대" }));
+    expect(bars(container)).toHaveLength(2);
+  });
+
+  it("곡선은 0 아래(바닥선 밑)로 내려가지 않는다", () => {
+    const { container } = render(<WordAddedTrend data={DATA} shapeToggle />);
+    fireEvent.click(screen.getByRole("button", { name: "곡선" }));
+
+    const d = container.querySelector('path[fill="none"]')!.getAttribute("d")!;
+    const ys = d
+      .split(/[ MC]/)
+      .filter(Boolean)
+      .map((pair) => Number(pair.split(",")[1]));
+    // 바닥선 y = HEIGHT(200) - PAD_BOTTOM(26)
+    expect(Math.max(...ys)).toBeLessThanOrEqual(174);
+  });
+
+  it("툴팁 단위를 바꿀 수 있다 — 넘긴 횟수는 번", () => {
+    const { container } = render(<WordAddedTrend data={DATA} unit="번" />);
+
+    fireEvent.pointerMove(bands(container)[3]!);
+    expect(screen.getByText("7번")).toBeInTheDocument();
+  });
 });

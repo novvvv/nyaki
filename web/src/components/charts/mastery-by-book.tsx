@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { GhostButton, SubtleButton, TextInput } from "@/components/ui";
 import {
+  cardCounts,
   computeGroupRow,
   isGroupId,
   loadGroups,
@@ -13,6 +14,8 @@ import {
 } from "@/lib/mastery-groups";
 import type { MasteryRow } from "@/lib/stats";
 import { cn } from "@/lib/utils";
+
+import { smoothPath } from "./smooth-path";
 
 // 단어장별 암기율. 두 가지로 본다.
 //
@@ -73,6 +76,12 @@ function defaultIds(data: MasteryRow[]): string[] {
 
 type View = "bar" | "curve";
 
+/**
+ * 막대가 보여주는 값. 암기율은 단어장 크기와 상관없이 비교하고, 암기 카드 수는
+ * 암기 상태(다음 복습이 1일 이상 뒤)에 들어간 카드를 개수 그대로 센다.
+ */
+type Measure = "rate" | "count";
+
 /** 그룹 편집 중인 내용. id가 없으면 새 그룹이다. */
 interface GroupDraft {
   id?: string;
@@ -86,6 +95,7 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
   const [groups, setGroups] = useState<MasteryGroup[]>(loadGroups);
   const [picking, setPicking] = useState(false);
   const [view, setView] = useState<View>("bar");
+  const [measure, setMeasure] = useState<Measure>("rate");
   const [draft, setDraft] = useState<GroupDraft | null>(null);
   const [draftError, setDraftError] = useState<string>();
 
@@ -338,7 +348,32 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
           고른 단어장이 없어요.
         </p>
       ) : view === "bar" ? (
-        <BarView rows={rows} />
+        <>
+          <div className="mt-4 flex items-center gap-3.5">
+            {(
+              [
+                ["rate", "암기율"],
+                ["count", "암기 카드 수"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={measure === key}
+                onClick={() => setMeasure(key)}
+                className={cn(
+                  "text-xs transition",
+                  measure === key
+                    ? "font-semibold text-ink"
+                    : "font-medium text-umber/45 hover:text-umber/70",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <BarView rows={rows} measure={measure} />
+        </>
       ) : (
         <CurveView rows={rows} />
       )}
@@ -376,13 +411,28 @@ function Choice({
   );
 }
 
-function BarView({ rows }: { rows: MasteryRow[] }) {
+/**
+ * 막대. 암기율이면 0~100 고정 눈금, 암기 카드 수면 보이는 단어장 중 카드가 가장
+ * 많은 단어장을 끝으로 잡는다 — 옅은 막대가 전체 카드, 진한 막대가 암기 카드다.
+ */
+function BarView({ rows, measure }: { rows: MasteryRow[]; measure: Measure }) {
+  const counted = rows.map((row) => ({ row, ...cardCounts(row.stages) }));
+  const maxCards = Math.max(1, ...counted.map((item) => item.cards));
+  const list =
+    measure === "count"
+      ? [...counted].sort((a, b) => b.ok - a.ok)
+      : counted;
+
   return (
     <ul className="mt-5 space-y-5" aria-label="단어장별 암기율 비교">
-      {rows.map((row) => (
+      {list.map(({ row, ok, cards }) => (
         <li
           key={row.id}
-          title={`${row.title} — ${row.rate}% (${row.itemCount}개)`}
+          title={
+            measure === "count"
+              ? `${row.title} — 암기 ${ok}개 / 카드 ${cards}개`
+              : `${row.title} — ${row.rate}% (${row.itemCount}개)`
+          }
           className="flex items-center gap-3"
         >
           <span className="w-24 shrink-0 truncate text-xs text-ink/70 sm:w-36">
@@ -394,19 +444,32 @@ function BarView({ rows }: { rows: MasteryRow[] }) {
               </span>
             ) : null}
           </span>
-          {/* 50% 기준선 — 상한이 정해진 값이라 눈금이 고정이다 */}
-          <div className="relative h-[10px] min-w-0 flex-1 rounded-full bg-taupe/30">
-            <div className="absolute inset-y-[-3px] left-1/2 w-px bg-taupe/40" />
-            <div
-              className="absolute inset-y-0 left-0 rounded-full bg-chart-1/85"
-              style={{ width: `max(${row.rate}%, 2px)` }}
-            />
-          </div>
+          {measure === "count" ? (
+            <div className="relative h-[10px] min-w-0 flex-1">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-taupe/30"
+                style={{ width: `${(cards / maxCards) * 100}%` }}
+              />
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-chart-1/85"
+                style={{ width: `max(${(ok / maxCards) * 100}%, 2px)` }}
+              />
+            </div>
+          ) : (
+            // 50% 기준선 — 상한이 정해진 값이라 눈금이 고정이다
+            <div className="relative h-[10px] min-w-0 flex-1 rounded-full bg-taupe/30">
+              <div className="absolute inset-y-[-3px] left-1/2 w-px bg-taupe/40" />
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-chart-1/85"
+                style={{ width: `max(${row.rate}%, 2px)` }}
+              />
+            </div>
+          )}
           <span className="w-9 shrink-0 text-right text-xs font-semibold tabular-nums text-ink">
-            {row.rate}%
+            {measure === "count" ? ok : `${row.rate}%`}
           </span>
           <span className="w-12 shrink-0 text-right text-[11px] tabular-nums text-umber/45">
-            {row.itemCount}개
+            {measure === "count" ? `/ ${cards}` : `${row.itemCount}개`}
           </span>
         </li>
       ))}
@@ -415,8 +478,14 @@ function BarView({ rows }: { rows: MasteryRow[] }) {
         <span className="w-24 shrink-0 sm:w-36" />
         <div className="relative h-3 min-w-0 flex-1 text-[10px] tabular-nums text-umber/42">
           <span className="absolute left-0">0</span>
-          <span className="absolute left-1/2 -translate-x-1/2">50</span>
-          <span className="absolute right-0">100</span>
+          {measure === "count" ? (
+            <span className="absolute right-0">{maxCards}</span>
+          ) : (
+            <>
+              <span className="absolute left-1/2 -translate-x-1/2">50</span>
+              <span className="absolute right-0">100</span>
+            </>
+          )}
         </div>
         <span className="w-9 shrink-0" />
         <span className="w-12 shrink-0" />
@@ -437,38 +506,6 @@ const LINE_OPACITY = [0.85, 0.5, 0.28];
 /** 축에 쓸 깔끔한 상한(%) — 10 단위로 올림, 최대 100. */
 function percentCeil(value: number): number {
   return Math.min(100, Math.max(10, Math.ceil(value / 10) * 10));
-}
-
-/**
- * 점들을 부드럽게 잇는 경로. 단조 3차 보간(Fritsch–Carlson)이다.
- *
- * 그냥 베지어로 이으면 값이 0인 칸 근처에서 선이 0 아래로 내려가 "음수 카드"가
- * 있는 것처럼 보인다. 단조 보간은 이웃 점 사이를 넘어가지 않는다.
- */
-function smoothPath(points: { x: number; y: number }[]): string {
-  if (points.length < 2) return "";
-  const n = points.length;
-  const dx = points.slice(1).map((p, i) => p.x - points[i]!.x);
-  const slope = points.slice(1).map((p, i) => (p.y - points[i]!.y) / dx[i]!);
-  const tangent = points.map((_, i) => {
-    if (i === 0) return slope[0]!;
-    if (i === n - 1) return slope[n - 2]!;
-    const a = slope[i - 1]!;
-    const b = slope[i]!;
-    return a * b <= 0
-      ? 0
-      : (3 * (dx[i - 1]! + dx[i]!)) /
-          ((2 * dx[i]! + dx[i - 1]!) / a + (dx[i]! + 2 * dx[i - 1]!) / b);
-  });
-
-  let d = `M${points[0]!.x},${points[0]!.y}`;
-  for (let i = 0; i < n - 1; i++) {
-    const p = points[i]!;
-    const q = points[i + 1]!;
-    const h = dx[i]! / 3;
-    d += ` C${p.x + h},${p.y + h * tangent[i]!} ${q.x - h},${q.y - h * tangent[i + 1]!} ${q.x},${q.y}`;
-  }
-  return d;
 }
 
 function CurveView({ rows }: { rows: MasteryRow[] }) {

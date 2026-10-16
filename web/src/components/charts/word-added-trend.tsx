@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { DailyCount } from "@/lib/stats";
+import { cn } from "@/lib/utils";
+
+import { smoothPath } from "./smooth-path";
 
 const HEIGHT = 200;
 const PAD_LEFT = 34;
@@ -36,6 +39,9 @@ function formatDateLabel(dateKey: string): string {
  * 포인터 좌표를 요소 너비 기준으로 환산하던 계산이 그 여백만큼 어긋나서
  * 커서보다 왼쪽 날짜가 잡혔다. 이제 막대마다 히트 영역을 따로 두므로
  * 좌표 환산 자체가 없다.
+ *
+ * shapeToggle을 켜면 오른쪽의 "표로 보기" 대신 막대 · 곡선을 고른다. 곡선은
+ * 흐름을 보려는 것이라, 값이 없는 날 사이도 이어진다는 점을 감수한다.
  */
 export function WordAddedTrend({
   data,
@@ -44,6 +50,8 @@ export function WordAddedTrend({
   ariaLabel = "날짜별 단어 추가 개수 추이",
   note,
   highlightLast = false,
+  shapeToggle = false,
+  unit = "개",
 }: {
   data: DailyCount[];
   /** 같은 막대 차트를 "복습한 단어"에도 쓴다. 기본값은 단어 추가 차트의 문구다. */
@@ -55,9 +63,14 @@ export function WordAddedTrend({
   note?: ReactNode;
   /** 마지막 날(오늘) 막대를 진하게, 나머지를 옅게 */
   highlightLast?: boolean;
+  /** "표로 보기" 대신 막대 · 곡선 토글 */
+  shapeToggle?: boolean;
+  /** 툴팁의 개수 단위 (예: "개", "번") */
+  unit?: string;
 }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
+  const [shape, setShape] = useState<"bar" | "curve">("bar");
   const [width, setWidth] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +125,18 @@ export function WordAddedTrend({
   const gridValues = [0, maxValue / 2, maxValue];
   const hovered = hoverIndex !== null ? bars[hoverIndex] : null;
 
+  // 곡선은 막대 꼭대기(칸 가운데)를 잇는다. 아래를 옅게 채워 양을 느끼게 한다.
+  const points = bars.map((bar) => ({ x: bar.center, y: bar.y }));
+  const line = smoothPath(points);
+  const area =
+    line && points.length > 0
+      ? `${line} L${points.at(-1)!.x},${baseY} L${points[0]!.x},${baseY} Z`
+      : "";
+  // 점 하나만 진하게 — 가리킨 날, 없으면 (오늘을 강조할 때) 마지막 날.
+  const dotIndex =
+    hoverIndex ?? (highlightLast && bars.length > 0 ? bars.length - 1 : null);
+  const dot = dotIndex !== null ? bars[dotIndex] : null;
+
   if (data.length === 0) {
     return (
       <div className="flex h-[200px] items-center justify-center text-sm text-umber/40">
@@ -129,13 +154,39 @@ export function WordAddedTrend({
             <span className="text-xs tabular-nums text-umber/50">{note}</span>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={() => setShowTable((v) => !v)}
-          className="text-xs text-umber/50 underline decoration-taupe/50 underline-offset-2 transition hover:text-ink"
-        >
-          {showTable ? "그래프로 보기" : "표로 보기"}
-        </button>
+        {shapeToggle ? (
+          <div className="flex items-center gap-3.5">
+            {(
+              [
+                ["bar", "막대"],
+                ["curve", "곡선"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={shape === key}
+                onClick={() => setShape(key)}
+                className={cn(
+                  "text-xs transition",
+                  shape === key
+                    ? "font-semibold text-ink"
+                    : "font-medium text-umber/45 hover:text-umber/70",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowTable((v) => !v)}
+            className="text-xs text-umber/50 underline decoration-taupe/50 underline-offset-2 transition hover:text-ink"
+          >
+            {showTable ? "그래프로 보기" : "표로 보기"}
+          </button>
+        )}
       </div>
 
       {showTable ? (
@@ -209,8 +260,35 @@ export function WordAddedTrend({
               </text>
             ))}
 
+            {shape === "curve" ? (
+              <g>
+                {area ? (
+                  <path d={area} fill="var(--nyaki-ink)" fillOpacity={0.06} />
+                ) : null}
+                {line ? (
+                  <path
+                    d={line}
+                    fill="none"
+                    stroke="var(--nyaki-ink)"
+                    strokeOpacity={0.82}
+                    strokeWidth={1.75}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ) : null}
+                {dot ? (
+                  <circle
+                    cx={dot.center}
+                    cy={dot.y}
+                    r={3.5}
+                    fill="var(--nyaki-ink)"
+                  />
+                ) : null}
+              </g>
+            ) : null}
+
             {/* 막대 — 값이 0인 날은 아무것도 그리지 않는다 */}
-            {bars.map((bar, i) =>
+            {shape === "curve" ? null : bars.map((bar, i) =>
               bar.count === 0 ? null : (
                 <rect
                   key={bar.date}
@@ -260,7 +338,8 @@ export function WordAddedTrend({
               }}
             >
               <div className="font-semibold tabular-nums text-ink">
-                {hovered.count}개
+                {hovered.count}
+                {unit}
               </div>
               <div className="text-umber/50">{hovered.date}</div>
             </div>

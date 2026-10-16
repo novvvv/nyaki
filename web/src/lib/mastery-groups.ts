@@ -68,6 +68,17 @@ export function saveGroups(groups: MasteryGroup[]) {
 /** 단계 6칸 중 앞 둘(새 카드 · 학습 중)이 X, 나머지가 OK다. 서버 암기율과 같은 경계. */
 const OK_FROM_STAGE = 2;
 
+/**
+ * 암기(OK) 카드 수와 전체 카드 수 — 단계 칸을 더한 값이다. 서버가 단계를 아직
+ * 안 보내면(빈 배열) 둘 다 0이다.
+ */
+export function cardCounts(stages: number[]): { ok: number; cards: number } {
+  return {
+    ok: stages.slice(OK_FROM_STAGE).reduce((sum, n) => sum + n, 0),
+    cards: stages.reduce((sum, n) => sum + n, 0),
+  };
+}
+
 export interface GroupRow extends MasteryRow {
   /** 아직 남아 있는 단어장 수. 0이면 비어 있는 그룹이다. */
   memberCount: number;

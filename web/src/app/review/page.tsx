@@ -511,7 +511,7 @@ function saveKey(card: DueCard): string {
 
 export default function ReviewPage() {
   const { getToken } = useAuth();
-  const { wordBooks, updateWord } = useVocab();
+  const { wordBooks, folders, updateWord } = useVocab();
 
   const [phase, setPhase] = useState<Phase>("setup");
   // 출제 개수. null은 "아직 안 건드림" = 고를 수 있는 걸 전부 낸다는 뜻이다.
@@ -558,6 +558,21 @@ export default function ReviewPage() {
 
   // 단어장이 하나뿐이면 고를 이유가 없어 선택 줄을 숨긴다.
   const showBookPicker = wordBooks.length > 1;
+  // 선택 목록의 묶음 — 폴더 순서대로, 빈 폴더는 빼고, 마지막에 폴더 밖 단어장.
+  // 지워진 폴더를 가리키는 단어장도 폴더 밖으로 본다.
+  const bookGroups = [
+    ...folders.map((folder) => ({
+      folder,
+      books: wordBooks.filter((book) => book.folderId === folder.id),
+    })),
+    {
+      folder: null,
+      books: wordBooks.filter(
+        (book) =>
+          !book.folderId || !folders.some((folder) => folder.id === book.folderId),
+      ),
+    },
+  ].filter((group) => group.books.length > 0);
   // 아직 아무것도 안 고른 상태면 **오늘 낼 게 있는 단어장**만 켠다.
   // 0개짜리를 켜놔도 할 수 있는 게 없어 혼란만 준다.
   const selected = (
@@ -719,6 +734,19 @@ export default function ReviewPage() {
       again: formatDelay(card.preview.againSeconds),
       good: formatDelay(card.preview.goodSeconds),
     };
+  }
+
+  /** 폴더 머리줄 — 폴더 안 단어장이 다 켜져 있으면 다 끄고, 아니면 다 켠다. */
+  function toggleFolder(bookIds: string[]) {
+    setSelectedBookIds((prev) => {
+      const base = prev ?? selected;
+      const allOn = bookIds.every((id) => base.includes(id));
+      const next = allOn
+        ? base.filter((id) => !bookIds.includes(id))
+        : [...base, ...bookIds.filter((id) => !base.includes(id))];
+      saveSelection(next);
+      return next;
+    });
   }
 
   function toggleBook(bookId: string) {
@@ -1031,7 +1059,7 @@ export default function ReviewPage() {
         SCREEN,
         "mx-auto grid w-full max-w-3xl items-center gap-12 px-6 py-14",
         // 넓으면 왼쪽에 시작 흐름, 오른쪽에 단어장 목록. 좁으면 위아래로 쌓인다.
-        showBookPicker ? "sm:grid-cols-[1fr_14rem]" : "max-w-xl",
+        showBookPicker ? "sm:grid-cols-[1fr_15.5rem]" : "max-w-xl",
       )}
     >
       <div className="flex flex-col items-center text-center">
@@ -1116,39 +1144,73 @@ export default function ReviewPage() {
 
       {/* 단어장 — 칩을 늘어놓으면 개수가 늘수록 줄이 접힌다. 세로 목록이 읽기 쉽다. */}
       {showBookPicker ? (
-        <ul className="flex flex-col gap-0.5 sm:border-l sm:border-taupe/30 sm:pl-6">
-          {wordBooks.map((book) => {
-            const n = counts?.byBook[book.id] ?? 0;
-            const on = selected.includes(book.id);
+        // 사이드바와 같은 순서로 묶는다 — 폴더들, 그다음 폴더 밖 단어장.
+        <div className="flex flex-col gap-4 sm:border-l sm:border-taupe/30 sm:pl-6">
+          {bookGroups.map((group) => {
+            const ids = group.books.map((book) => book.id);
+            const allOn = ids.every((id) => selected.includes(id));
+            const due = ids.reduce((sum, id) => sum + (counts?.byBook[id] ?? 0), 0);
             return (
-              <li key={book.id}>
-                <button
-                  type="button"
-                  onClick={() => toggleBook(book.id)}
-                  aria-pressed={on}
-                  className={cn(
-                    "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-xs transition",
-                    // 켜진 줄은 행 전체를 Obsidian으로 채운다.
-                    // 디자인 토큰의 "선택은 Obsidian 채움" 규칙 그대로다.
-                    on
-                      ? "bg-ink text-cream"
-                      : "text-ink/35 hover:text-ink/60",
-                  )}
-                >
-                  <span className="min-w-0 flex-1 truncate">{book.title}</span>
-                  <span
+              <div key={group.folder?.id ?? "loose"}>
+                {group.folder ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleFolder(ids)}
+                    aria-pressed={allOn}
                     className={cn(
-                      "shrink-0 tabular-nums",
-                      on ? "text-cream/55" : "text-ink/25",
+                      "mb-0.5 flex w-full items-baseline gap-3 px-3 py-1 text-left text-[11px] font-medium transition",
+                      allOn ? "text-ink/70" : "text-ink/40 hover:text-ink/60",
                     )}
                   >
-                    {n}
-                  </span>
-                </button>
-              </li>
+                    <span className="min-w-0 flex-1 truncate">
+                      {group.folder.title}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-ink/25">{due}</span>
+                  </button>
+                ) : null}
+                <ul
+                  className={cn(
+                    "flex flex-col gap-0.5",
+                    // 폴더 안 단어장은 사이드바처럼 한 칸 들여 선을 긋는다.
+                    group.folder && "ml-3 border-l border-taupe/30 pl-1.5",
+                  )}
+                >
+                  {group.books.map((book) => {
+                    const n = counts?.byBook[book.id] ?? 0;
+                    const on = selected.includes(book.id);
+                    return (
+                      <li key={book.id}>
+                        <button
+                          type="button"
+                          onClick={() => toggleBook(book.id)}
+                          aria-pressed={on}
+                          className={cn(
+                            "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-xs transition",
+                            // 켜진 줄은 행 전체를 Obsidian으로 채운다.
+                            // 디자인 토큰의 "선택은 Obsidian 채움" 규칙 그대로다.
+                            on
+                              ? "bg-ink text-cream"
+                              : "text-ink/35 hover:text-ink/60",
+                          )}
+                        >
+                          <span className="min-w-0 flex-1 truncate">{book.title}</span>
+                          <span
+                            className={cn(
+                              "shrink-0 tabular-nums",
+                              on ? "text-cream/55" : "text-ink/25",
+                            )}
+                          >
+                            {n}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             );
           })}
-        </ul>
+        </div>
       ) : null}
     </main>
   );

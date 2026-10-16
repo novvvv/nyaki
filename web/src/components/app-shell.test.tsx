@@ -68,6 +68,8 @@ function folder(id: string, title = id): Folder {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // 접은 폴더 · 폭은 이 브라우저에 남는다. 앞 테스트의 것이 넘어오지 않게.
+  window.localStorage.clear();
   folders = [folder("f1", "시험")];
   wordBooks = [book("inside", "f1"), book("loose")];
   pathname = "/word-books";
@@ -94,6 +96,20 @@ describe("사이드바", () => {
     expect(screen.queryByRole("link", { name: /inside/ })).not.toBeInTheDocument();
     // 폴더 밖은 그대로다.
     expect(screen.getByRole("link", { name: /loose/ })).toBeInTheDocument();
+  });
+
+  it("접은 폴더는 다시 그려도 접혀 있다 — 테스트 화면에 다녀와도", async () => {
+    const first = render(<AppShell>본문</AppShell>);
+    await userEvent.click(screen.getByRole("button", { expanded: true }));
+    first.unmount();
+
+    render(<AppShell>본문</AppShell>);
+    expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /inside/ })).not.toBeInTheDocument();
+
+    // 다시 펼치면 그것도 기억한다.
+    await userEvent.click(screen.getByRole("button", { expanded: false }));
+    expect(window.localStorage.getItem("nyaki.sidebar.collapsed")).toBe("[]");
   });
 
   it("폴더를 지울 때 안의 단어장이 함께 지워진다고 알려준다", async () => {

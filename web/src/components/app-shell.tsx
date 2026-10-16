@@ -60,6 +60,32 @@ function saveSidebarWidth(value: number) {
   }
 }
 
+const COLLAPSED_KEY = "nyaki.sidebar.collapsed";
+
+/**
+ * 접어 둔 폴더 id. 사이드바는 단어장 화면에만 있어서 테스트 · 마이페이지에
+ * 다녀오면 새로 그려진다 — 기억하지 않으면 그때마다 폴더가 다 펼쳐진다.
+ */
+function loadCollapsed(): string[] {
+  try {
+    const raw = window.localStorage.getItem(COLLAPSED_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCollapsed(ids: string[]) {
+  try {
+    window.localStorage.setItem(COLLAPSED_KEY, JSON.stringify(ids));
+  } catch {
+    // 사생활 보호 모드 등에서 막힐 수 있다. 기억 못 해도 동작에는 지장 없다.
+  }
+}
+
 /**
  * 끌고 난 뒤의 클릭을 삼킨다.
  *
@@ -118,7 +144,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     deleteFolder,
   } = useVocab();
 
-  const [collapsed, setCollapsed] = useState<string[]>([]);
+  // 초기값으로 읽는다. 목록은 단어장을 다 받은 뒤에야 그려지므로 서버가 그린
+  // 화면(불러오는 중)과 어긋나지 않는다.
+  const [collapsed, setCollapsed] = useState<string[]>(loadCollapsed);
   // 초기값으로 읽는다 — 이펙트에서 읽으면 기본 폭이 한 프레임 보였다 바뀐다.
   const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth);
   const [resizing, setResizing] = useState(false);
@@ -310,11 +338,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       pathname={pathname}
                       open={!collapsed.includes(folder.id)}
                       onToggle={() =>
-                        setCollapsed((prev) =>
-                          prev.includes(folder.id)
+                        setCollapsed((prev) => {
+                          const next = prev.includes(folder.id)
                             ? prev.filter((id) => id !== folder.id)
-                            : [...prev, folder.id],
-                        )
+                            : [...prev, folder.id];
+                          saveCollapsed(next);
+                          return next;
+                        })
                       }
                       onRename={() => void handleRename(folder)}
                       onDelete={() => void handleDelete(folder)}

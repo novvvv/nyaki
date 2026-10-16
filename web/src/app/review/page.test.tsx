@@ -35,12 +35,19 @@ vi.mock("@/components/auth-provider", () => ({
   useAuth: () => ({ getToken: async () => "test-token" }),
 }));
 
+// 폴더 묶음 테스트가 바꿔 끼운다. 기본은 폴더 없이 단어장 둘.
+const DEFAULT_BOOKS = [
+  { id: "b1", title: "냐키", words: [] },
+  { id: "b2", title: "비어있음", words: [] },
+];
+let mockBooks: { id: string; title: string; words: never[]; folderId?: string }[] =
+  DEFAULT_BOOKS;
+let mockFolders: { id: string; title: string }[] = [];
+
 vi.mock("@/lib/vocab-store", () => ({
   useVocab: () => ({
-    wordBooks: [
-      { id: "b1", title: "냐키", words: [] },
-      { id: "b2", title: "비어있음", words: [] },
-    ],
+    wordBooks: mockBooks,
+    folders: mockFolders,
     updateWord: (...args: unknown[]) => updateWord(...args),
   }),
 }));
@@ -92,6 +99,8 @@ async function startSession(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockBooks = DEFAULT_BOOKS;
+  mockFolders = [];
   // 앞 테스트가 켜둔 화면 설정(단어장 선택·간격 표시)이 넘어오지 않게.
   window.localStorage.clear();
   fetchDueWords.mockResolvedValue(
@@ -405,5 +414,66 @@ describe("테스트 중 저장", () => {
 
     expect(setClozeNoteBookmark).toHaveBeenCalledWith("test-token", "b1", "n1", false);
     expect(screen.getByRole("button", { name: "☆ 저장" })).toBeInTheDocument();
+  });
+});
+
+describe("단어장 고르기 — 폴더별 묶음", () => {
+  beforeEach(() => {
+    mockFolders = [{ id: "f1", title: "정보처리기사" }];
+    mockBooks = [
+      { id: "b1", title: "2020 기출", words: [], folderId: "f1" },
+      { id: "b2", title: "2021 기출", words: [], folderId: "f1" },
+      { id: "b3", title: "비즈니스 일본어", words: [] },
+    ];
+    fetchDueCounts.mockResolvedValue({
+      total: 6,
+      byBook: { b1: 2, b2: 1, b3: 3 },
+    });
+  });
+
+  it("폴더 이름 아래에 그 폴더의 단어장이 모이고, 폴더 밖 단어장은 뒤에 온다", async () => {
+    const { default: ReviewPage } = await import("./page");
+    render(<ReviewPage />);
+
+    const folder = await screen.findByRole("button", { name: /정보처리기사/ });
+    // 폴더 머리줄의 숫자는 안의 단어장 개수의 합이다.
+    expect(folder).toHaveTextContent("3");
+
+    const names = screen
+      .getAllByRole("button", { pressed: true })
+      .concat(screen.getAllByRole("button", { pressed: false }))
+      .map((button) => button.textContent ?? "");
+    expect(names.some((name) => name.startsWith("2020 기출"))).toBe(true);
+    expect(names.some((name) => name.startsWith("비즈니스 일본어"))).toBe(true);
+  });
+
+  it("폴더 이름을 누르면 안의 단어장을 한꺼번에 끄고 켠다", async () => {
+    const user = userEvent.setup();
+    const { default: ReviewPage } = await import("./page");
+    render(<ReviewPage />);
+
+    const folder = await screen.findByRole("button", { name: /정보처리기사/ });
+    // 고른 적이 없으면 낼 게 있는 단어장이 다 켜져 있다.
+    await waitFor(() => expect(folder).toHaveAttribute("aria-pressed", "true"));
+
+    await user.click(folder);
+    expect(screen.getByRole("button", { name: /2020 기출/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: /2021 기출/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    // 폴더 밖 단어장은 그대로다.
+    expect(
+      screen.getByRole("button", { name: /비즈니스 일본어/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(folder);
+    expect(screen.getByRole("button", { name: /2020 기출/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });

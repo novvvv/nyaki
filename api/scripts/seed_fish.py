@@ -80,6 +80,33 @@ FISH: list[dict] = [
         "description": "거대 가시복. 그 커다란 몸집 때문에 오래 전 에오르제아를 뒤흔든 "
         "거대 봄의 이름이 붙었다.",
     },
+    {
+        # 터주가 아닌 상시 물고기 — 시간·날씨 조건 없음. 생미끼 두 단계를 거친다.
+        "slug": "mazlaya-marlin",
+        "item_id": 4917,
+        "icon_id": 29022,
+        "name": "마즐라야 청새치",
+        "name_en": "Mazlaya Marlin",
+        "name_ja": "マズラヤマーリン",
+        "zone_id": 137,  # 동부 라노시아
+        "spot_name": "북부 핏빛해안, 로타노 해 먼바다: 뱃머리",
+        "water": "바닷가",
+        "level": 50,
+        "stars": 0,
+        "is_legendary": False,
+        "is_big_fish": False,
+        "start_hour": None,
+        "end_hour": None,
+        "weathers": [],
+        "previous_weathers": [],
+        "bait": "쥐며느리 → 항만청어 → 오거 창꼬치어",
+        "tug": "!!!",
+        "hookset": "강력한 낚아채기",
+        "buffs": [],
+        "description": "엄청난 속도로 헤엄치는 대형어. 먼 옛날 여신 리믈렌이 목욕하는 걸 "
+        "훔쳐봤기 때문에 멈추면 죽는 저주를 받았다고 한다.",
+        "note": "항만청어·오거 창꼬치어를 차례로 생미끼로 써서 낚는다.",
+    },
 ]
 
 

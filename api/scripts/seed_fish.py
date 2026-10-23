@@ -107,6 +107,32 @@ FISH: list[dict] = [
         "훔쳐봤기 때문에 멈추면 죽는 저주를 받았다고 한다.",
         "note": "항만청어·오거 창꼬치어를 차례로 생미끼로 써서 낚는다.",
     },
+    {
+        # 시간 조건 없이 날씨(폭풍)만 맞으면 나오는 터주.
+        "slug": "the-lone-ripper",
+        "item_id": 7926,
+        "icon_id": 29085,
+        "name": "고독상어",
+        "name_en": "The Lone Ripper",
+        "name_ja": "ローンリッパー",
+        "zone_id": 138,  # 서부 라노시아
+        "spot_name": "하프스톤 연안",
+        "water": "먼바다",
+        "level": 50,
+        "stars": 3,
+        "is_legendary": True,
+        "is_big_fish": True,
+        "start_hour": None,
+        "end_hour": None,
+        "weathers": [6],  # 폭풍
+        "previous_weathers": [],
+        "bait": "중형 금속 지그",
+        "tug": "!!!",
+        "hookset": "강력한 낚아채기",
+        "buffs": ["물고기의 눈"],
+        "description": "망치상어로서는 드물게 무리를 짓지 않고 살아가는 독불장군. "
+        "거친 바다를 유유히 헤엄치며 우왕좌왕 도망치는 물고기를 포식한다.",
+    },
 ]
 
 

@@ -12,12 +12,14 @@ default vs server_default
   sync.py     — Hub sync 변경 로그 (SyncChangeModel)
   gamification.py — 게이미피케이션 (UserProgressModel, QuestStateModel, AttendanceLogModel)
   content.py  — nyaki-web 블로그 콘텐츠 (ArtistModel, PostModel, FishModel)
+  fishing.py  — nyaki-web 터주 사용자 기록 (CaughtFishModel)
 
 기존 코드는 `from .models import WordBookModel` 형태로 이 패키지를 그대로 쓴다 —
 아래 재수출 덕분에 import 구문을 안 고쳐도 된다.
 """
 
 from .content import ArtistModel, FishModel, PostModel
+from .fishing import CaughtFishModel
 from .gamification import AttendanceLogModel, QuestStateModel, UserProgressModel
 from .sync import SyncChangeModel
 from .vocab import (
@@ -45,4 +47,5 @@ __all__ = [
     "ArtistModel",
     "PostModel",
     "FishModel",
+    "CaughtFishModel",
 ]

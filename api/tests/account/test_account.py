@@ -17,7 +17,7 @@ from firebase_admin import auth
 from sqlalchemy import func, select
 
 from app.account.services import USER_TABLES
-from app.core.auth import get_current_user_id
+from app.core.auth import get_current_user_id, require_admin_id
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 
@@ -71,6 +71,22 @@ def _fill(client: TestClient) -> None:
     ).status_code == 201
     # 출석
     assert client.post("/v1/attendance").status_code == 200
+    # 잡은 물고기 — 물고기 자체는 공용 콘텐츠라 관리자 PUT으로 먼저 만든다
+    app.dependency_overrides[require_admin_id] = lambda: "admin"
+    assert client.put(
+        "/v1/content/fish/account-fish",
+        json={
+            "slug": "account-fish",
+            "item_id": 99100,
+            "name": "탈퇴 확인용 물고기",
+            "zone_id": 135,
+            "spot_name": "낚시터",
+            "level": 1,
+            **stamp,
+        },
+    ).status_code == 200
+    del app.dependency_overrides[require_admin_id]
+    assert client.put("/v1/content/caught-fish/account-fish").status_code == 200
 
 
 def _counts(user: str) -> dict[str, int]:

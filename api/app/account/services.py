@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from ..models import (
     AttendanceLogModel,
     CardModel,
+    CaughtFishModel,
     ClozeNoteModel,
     FolderModel,
     PackImportModel,
@@ -41,6 +42,7 @@ USER_TABLES = (
     UserProgressModel,
     QuestStateModel,
     AttendanceLogModel,
+    CaughtFishModel,
 )
 
 

@@ -73,3 +73,10 @@ class FishPayload(BaseModel):
 
 class FishResponse(FishPayload):
     model_config = ConfigDict(from_attributes=True)
+
+
+class CaughtFishResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    fish_slug: str
+    caught_at: datetime

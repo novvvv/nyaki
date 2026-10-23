@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 
-from app.core.auth import require_admin_id
+from app.core.auth import get_current_user_id, require_admin_id
 from app.core.database import Base, engine
 from app.main import app
 
@@ -93,7 +93,9 @@ def test_fish_crud_and_filters() -> None:
     assert r.json()["spot_name"] == "소금기둥 해변"
 
     # 3. 목록 필터
-    slugs = lambda resp: sorted(f["slug"] for f in resp.json())  # noqa: E731
+    # 테스트들이 DB를 같이 쓰므로 다른 테스트가 만든 물고기는 빼고 본다.
+    own = {"meteor-survivor", "plain-fish"}
+    slugs = lambda resp: sorted(f["slug"] for f in resp.json() if f["slug"] in own)  # noqa: E731
     assert slugs(client.get("/v1/content/fish")) == ["meteor-survivor", "plain-fish"]
     assert slugs(client.get("/v1/content/fish?zone_id=135")) == ["meteor-survivor"]
     assert slugs(client.get("/v1/content/fish?weather_id=4")) == ["meteor-survivor", "plain-fish"]
@@ -115,5 +117,43 @@ def test_fish_crud_and_filters() -> None:
     assert client.get("/v1/content/fish/plain-fish").status_code == 404
     assert slugs(client.get("/v1/content/fish")) == ["meteor-survivor"]
     assert client.delete("/v1/content/fish/plain-fish").status_code == 404
+
+    app.dependency_overrides.clear()
+
+
+def test_caught_fish_is_per_user() -> None:
+    """잡은 물고기 체크는 로그인한 본인 것만 보이고, 없는 물고기는 체크할 수 없다."""
+    Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[require_admin_id] = lambda: "admin-uid"
+    client = TestClient(app)
+    client.put(
+        "/v1/content/fish/caught-test",
+        json=_fish(slug="caught-test", item_id=99001, name="체크용 물고기"),
+    )
+
+    # 로그인 안 하면 401
+    assert client.get("/v1/content/caught-fish").status_code == 401
+
+    app.dependency_overrides[get_current_user_id] = lambda: "user-a"
+    r = client.put("/v1/content/caught-fish/caught-test")
+    assert r.status_code == 200
+    # 두 번 체크해도 처음 시각 그대로. SQLite는 읽을 때 시간대 표시를 떼므로 시각 값으로 비교.
+    def caught_at(resp) -> datetime:  # noqa: ANN001
+        return datetime.fromisoformat(resp.json()["caught_at"].removesuffix("Z")).replace(tzinfo=None)
+
+    first_caught_at = caught_at(r)
+    assert caught_at(client.put("/v1/content/caught-fish/caught-test")) == first_caught_at
+    assert [c["fish_slug"] for c in client.get("/v1/content/caught-fish").json()] == ["caught-test"]
+    assert client.put("/v1/content/caught-fish/no-such-fish").status_code == 404
+
+    # 다른 사용자에게는 안 보임
+    app.dependency_overrides[get_current_user_id] = lambda: "user-b"
+    assert client.get("/v1/content/caught-fish").json() == []
+
+    # 해제 — 두 번 해제해도 204
+    app.dependency_overrides[get_current_user_id] = lambda: "user-a"
+    assert client.delete("/v1/content/caught-fish/caught-test").status_code == 204
+    assert client.delete("/v1/content/caught-fish/caught-test").status_code == 204
+    assert client.get("/v1/content/caught-fish").json() == []
 
     app.dependency_overrides.clear()

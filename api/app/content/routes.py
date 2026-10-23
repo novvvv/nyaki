@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from ..core.auth import require_admin_id
+from ..core.auth import get_current_user_id, require_admin_id
 from .schemas import (
     ArtistPayload,
     ArtistResponse,
+    CaughtFishResponse,
     FishPayload,
     FishResponse,
     PostPayload,
@@ -19,8 +20,11 @@ from .services import (
     get_post,
     get_post_for_artist,
     list_artists,
+    list_caught_fish,
     list_fish,
     list_posts,
+    mark_caught,
+    unmark_caught,
     upsert_artist,
     upsert_fish,
     upsert_post,
@@ -212,5 +216,41 @@ def remove_fish(
     entity = delete_fish(session, slug)
     if entity is None:
         raise HTTPException(status_code=404, detail="물고기를 찾을 수 없습니다.")
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ====================== 잡은 물고기 — 로그인한 본인 기록만 ====================== #
+
+
+@router.get("/caught-fish", response_model=list[CaughtFishResponse])
+def get_caught_fish(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[CaughtFishResponse]:
+    return list_caught_fish(session, user_id)
+
+
+@router.put("/caught-fish/{slug}", response_model=CaughtFishResponse)
+def put_caught_fish(
+    slug: str,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> CaughtFishResponse:
+    if get_fish(session, slug) is None:
+        raise HTTPException(status_code=404, detail="물고기를 찾을 수 없습니다.")
+    entity = mark_caught(session, user_id, slug)
+    session.commit()
+    return entity
+
+
+@router.delete("/caught-fish/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_caught_fish(
+    slug: str,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    # 체크 안 된 걸 해제해도 204 — 화면에서 두 번 눌러도 오류가 나지 않게.
+    unmark_caught(session, user_id, slug)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

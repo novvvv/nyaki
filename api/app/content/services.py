@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from ..models import ArtistModel, FishModel, PostModel
+from ..models import ArtistModel, CaughtFishModel, FishModel, PostModel
 from .schemas import ArtistPayload, FishPayload, PostPayload
 
 
@@ -152,3 +152,35 @@ def delete_fish(session: Session, slug: str) -> FishModel | None:
     entity.updated_at = utc_now()
     session.flush()
     return entity
+
+
+# ====================== 잡은 물고기 — 로그인 사용자 본인 것만 ====================== #
+
+
+def list_caught_fish(session: Session, user_id: str) -> list[CaughtFishModel]:
+    return list(
+        session.scalars(
+            select(CaughtFishModel)
+            .where(CaughtFishModel.user_id == user_id)
+            .order_by(CaughtFishModel.caught_at.desc())
+        )
+    )
+
+
+def mark_caught(session: Session, user_id: str, fish_slug: str) -> CaughtFishModel:
+    """이미 체크돼 있으면 처음 잡은 시각을 그대로 둔다(두 번 눌러도 같은 결과)."""
+    entity = session.get(CaughtFishModel, (user_id, fish_slug))
+    if entity is None:
+        entity = CaughtFishModel(user_id=user_id, fish_slug=fish_slug, caught_at=utc_now())
+        session.add(entity)
+        session.flush()
+    return entity
+
+
+def unmark_caught(session: Session, user_id: str, fish_slug: str) -> None:
+    session.execute(
+        delete(CaughtFishModel).where(
+            CaughtFishModel.user_id == user_id,
+            CaughtFishModel.fish_slug == fish_slug,
+        )
+    )

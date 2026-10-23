@@ -35,6 +35,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "쑥쑥 자라는 해조. 이름은 1말름(약 1600m)이나 되는 미역이 떠내려왔다는 전설에서 유래했다."
  },
@@ -118,6 +120,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -183,6 +187,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "키키룬 선원이 배 창고에서 썩은 물고기를 발견했다. 먹어봤더니 매우 맛이 좋았는데, 이것이 멸치 절임의 시초이다."
  },
@@ -230,6 +236,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "손가락만큼 작은 새우. 국물 재료에 주로 쓰며 낚시 미끼로도 좋다."
  },
@@ -289,6 +297,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -334,6 +344,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "겉모습이 징그러워 싫어하는 사람이 많지만, 비취 바다에 떠 있는 마즐라야 섬이나 근동 사베네어 섬에서는 말려서 먹기도 한다."
  },
@@ -405,6 +417,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -450,6 +464,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "맛있기로 유명한 조개. 바닷가에 사는 주민들이 갖가지 가정 요리에 즐겨 쓴다."
  },
@@ -493,6 +509,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "레몬색 몸에 옅은 줄무늬를 가진 아름다운 물고기. 금색을 좋아하는 울다하 부자들 사이에서 관상어로 인기가 많다."
  },
@@ -544,6 +562,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "산신 오쉬온에게 밟혀 죽은 민물고기를 여신 리믈렌이 가엾게 여겨 납작한 바닷물고기로 되살려주었다고 한다."
  },
@@ -607,6 +627,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "껍데기가 너무 딱딱하고 살이 없어 식용으로는 적합하지 않다. 미끼를 가로채기도 해서 어부들이 싫어한다."
  },
@@ -666,6 +688,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "몸 표면에 화려한 무늬가 있는 물고기. 그 무늬가 오사드 대륙에 사는 야생 '호랑이'와 닮아서 호랑대구라 불린다."
  },
@@ -701,6 +725,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "판금 투구 같은 껍데기가 특징인 게. 얼핏 게와 비슷하지만 박물학자 아텔루네의 설에 의하면 거미전갈에 가깝다."
  },
@@ -760,6 +786,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "로들리트 만에서 나는 것이 특히 좋다고 한다. 갓 딴 로들리트 굴에 태양 레몬즙을 뿌리기만 해도 대단히 맛있다."
  },
@@ -795,6 +823,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "커다란 물고기로부터 도망치기 위해 지느러미를 펼치고 날아오르는 물고기. 그 모습은 여신 리믈렌이 던진 단검에 비유된다."
  },
@@ -830,6 +860,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "따뜻한 남쪽 바다에서 자라는 아리따운 물고기. 가끔 해류를 타고 흘러오기 때문에 에오르제아에서도 낚을 수 있다."
  },
@@ -869,6 +901,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "깜짝 놀라면 숨어있던 구멍에서 튀어나온다. 이 습성을 아는 바닷새는 구멍에 돌멩이를 떨어뜨려 잡아먹는다."
  },
@@ -940,6 +974,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "촉수를 출렁이며 춤추듯 헤엄친다. 이것이 구애 행동이라는 설과 노폐물을 제거하는 것이라는 설이 있으며, 지금도 논쟁이 이어지고 있다."
  },
@@ -991,6 +1027,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "침묵독을 가진 위험한 물고기. 어느 가정에서 실수로 식탁에 올렸다가 가족 간의 대화가 끊어져서 집안이 풍비박산 났다."
  },
@@ -1026,6 +1064,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "칼날처럼 뾰족한 지느러미를 가진 물고기. 종종 그 날카로운 지느러미로 어망을 찢기도 한다."
  },
@@ -1075,6 +1115,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -1108,6 +1150,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "빛을 내는 유인돌기로 작은 물고기를 유인해 잡아먹기 때문에 '어부고기'라고도 불린다. 어부에게는 행운의 상징이다."
  },
@@ -1143,6 +1187,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "해마와 해룡 중 어떤 이름을 붙일지를 두고 학자들이 서로 싸웠다. 하지만 그중에 실제로 말이나 용을 본 사람은 아무도 없었다."
  },
@@ -1178,6 +1224,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "독특한 연분홍빛 몸 색깔은 손가락새우를 주로 먹기 때문인 것 같다. 비아나크 섬에서 잡히는 것이 특히 맛있다."
  },
@@ -1213,6 +1261,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "신발 밑창처럼 납작한 물고기. 구워서 돈버섯 양념을 뿌려 먹으면 아주 맛있다."
  },
@@ -1248,6 +1298,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "망치처럼 생긴 머리로 잽싸게 먹잇감을 감지하는 상어. 무리를 지어 다니며, 많을 때는 백 마리 단위로 움직인다."
  },
@@ -1283,6 +1335,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "북쪽 바다에 사는 바다늑대족은 얇게 잘라 먹기도 한다. 오독오독 씹는 맛이 일품이라는데……"
  },
@@ -1318,6 +1372,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "중요한 식재료이자, 대형 육식어를 낚는 미끼로도 쓰인다. 어부 길드에서 다루는 물고기 중 가장 많이 잡힌다."
  },
@@ -1357,6 +1413,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "미코테족이 즐겨 먹는 맛 좋고 통통한 거대어. 동방에서는 낚은 것을 그 자리에서 해체하여 날로 먹는 문화가 있다."
  },
@@ -1396,6 +1454,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "해마 명명 시에 해룡 이름을 붙이지 못했던 학자들이 필사적으로 비슷한 종을 찾아서 드디어 해룡이라는 이름을 붙였다."
  },
@@ -1443,6 +1503,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -1480,6 +1542,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "살이 쫄깃해서 푹 삶아도 물러지지 않기 때문에 찜 요리에 자주 쓰인다. 북해에서 이름난 임금이 즐겨 먹는 것으로도 유명하다."
  },
@@ -1523,6 +1587,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "식용으로 적합하진 않지만, 안에서 가끔 백진주가 나오기 때문에 귀하게 여겨지는 조개. 진주를 얻기 위해 대량으로 양식하는 방법을 찾고 있다."
  },
@@ -1562,6 +1628,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "고래나 상어 몸에 달라붙어서 기생하는 물고기. 시간을 멈춘 듯 가만히 달라붙은 모습이 시간의 신 알디크가 좋아하는 꽃과 닮았다는 전설이 있다."
  },
@@ -1601,6 +1669,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "화가 나면 가시가 돋은 몸을 풍선처럼 부풀려서 위협적인 모습이 된다. '바다의 봄'이라는 별명으로도 유명하다."
  },
@@ -1648,6 +1718,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "평소에는 조금 큼직한 물고기를 주로 노리지만, 가끔 사람을 덮칠 때도 있다. 서식지에서 함부로 헤엄치면 매우 위험하다."
  },
@@ -1709,6 +1781,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -1749,6 +1823,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -1792,6 +1868,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -1829,6 +1907,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "예전에는 못 먹는 물고기라고 여겨서 낚아도 버리거나 비료로 썼지만, 최근 들어 다양한 요리법이 개발됐다."
  },
@@ -1864,6 +1944,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "다 자라면 이마가 갑자기 툭 튀어나온다. 같은 종끼리 만나면 이마를 서로 들이받아서 우열을 정한다고 한다."
  },
@@ -1903,6 +1985,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "비교적 수심이 얕은 앞바다에 서식하며 바닥에 달라붙어 꼼짝 않고 가만히 지낸다. 이것은 조용히 먹잇감을 기다리려는 습성 때문이다."
  },
@@ -1942,6 +2026,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "보는 사람을 불안하게 만드는 섬뜩한 모습으로 모두가 싫어한다. 겉모습과 달리 맛있지만 먹는 사람은 거의 없다."
  },
@@ -1985,6 +2071,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -2018,6 +2106,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "평소에는 먼바다에 살지만 가끔 바닷가까지 내려오기도 한다. 그물에 걸리면 다른 물고기를 먹어치우기 때문에 싫어하는 어부가 많다."
  },
@@ -2060,6 +2150,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -2101,6 +2193,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "이 조개에 발이 낀 남자가 밀물 때 익사했다는 일화가 있다. 하지만 실제로는 그렇게 급히 입을 닫지 않는다."
  },
@@ -2132,6 +2226,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -2165,6 +2261,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "수온이 낮은 바다 밑을 좋아한다. 계절에 따라 변하는 해류에 몸을 맡기며 살기 좋은 해역으로 이동한다고 한다."
  },
@@ -2211,6 +2309,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "엄청난 속도로 헤엄치는 대형어. 먼 옛날 여신 리믈렌이 목욕하는 걸 훔쳐봤기 때문에 멈추면 죽는 저주를 받았다고 한다."
  },
@@ -2248,6 +2348,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -2300,6 +2402,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -2337,6 +2441,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "온갖 악명높은 전설의 주인공. 배를 가라앉혔다는 일화가 에오르제아뿐 아니라 동방에서도 유명하다."
  },
@@ -2368,6 +2474,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "드물게 해수면에 몸을 눕힌 채 둥둥 떠다닌다. 뱃사람들에게 매우 사랑받는 존재."
  },
@@ -2399,6 +2507,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "단단한 판 형태의 턱으로 거대한 상어마저 물어뜯는다고 한다. 사하긴족이 신성시하는 것도 이해가 갈 정도다."
  },
@@ -2438,6 +2548,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "수많은 식인 전설을 남긴 상어. 무예에 뛰어난 북해의 왕마저도 팔 하나를 내주고 퇴치했다고 한다."
  },
@@ -2483,6 +2595,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -2548,6 +2662,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "낚싯바늘이 없어도 낚을 수 있다고 할 만큼 식욕이 왕성하다. 눈앞에서 움직이는 물체는 뭐든 집게발로 붙잡으려 한다."
  },
@@ -2591,6 +2707,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "번식기가 되면 머리나 배, 꼬리 지느러미가 화려한 색으로 바뀐다. 이 아름다운 혼인색 때문에 관상어로 인기가 많다."
  },
@@ -2646,6 +2764,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -2695,6 +2815,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "물에서 낚아올리면 등지느러미와 뼈를 비비며 '기기기기기' 하고 낮은 소리로 운다. 낚인 게 억울한 것 같다."
  },
@@ -2770,6 +2892,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "햇볕이 없는 곳에서 주로 서식하므로 껍데기가 희게 바랬다. 특히 탈피 직후에는 거의 투명해진다."
  },
@@ -2813,6 +2937,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "송어낚시 초보자도 쉽게 낚을 수 있는 물고기. 하지만 노련한 어부도 나중에 가면 다시 이 물고기를 즐겨 낚는다고 한다."
  },
@@ -2880,6 +3006,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "바일브랜드 섬 민물에서 살게 된 망둥이의 일종. 망둥이는 서식지에 따라 다양한 빛깔을 지닌다."
  },
@@ -2935,6 +3063,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "매우 사나운 육식 물고기. 물에 들어온 아이나 가축을 물어뜯는 경우도 자주 있다. 찜구이로 먹으면 맛있다."
  },
@@ -2978,6 +3108,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "붉은빛을 띠는 가재. 어릴 때는 푸른 기가 도는 잿빛이지만 성장하면서 점점 붉어진다고 한다."
  },
@@ -3045,6 +3177,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "물속에서 모래를 비집고 숨는 습성이 있다. 그 때문에 라노시아에서는 겁쟁이를 '모래무지 같은 녀석'이라고 부른다."
  },
@@ -3108,6 +3242,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "미끌미끌하고 길쭉한 물고기. 라라펠족 농민은 즐겨 먹지만 보통 흙비린내가 난다며 싫어한다."
  },
@@ -3207,6 +3343,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "잡식성이라 큼직한 것도 쉽게 잡을 수 있어 어부에게 인기 있다. 소금을 뿌려서 굽기만 해도 맛있다는 점도 인기 비결."
  },
@@ -3254,6 +3392,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -3295,6 +3435,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "빛이 없는 곳에서 살다 보니 눈이 퇴화했지만, 천적이 없기에 별 문제는 없다. 물 흐름이 달라지는 것을 감지해 먹이를 잡아먹는다."
  },
@@ -3346,6 +3488,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "지느러미로 진흙을 기어 다니는 이상한 물고기. 툭 튀어나온 눈은 얕은 물웅덩이에서 적을 발견하기 위한 것이라고 한다."
  },
@@ -3417,6 +3561,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "털바늘 루어로 낚을 수 있는 물고기. 소금구이는 물론 튀김, 뫼니에르 등 다양한 요리로 만든다."
  },
@@ -3484,6 +3630,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "죽은 물고기나 해조류를 먹기 때문에 '강의 청소부'라고 불린다. 이 게가 사라지면 강이 탁해진다고 한다."
  },
@@ -3555,6 +3703,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -3624,6 +3774,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "에오르제아에서 흔히 보이는 작은 농어. 서식지가 겹치는 어둑농어와 치열한 생존경쟁을 펼치고 있다."
  },
@@ -3679,6 +3831,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "껍데기가 동그랗게 말려있다. 떫은맛을 정성껏 빼면 먹을 수 있지만 조금만 잘못 조리해도 매우 비리고 맛없다."
  },
@@ -3730,6 +3884,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -3775,6 +3931,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "이름 그대로 라노시아 하천에서 자주 보이는 물고기. 작은 물고기를 잡아먹기 때문에 피라미 루어로 쉽게 낚을 수 있다."
  },
@@ -3834,6 +3992,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "옛 전쟁에서 농성전을 벌일 때 식량으로 삼기 위해 가까운 비취 호수에 풀어놓았다는 전설이 있다."
  },
@@ -3909,6 +4069,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -3950,6 +4112,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "강에서 태어나 바다에서 자라고, 다시 강으로 돌아가 알을 낳은 뒤 죽는다. 그 때문에 생명의 순환을 상징하기도 한다."
  },
@@ -4029,6 +4193,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "진흙투성이가 되어 포식자의 눈을 속였기 때문에, 옛날에는 '진흙에서 태어나는 골렘의 일종'이라고 여겨졌다."
  },
@@ -4068,6 +4234,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -4137,6 +4305,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "피처럼 붉은 껍데기가 특징. 태양의 여신 아제마가 흘린 피에서 태어났다는 전설이 있을 정도다."
  },
@@ -4184,6 +4354,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -4241,6 +4413,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "불순물을 몸 안에 쌓아두기 때문에 비려서 식용으로 적합하지 않다. 하지만 이 조개 덕분에 서식지 수질이 유지된다."
  },
@@ -4292,6 +4466,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "털바늘 루어로 낚시를 즐기기에 딱 좋은 물고기. 단, 찬물에 주로 살기 때문에 낚시를 마치고 따뜻한 온천은 필수."
  },
@@ -4323,6 +4499,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "유리처럼 속이 훤히 비치기 때문에 물속에 있으면 알아차리기 어렵다. 얼마 전까지 존재조차 알려지지 않았던 물고기."
  },
@@ -4366,6 +4544,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "한때 '먹으면 시력이 좋아진다'는 소문이 퍼져서 크게 유행했지만, 엄청나게 맛이 없었기 때문에 곧 잊혔다."
  },
@@ -4421,6 +4601,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -4494,6 +4676,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "살아남은 생물이 거의 없다는 남방대륙에서 들여온 품종. 생명력이 무척 강해서 낯선 곳에서도 잘 번식한다."
  },
@@ -4529,6 +4713,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "방패 모양 껍데기 때문에 전설의 '이지스 방패'와 같은 이름이 붙었다. 박물학자는 고대종이라 추정한다."
  },
@@ -4564,6 +4750,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "독특하게 생긴 주둥이로 물에 뜬 나무나 바위에서 자라는 해조를 먹는 작은 물고기. 대부분 5일름(약 13cm) 정도로 자라난다."
  },
@@ -4603,6 +4791,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "가끔 나무 위에서 발견되기 때문에 '나무를 오르는 물고기'라는 이름이 붙었다. 하지만 실제로는 새가 잡아서 옮긴 것이다."
  },
@@ -4634,6 +4824,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "호수 바닥에 숨어 사는 거대어. 감각기관인 긴 수염으로 먹잇감이 일으키는 진동을 감지하고 눈앞의 먹이를 단번에 집어삼킨다."
  },
@@ -4669,6 +4861,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "번개기운을 뿜어 먹잇감을 기절시키고 잡아먹는 무시무시한 물고기. 멋모르고 가까이 갔다가 호되게 당하는 사람이 해마다 몇 명씩 나온다."
  },
@@ -4716,6 +4910,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "가시 돋친 빨판 주둥이로 먹잇감에 달라붙어 체액을 빨아먹는 물고기. 한때 울다하에서는 왕과 귀족들이 즐겨 먹기도 했다."
  },
@@ -4755,6 +4951,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "도마뱀 머리뼈를 투구처럼 뒤집어쓰고 영역다툼을 벌이는 신기한 물고기. 몸집이 클수록 커다란 머리뼈를 쓰기 때문에 유리한 모양이다."
  },
@@ -4806,6 +5004,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "식재료로 유명한 물고기. 이 물고기는 해마다 강을 거슬러 올라가는데, 마물이나 짐승에게도 귀한 먹잇감이다."
  },
@@ -4841,6 +5041,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "바위 표면에 달라붙기 위한 입이 특징이다. 다양한 색과 무늬가 있는데, 그중에서도 얼룩무늬가 특히 아름답다."
  },
@@ -4872,6 +5074,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "가늘고 긴 몸통은 단단한 비늘로 빈틈없이 덮여있다. 숨을 쉬기 위해 가끔 물 밖으로 입을 내미는 것도 특징이다."
  },
@@ -4919,6 +5123,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "신의 손아귀에서 발견된 물고기. 독성에 잘 견디기 때문에 수질 측정할 때 도움이 된다."
  },
@@ -4954,6 +5160,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "뼈만 남은 시체에 착 달라붙은 소름 끼치는 모습 때문에 불길함을 담아 '요마의 앞잡이'라 부르기도 한다."
  },
@@ -4985,6 +5193,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "징검뿌리 늪지대에서만 볼 수 있는 고유종. 지느러미를 활용해서 이리저리 뛰어다닌다."
  },
@@ -5044,6 +5254,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "작은 물고기나 곤충을 통째로 삼키기 위한 뾰족한 아래턱이 특징. 먼 옛날부터 모습을 그대로 유지하는 고대어의 일종이다."
  },
@@ -5123,6 +5335,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "가는 잔털이 자란 집게발이 마치 벙어리장갑을 낀 것처럼 보여서 이런 이름으로 불리게 되었다."
  },
@@ -5170,6 +5384,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "아마도 아주 먼 옛날, 남쪽 바다에서 건너온 라라펠족 '몬케 온케'가 우호의 표시로 뿔의 아이에게 바쳤다는 관상어의 후손."
  },
@@ -5221,6 +5437,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "바다에 내려오지 않고 하천이나 호수에서 지내는 민물고기. 조심성이 많아서 낚으려면 기술이 필요하다."
  },
@@ -5252,6 +5470,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "아주 고운 모래알갱이로 이루어진 사막 '모래바다'에 서식하는 모랫고기. 먹이사슬의 최하위층에 놓여 있다."
  },
@@ -5343,6 +5563,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -5388,6 +5610,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "또렷한 줄무늬가 어릿광대 의상과 닮아서 '광대'라는 이름이 붙었다. 아주 귀한 관상어."
  },
@@ -5423,6 +5647,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "비늘이 너무 단단해서 대형어도 좀처럼 노리지 않는다. 천적이 적기 때문에 장수해서 아주 크게 자란다."
  },
@@ -5502,6 +5728,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "민물고기 중에는 큰 편에 속하는 물고기. 식탐이 많기로도 유명해서 미끼가 클수록 잘 먹는다."
  },
@@ -5553,6 +5781,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "잡식성 물고기라 루어로도 쉽게 낚을 수 있다. 그리다니아에서는 생선구이 하면 바로 떠오르는 친숙한 물고기."
  },
@@ -5588,6 +5818,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "강어귀처럼 민물에서 바닷물로 이어지는 구역에서 볼 수 있는 물고기. 온몸에 난 귀여운 얼룩무늬 덕분에 관상어로서도 인기가 높지만 기르기 어렵다."
  },
@@ -5631,6 +5863,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "미꾸라지치고는 드물게 몸 색깔이 굉장히 옅으며 빛을 비추기에 따라 금색으로 보인다. 돌연변이가 번식한 듯하다."
  },
@@ -5662,6 +5896,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -5711,6 +5947,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "지역 주민들 사이에서는 털바늘 루어로 낚을 수 있다고 알려진 물고기. 피처럼 붉은 몸 색깔 때문에 옛날에는 '흡혈어' 취급을 받았다."
  },
@@ -5762,6 +6000,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "납작한 몸에 선명한 무늬가 있어서 아름다운 물고기. 교역선에 실려 남해 제도에서 들어왔다는 설이 있다."
  },
@@ -5805,6 +6045,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "청동호수에 사는 고유종. 이 물고기를 잡아먹으려던 새가 떨어뜨린 것인지, 주변 하천에서도 간혹 발견된다."
  },
@@ -5872,6 +6114,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "아말쟈족은 붉은 껍데기를 가진 이 우렁이가 '화염신 이프리트의 발톱에서 태어났다'고 믿어서 신성한 음식으로 여긴다."
  },
@@ -5915,6 +6159,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "울다하 선왕 사사발의 즉위식에서 어느 상인이 관상어로 바친 뒤로 '왕실'이라는 이름이 붙었다."
  },
@@ -5953,6 +6199,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -5990,6 +6238,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "용이 자신의 피로 졸개를 만들 때, 피 한 방울이 강에 떨어져서 이 물고기가 되었다는 전설이 있다. 하늘을 나는 용처럼 폭포를 거슬러 오른다."
  },
@@ -6041,6 +6291,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "금속처럼 빛나는 비늘을 가졌으며, 생김새가 칼날을 닮아서 이러한 이름이 붙었다. 하지만 칼로 썰기는 몹시 힘들다."
  },
@@ -6076,6 +6328,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6121,6 +6375,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6166,6 +6422,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "물고기와 조개, 두꺼비를 비롯하여 쥐나 작은 새까지 잡아먹는 사나운 물고기. 북방꼬치어의 근연종."
  },
@@ -6205,6 +6463,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "서식지가 다른 남방꼬치어의 근연종. 꼬리지느러미 색이 붉으면 북방, 푸르면 남방이라 한눈에 구별할 수 있다."
  },
@@ -6236,6 +6496,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "이름의 유래에는 '코볼드족처럼 몸집이 작아서'라는 설과 '코볼드족이 연금술로 색을 입혀서'라는 설이 있다."
  },
@@ -6276,6 +6538,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6309,6 +6573,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "고블린족이 한창 순례 여행을 하다가 손에 넣은 뒤 에오르제아로 가지고 돌아왔다는 물고기. 고블린족이 즐겨 먹는다."
  },
@@ -6348,6 +6614,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "특정 지역에서만 사는 귀한 물고기. 이 물고기가 물 위로 뛰어오르는 모습을 보면 사흘 동안 행운이 좋다는 말이 있다."
  },
@@ -6405,6 +6673,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6454,6 +6724,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "독에 강해 수질이 나쁜 곳에서도 잘 산다. 하지만 몸 안에 독소가 쌓여 있어 먹지 않는 게 좋다."
  },
@@ -6493,6 +6765,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "번개기운을 내뿜는 물고기 중에서도 특히 마력이 강하다. 그 위력은 강력한 번개 마법 '선더라'와 견줄 수 있을 정도다."
  },
@@ -6532,6 +6806,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "힘이 굉장히 세서 낚으려면 상당한 솜씨가 필요하다. 박물학자 중에는 고대어의 일종이라고 주장하는 사람도 있다."
  },
@@ -6587,6 +6863,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "북주 일사바드 대륙에서 들어온 품종. 그 섬뜩한 붉은 눈과 마주치면 불행이 찾아온다는 소문이 있다."
  },
@@ -6622,6 +6900,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6663,6 +6943,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6708,6 +6990,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "은하수처럼 반짝이는 얼룩 무늬를 가진 물고기. 그 모습은 마치 별의 여신 니메이아를 연상시킨다."
  },
@@ -6739,6 +7023,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "전쟁의 신 할로네처럼 용감하며 사나운 물고기. 이슈가르드 기사들이 문장으로 사용하기도 한다."
  },
@@ -6796,6 +7082,8 @@
   ],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6833,6 +7121,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "이빨이 빽빽한 주둥이로 먹잇감의 몸에 달라붙어 피를 빨아먹는다. 들짐승이나 마물까지도 놈의 먹이에 지나지 않는다."
  },
@@ -6864,6 +7154,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "산과 방랑의 신 오쉬온이 어느 날 산속에서 길을 잃자, 이 물고기가 나타나 바른길을 알려주었다는 전설이 있다."
  },
@@ -6895,6 +7187,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "낚싯줄을 끊어뜨리지 않고 잡으려면 상당한 실력이 필요하다. '환상'이라 불러 마땅한 존재."
  },
@@ -6926,6 +7220,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "매년 이 물고기에게 물린 어부가 속출한다. 그 상처 자국은 마수 커얼에게 물린 듯 끔찍하다고 한다."
  },
@@ -6957,6 +7253,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -6993,6 +7291,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7026,6 +7326,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "사나운 거대 물고기. 사막 부족은 말 안 듣는 어린아이를 겁줄 때 이 물고기의 이름을 댄다."
  },
@@ -7057,6 +7359,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "몸 무늬가 지금은 제작할 수 없는 '우츠칼'과 닮아서 그렇게 부른다."
  },
@@ -7092,6 +7396,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "몸집이 너무 큰 나머지 낚으려면 여럿이 함께 해야 한다. 거대 물고기 낚시의 등용문과 같은 존재."
  },
@@ -7125,6 +7431,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7167,6 +7475,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7203,6 +7513,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7236,6 +7548,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "수많은 동갈치 중에서도 가장 큰 덩치를 자랑한다. 웬만한 어부는 낚아올리는 것조차 불가능하다."
  },
@@ -7267,6 +7581,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "검은 알을 소금에 절이면 맛이 기막히다고 한다. 남획 때문에 개체 수가 격감했다."
  },
@@ -7298,6 +7614,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "정령의 말을 전해 들은 뿔의 아이에 의하면, 이 물고기는 세계가 창조되었을 때부터 이 모습이었다고 한다."
  },
@@ -7329,6 +7647,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7362,6 +7682,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "먼 옛날 극동에서 온 여행자가 말린 알을 '보석'으로 환술황에게 헌상했는데, 그 알이 부화했다고 한다."
  },
@@ -7393,6 +7715,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "장신인 엘레젠족보다 더 크게 성장한다는 거대물고기. 큰 뱀으로 착각할 정도의 거구라고 한다."
  },
@@ -7424,6 +7748,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "백 년 넘게 산다는 환상의 거대어. 알은 굉장히 맛있지만 맹독이라 먹으면 죽는다."
  },
@@ -7466,6 +7792,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7503,6 +7831,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "지느러미를 살살 흔들어서 모래를 물처럼 만들어 헤엄치는 모랫고기. 도미와 닮았지만 사실은 근연종이 아니다."
  },
@@ -7534,6 +7864,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "모랫고기나 곤충, 때로는 마물까지 잡아먹는 대형 물고기. 살이 통통해 맛있을 것 같지만 모래 빼기가 매우 까다롭다."
  },
@@ -7569,6 +7901,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "마치 요술을 부리는 것처럼 모래 속으로 재빨리 사라져서, 동방의 암살 기술 '은신'이라는 이름이 붙었다."
  },
@@ -7604,6 +7938,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7641,6 +7977,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "작가 다윈 경이 쓴 여행기 '지하도시 견문록'에 따르면 지하 세계에서 온 사절이라고 한다. 물론 믿는 사람은 별로 없다."
  },
@@ -7676,6 +8014,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "모래언덕 꼭대기까지 올라간 다음 하늘을 날아다니다가, 먹잇감을 찾으면 그 위에 내려앉아 온몸을 뒤덮고 그대로 잡아먹는다."
  },
@@ -7711,6 +8051,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "달해파리 같은 부유 해파리의 친척뻘이다. 몸이 대부분 공기주머니로 되어 있어서, 그 안에 공중에 뜨는 기체를 담아 날아다닌다."
  },
@@ -7746,6 +8088,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "옛날부터 기록으로는 남아 있었지만, 표본이 없어 실존 여부는 확실치 않았다. '하늘을 나는 지팡이'라고도 불린다."
  },
@@ -7781,6 +8125,8 @@
   "mooches": [],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -7818,6 +8164,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "쥐가오리와 닮은 납작한 몸 전체가 대기 중에 있는 바람속성 에테르를 받아들이는 '에테르 날개'로 기능하고 있다."
  },
@@ -7853,6 +8201,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "바람속성 에테르를 머금기 위한 얇은 막이 배의 돛처럼 보인다. 그 아름다운 모습을 보면 행운이 찾아온다고 한다."
  },
@@ -7884,6 +8234,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "사골리 사막에 사는 모랫고기. 먹잇감을 잡을 때 쓰는 기관이 반짝이기 때문에, 가끔 보석으로 착각하고 잡았다가 공격당하는 사람도 있다."
  },
@@ -7915,6 +8267,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "맛없는 생선요리에 화가 난 어느 왕이 접시째 구름바다에 내던졌는데, 그것이 물고기로 다시 태어났다는 민담이 있다."
  },
@@ -7946,6 +8300,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "산란지인 사골리 사막과 서식지인 위대한 항로가 동방무역 경로와 겹치기 때문에 이런 이름이 붙었다."
  },
@@ -7977,6 +8333,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "커르다스 구름바다에 숨어 사는 육식 대형어. 이슈가르드인 중에는 드래곤족 졸개라고 생각하는 사람도 있다."
  },
@@ -8016,6 +8374,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "바위처럼 보이지만 엄연한 생물. 잘 가공하면 하얗고 아름다운 광택을 내기 때문에 '바다의 보석'이라고도 불린다."
  },
@@ -8051,6 +8411,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "시선을 사로잡을 만큼 푸른빛을 띤 산호. 그 빛깔은 바다의 이름을 따서 '로타노 블루'라 불리며 매우 사랑받는다."
  },
@@ -8106,6 +8468,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "피처럼 붉은 산호는 생명력을 상징한다. 덕분에 라노시아에서는 출산 축하 선물로 인기가 많다."
  },
@@ -8153,6 +8517,8 @@
   "mooches": [],
   "tug": "",
   "hookset": "",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "드물게 흑진주를 품고 있기도 하다. 흰나비조개보다 개체 수가 적기 때문에, 이 흑진주는 최고급 명품으로 여겨진다."
  },
@@ -8212,6 +8578,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8245,6 +8613,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8278,6 +8648,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8311,6 +8683,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8344,6 +8718,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8381,6 +8757,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8420,6 +8798,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8464,6 +8844,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8497,6 +8879,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8539,6 +8923,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8572,6 +8958,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8605,6 +8993,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8642,6 +9032,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8675,6 +9067,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8708,6 +9102,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8741,6 +9137,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8777,6 +9175,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8816,6 +9216,8 @@
   ],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8849,6 +9251,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8882,6 +9286,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8919,6 +9325,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8952,6 +9360,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -8985,6 +9395,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9020,6 +9432,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9056,6 +9470,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9092,6 +9508,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9125,6 +9543,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9161,6 +9581,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9200,6 +9622,8 @@
   ],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9233,6 +9657,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9272,6 +9698,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9305,6 +9733,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9338,6 +9768,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9373,6 +9805,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9406,6 +9840,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9439,6 +9875,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9475,6 +9913,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9511,6 +9951,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9544,6 +9986,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9581,6 +10025,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9614,6 +10060,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9656,6 +10104,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9689,6 +10139,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9722,6 +10174,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9755,6 +10209,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9788,6 +10244,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9821,6 +10279,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9862,6 +10322,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9903,6 +10365,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9939,6 +10403,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -9972,6 +10438,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10014,6 +10482,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10047,6 +10517,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10082,6 +10554,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10115,6 +10589,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10151,6 +10627,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10193,6 +10671,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10228,6 +10708,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10261,6 +10743,8 @@
   "mooches": [],
   "tug": "!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10296,6 +10780,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10333,6 +10819,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10368,6 +10856,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10403,6 +10893,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10444,6 +10936,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10485,6 +10979,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10520,6 +11016,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10553,6 +11051,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10586,6 +11086,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10627,6 +11129,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10662,6 +11166,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10697,6 +11203,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10733,6 +11241,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10768,6 +11278,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10810,6 +11322,8 @@
   ],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10853,6 +11367,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10888,6 +11404,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10929,6 +11447,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -10965,6 +11485,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11007,6 +11529,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11046,6 +11570,8 @@
   ],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11081,6 +11607,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11120,6 +11648,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11162,6 +11692,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11215,6 +11747,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11250,6 +11784,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11289,6 +11825,14 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [
+   {
+    "slug": "jungle-catfish",
+    "name": "큰숲메기",
+    "count": 3
+   }
+  ],
+  "intuition_seconds": 600,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11338,6 +11882,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11374,6 +11920,14 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [
+   {
+    "slug": "little-thalaos",
+    "name": "살라오스 갈치",
+    "count": 3
+   }
+  ],
+  "intuition_seconds": 350,
   "buffs": [],
   "description": "살라오스 갈치의 돌연변이라 추정되는 전설의 괴어. 제7재해로 변한 조류를 따라 로타노 해까지 내려왔다."
  },
@@ -11415,6 +11969,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11461,6 +12017,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "창 형태의 껍데기를 가진 앵무조개의 고대종. 흑와단 군함 바닥에 꽂혀있던 개체가 발견됨으로써 멸종되지 않은 사실이 판명됐다."
  },
@@ -11506,6 +12064,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11544,6 +12104,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11582,6 +12144,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11615,6 +12179,14 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [
+   {
+    "slug": "boxing-pleco",
+    "name": "권투비파",
+    "count": 5
+   }
+  ],
+  "intuition_seconds": 300,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11661,6 +12233,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11707,6 +12281,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11751,6 +12327,14 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [
+   {
+    "slug": "canavan",
+    "name": "자나바르",
+    "count": 1
+   }
+  ],
+  "intuition_seconds": 1400,
   "buffs": [],
   "description": "돌연변이로 태어난 흰 메기. 사람마저 한입에 삼키는 거구를 뽐내며, 자나바르와 구역을 둘러싸고 격하게 대립한다."
  },
@@ -11793,6 +12377,14 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [
+   {
+    "slug": "wahoo",
+    "name": "줄삼치",
+    "count": 6
+   }
+  ],
+  "intuition_seconds": 120,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11839,6 +12431,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11885,6 +12479,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11929,6 +12525,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -11973,6 +12571,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "이가 빠지지 않고 계속 자라기 때문에 턱이 톱니바퀴 모양으로 변하고만 기묘한 모랫고기. 안개가 걷히면 활발하게 사냥을 한다."
  },
@@ -12013,6 +12613,14 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [
+   {
+    "slug": "lamp-marimo",
+    "name": "등불해조구",
+    "count": 5
+   }
+  ],
+  "intuition_seconds": 180,
   "buffs": [
    "물고기의 눈"
   ],
@@ -12052,6 +12660,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -12096,6 +12706,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -12145,6 +12757,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [],
   "description": "마하르마저 잡아먹는 구름바다의 제왕. 박물학자 마르세트에 의하면 구름고기가 아니라 갑린강 마물의 일종이라고 한다."
  },
@@ -12188,6 +12802,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -12224,6 +12840,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -12257,6 +12875,14 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [
+   {
+    "slug": "giant-takitaro",
+    "name": "거대 타키타로",
+    "count": 1
+   }
+  ],
+  "intuition_seconds": 60,
   "buffs": [],
   "description": "우르드의 선물 '진정한 터주' 자리를 놓고 거대 타키타로와 경쟁한다는 환상의 거대어. 지느러미를 한번 휘두르면 파도가 일어난다고 한다."
  },
@@ -12299,6 +12925,8 @@
   ],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -12332,6 +12960,8 @@
   "mooches": [],
   "tug": "!!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],
@@ -12379,6 +13009,8 @@
   ],
   "tug": "!!",
   "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
   "buffs": [
    "물고기의 눈"
   ],

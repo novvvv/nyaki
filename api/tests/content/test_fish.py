@@ -49,6 +49,8 @@ def _fish(**overrides: object) -> dict:
         "tug": "!!!",
         "hookset": "강력한 낚아채기",
         "buffs": ["물고기의 눈"],
+        "predators": [{"slug": "jungle-catfish", "name": "큰숲메기", "count": 3}],
+        "intuition_seconds": 600,
         "description": "비정상적으로 단단한 외골격을 가진 투구게.",
         "created_at": _now(),
         "updated_at": _now(),
@@ -69,6 +71,8 @@ def test_fish_crud_and_filters() -> None:
     assert body["weathers"] == [3, 4, 5]
     assert body["start_hour"] == 3 and body["end_hour"] == 5
     assert body["buffs"] == ["물고기의 눈"]
+    assert body["predators"] == [{"slug": "jungle-catfish", "name": "큰숲메기", "count": 3}]
+    assert body["intuition_seconds"] == 600
     assert body["mooches"] == [{"name": "구리붕어", "tug": "!", "hookset": "섬세한 낚아채기"}]
 
     # 날씨 조건이 없는 상시 물고기 하나 더 — 날씨 필터에서 항상 포함돼야 함
@@ -122,6 +126,11 @@ def test_fish_crud_and_filters() -> None:
     r = client.put(
         "/v1/content/fish/bad",
         json=_fish(slug="bad", item_id=1, mooches=[{"name": "구리붕어", "tug": "?"}]),
+    )
+    assert r.status_code == 422
+    r = client.put(
+        "/v1/content/fish/bad",
+        json=_fish(slug="bad", item_id=1, predators=[{"name": "큰숲메기", "count": 0}]),
     )
     assert r.status_code == 422
     r = client.put("/v1/content/fish/other-slug", json=_fish())

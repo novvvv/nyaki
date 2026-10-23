@@ -146,7 +146,13 @@ def parse_tarto(html: str) -> dict | None:
                     "tug": TUG_KO.get(tug.group(1), "") if tug else "",
                 }
             )
+    # 어부의 직감 조건 — "· 5031,3마리"(아이템 id, 마리 수). 링크는 깨져 있어 글자로 읽는다.
+    predators = [
+        (int(i), int(n))
+        for i, n in re.findall(r"(\d+),(\d+)마리", html[start:].split("fish-info-predator-container")[1])
+    ] if "fish-info-predator-container" in html[start:] else []
     return {
+        "predators": predators,
         "level": int(level.group(1)) if level else None,
         "stars": len(stars.group(1)) if stars else 0,
         "legendary": "《전설》" in head_text,
@@ -232,6 +238,7 @@ def main() -> None:
     ]
     en = xivapi_rows("Item", fishing_items, "Name,Name@lang(ja)", cache)
     ko_by_en = {f["Name"]: items[str(i)][col(ih, "Name")] for i, f in en.items() if f.get("Name")}
+    id_by_en = {f["Name"]: i for i, f in en.items() if f.get("Name")}
     spot_en = {
         i: f["PlaceName"]["fields"]["Name"]
         for i, f in xivapi_rows("FishingSpot", spot_ids, "PlaceName.Name", cache).items()
@@ -379,6 +386,26 @@ def main() -> None:
                         f"tar.to={last['tug']}/{last['hookset']}"
                     )
 
+        # 밑작(어부의 직감) — Carbuncle predators {영문: 마리 수}, tar.to와 아이템 id로 대조
+        predators = []
+        intuition = None
+        if cb and cb.get("predators"):
+            for en_name, count in cb["predators"].items():
+                pid = id_by_en.get(en_name)
+                predators.append(
+                    {"item_id": pid, "slug": slugify(en_name), "name": ko_by_en.get(en_name, en_name), "count": int(count)}
+                )
+            intuition = cb.get("intuitionLength")
+        tpred = sorted(tar.get("predators", []))
+        cpred = sorted((p["item_id"], p["count"]) for p in predators)
+        if tpred != cpred:
+            report.append(f"DIFF 밑작 {name}: carbuncle={cpred} tar.to={tpred}")
+            if not predators and tpred:
+                predators = [
+                    {"item_id": i, "slug": slugify(en.get(i, {}).get("Name", "")), "name": items[str(i)][col(ih, "Name")], "count": n}
+                    for i, n in tpred
+                ]
+
         description = (param[col(fh, "Text")] if param else "") or item[col(ih, "Description")]
         record = {
                 "slug": slugify(name_en),
@@ -406,6 +433,8 @@ def main() -> None:
                 "mooches": mooches,
                 "tug": tug,
                 "hookset": hookset,
+                "predators": predators,
+                "intuition_seconds": int(intuition) if intuition else None,
                 "buffs": ["물고기의 눈"] if tar.get("fish_eyes") else [],
                 "description": description.replace("\n", " ").strip(),
             }
@@ -414,6 +443,14 @@ def main() -> None:
             record.update({k: v for k, v in override.items() if not k.startswith("_")})
             report.append(f"OVERRIDE {name}: {', '.join(k for k in override if not k.startswith('_'))}")
         out.append(record)
+
+    known = {f["slug"] for f in out}
+    for f in out:
+        for p in f["predators"]:
+            if p["slug"] not in known:
+                report.append(f"LINK {f['name']}: 밑작 {p['name']}는 데이터에 없어 링크 없음")
+                p["slug"] = ""
+            p.pop("item_id", None)
 
     slugs = [f["slug"] for f in out]
     dupes = {s for s in slugs if slugs.count(s) > 1}

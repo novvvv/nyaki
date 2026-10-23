@@ -50,6 +50,14 @@ class FishSpot(BaseModel):
     spot_name: str = Field(min_length=1, max_length=200)
 
 
+class Predator(BaseModel):
+    """밑작 — 어부의 직감을 띄우려고 먼저 낚는 물고기."""
+
+    slug: str = Field(default="", max_length=120)
+    name: str = Field(min_length=1, max_length=200)
+    count: int = Field(ge=1)
+
+
 class FishPayload(BaseModel):
     slug: str = Field(min_length=1, max_length=120)
     item_id: int = Field(ge=1)
@@ -75,6 +83,8 @@ class FishPayload(BaseModel):
     mooches: list[MoochStep] = Field(default_factory=list)
     tug: Tug = ""
     hookset: str = Field(default="", max_length=50)
+    predators: list[Predator] = Field(default_factory=list)
+    intuition_seconds: int | None = Field(default=None, ge=0)
     buffs: list[str] = Field(default_factory=list)
     description: str = ""
     note: str = ""

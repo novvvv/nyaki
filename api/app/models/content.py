@@ -94,6 +94,11 @@ class FishModel(Base):
     # 이 물고기 자체를 낚을 때의 입질·챔질(마지막 단계).
     tug: Mapped[str] = mapped_column(String(5), default="", server_default="")
     hookset: Mapped[str] = mapped_column(String(50), default="", server_default="")
+    # 밑작(어부의 직감) — 이 물고기를 노리기 전에 먼저 낚아야 하는 물고기와 마리 수.
+    # [{"slug": "jungle-catfish", "name": "큰숲메기", "count": 3}, …] — slug는 우리 DB에 있을 때만.
+    predators: Mapped[list[dict]] = mapped_column(_JSON_LIST, default=list, server_default="[]")
+    # 어부의 직감 지속 시간(현실 초). 밑작이 없으면 None.
+    intuition_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # 관련 버프 ("물고기의 눈" …). 필수 조건이 아니다 — 물고기의 눈은 쓰면 시간 조건을
     # 무시하고 낚을 수 있다는 뜻(효월 이전 물고기). 공략 사이트의 버프 아이콘 그대로 옮긴다.
     buffs: Mapped[list[str]] = mapped_column(_JSON_LIST, default=list, server_default="[]")

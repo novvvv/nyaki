@@ -87,7 +87,8 @@ class FishModel(Base):
     bait: Mapped[str] = mapped_column(String(200), default="", server_default="")
     tug: Mapped[str] = mapped_column(String(5), default="", server_default="")
     hookset: Mapped[str] = mapped_column(String(50), default="", server_default="")
-    # 필요한 버프·조건 ("물고기의 눈", "어군 탐지" …)
+    # 관련 버프 ("물고기의 눈" …). 필수 조건이 아니다 — 물고기의 눈은 쓰면 시간 조건을
+    # 무시하고 낚을 수 있다는 뜻(효월 이전 물고기). 공략 사이트의 버프 아이콘 그대로 옮긴다.
     buffs: Mapped[list[str]] = mapped_column(_JSON_LIST, default=list, server_default="[]")
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
     note: Mapped[str] = mapped_column(Text, default="", server_default="")

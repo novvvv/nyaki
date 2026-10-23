@@ -133,6 +133,32 @@ FISH: list[dict] = [
         "description": "망치상어로서는 드물게 무리를 짓지 않고 살아가는 독불장군. "
         "거친 바다를 유유히 헤엄치며 우왕좌왕 도망치는 물고기를 포식한다.",
     },
+    {
+        "slug": "mirrorscale",
+        "item_id": 7940,
+        "icon_id": 29371,
+        "name": "거울비늘",
+        "name_en": "Mirrorscale",
+        "name_ja": "ミラースケイル",
+        "zone_id": 137,  # 동부 라노시아
+        "spot_name": "빗물받이 소택지",
+        "water": "호수/늪",
+        "level": 50,
+        "stars": 3,
+        "is_legendary": True,
+        "is_big_fish": True,
+        "start_hour": 9,
+        "end_hour": 16,
+        "weathers": [1, 2],  # 쾌청, 맑음
+        "previous_weathers": [],
+        "bait": "깔따구 → 구리붕어",
+        "tug": "!!!",
+        "hookset": "섬세한 낚아채기",
+        "buffs": ["물고기의 눈"],
+        "description": "비늘이 마치 잘 닦은 은 거울처럼 아름다운 개체. "
+        "이 물고기를 잡아먹으려고 하는 자는 비늘에 비친 자기 모습에 현혹된다.",
+        "note": "깔따구로 구리붕어를 낚아 생미끼로 쓴다.",
+    },
 ]
 
 

@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Index, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..core.database import Base
@@ -36,6 +37,61 @@ class PostModel(Base):
     title: Mapped[str] = mapped_column(String(300))
     body: Mapped[str] = mapped_column(Text)
     posted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
+# words.tags와 같은 방식 — 운영(Postgres)은 JSONB, 테스트(SQLite)는 JSON.
+_JSON_LIST = JSON().with_variant(JSONB, "postgresql")
+
+
+class FishModel(Base):
+    """FF14 낚시 물고기(터주 등) 한 마리 = 한 행.
+
+    날씨·시간 조건을 구조화해 두는 이유: 웹이 이 조건과 에오르제아 날씨 공식으로
+    "다음 출현 시각"을 계산하고, 나중에 검색·알림 기능이 같은 필드를 그대로 쓴다.
+    zone_id·날씨 id는 게임 데이터(TerritoryType·Weather 시트) id — nyaki-web의
+    src/lib/ff14/weather-data.json과 같은 체계라 웹에서 바로 매칭된다.
+    """
+
+    __tablename__ = "fish"
+    __table_args__ = (Index("ix_fish_zone_id", "zone_id"),)
+
+    slug: Mapped[str] = mapped_column(String(120), primary_key=True)
+    # 게임 아이템 id (메테오 투구게 = 7903). 외부 DB(tar.to 등) 링크·아이콘 조회 키.
+    item_id: Mapped[int] = mapped_column(Integer, unique=True)
+    icon_id: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    name: Mapped[str] = mapped_column(String(200))
+    name_en: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    name_ja: Mapped[str] = mapped_column(String(200), default="", server_default="")
+
+    zone_id: Mapped[int] = mapped_column(Integer)
+    spot_name: Mapped[str] = mapped_column(String(200))
+    # 낚시 종류 표기 그대로 ("바닷가", "민물", "모래", "구름바다" …)
+    water: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    level: Mapped[int] = mapped_column(Integer)
+    stars: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    is_legendary: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    is_big_fish: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+    # 출현 시간(에오르제아 시, 0~24). 둘 다 None이면 상시. 22→2처럼 자정을 넘길 수 있다.
+    start_hour: Mapped[float | None] = mapped_column(Float, nullable=True)
+    end_hour: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # 날씨 id 목록. 빈 목록이면 조건 없음.
+    weathers: Mapped[list[int]] = mapped_column(_JSON_LIST, default=list, server_default="[]")
+    previous_weathers: Mapped[list[int]] = mapped_column(
+        _JSON_LIST, default=list, server_default="[]"
+    )
+
+    bait: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    tug: Mapped[str] = mapped_column(String(5), default="", server_default="")
+    hookset: Mapped[str] = mapped_column(String(50), default="", server_default="")
+    # 필요한 버프·조건 ("물고기의 눈", "어군 탐지" …)
+    buffs: Mapped[list[str]] = mapped_column(_JSON_LIST, default=list, server_default="[]")
+    description: Mapped[str] = mapped_column(Text, default="", server_default="")
+    note: Mapped[str] = mapped_column(Text, default="", server_default="")
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

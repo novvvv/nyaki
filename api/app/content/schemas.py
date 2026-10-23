@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ArtistPayload(BaseModel):
@@ -31,4 +31,45 @@ class PostPayload(BaseModel):
 
 
 class PostResponse(PostPayload):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FishPayload(BaseModel):
+    slug: str = Field(min_length=1, max_length=120)
+    item_id: int = Field(ge=1)
+    icon_id: int = Field(default=0, ge=0)
+    name: str = Field(min_length=1, max_length=200)
+    name_en: str = Field(default="", max_length=200)
+    name_ja: str = Field(default="", max_length=200)
+    # zone_id·날씨 id는 게임 데이터 id (models/content.py FishModel 참고)
+    zone_id: int = Field(ge=1)
+    spot_name: str = Field(min_length=1, max_length=200)
+    water: str = Field(default="", max_length=40)
+    level: int = Field(ge=1, le=100)
+    stars: int = Field(default=0, ge=0, le=5)
+    is_legendary: bool = False
+    is_big_fish: bool = False
+    # 에오르제아 시(0~24). 둘 다 None이면 상시, 한쪽만 있는 건 허용하지 않음.
+    start_hour: float | None = Field(default=None, ge=0, le=24)
+    end_hour: float | None = Field(default=None, ge=0, le=24)
+    weathers: list[int] = Field(default_factory=list)
+    previous_weathers: list[int] = Field(default_factory=list)
+    bait: str = Field(default="", max_length=200)
+    tug: Literal["", "!", "!!", "!!!"] = ""
+    hookset: str = Field(default="", max_length=50)
+    buffs: list[str] = Field(default_factory=list)
+    description: str = ""
+    note: str = ""
+    created_at: datetime
+    updated_at: datetime
+    is_deleted: bool = False
+
+    @model_validator(mode="after")
+    def _hours_together(self) -> "FishPayload":
+        if (self.start_hour is None) != (self.end_hour is None):
+            raise ValueError("start_hour와 end_hour는 함께 지정하거나 함께 비워야 합니다.")
+        return self
+
+
+class FishResponse(FishPayload):
     model_config = ConfigDict(from_attributes=True)

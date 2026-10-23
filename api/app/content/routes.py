@@ -2,16 +2,27 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from ..core.auth import require_admin_id
-from .schemas import ArtistPayload, ArtistResponse, PostPayload, PostResponse
+from .schemas import (
+    ArtistPayload,
+    ArtistResponse,
+    FishPayload,
+    FishResponse,
+    PostPayload,
+    PostResponse,
+)
 from .services import (
     delete_artist,
+    delete_fish,
     delete_post,
     get_artist,
+    get_fish,
     get_post,
     get_post_for_artist,
     list_artists,
+    list_fish,
     list_posts,
     upsert_artist,
+    upsert_fish,
     upsert_post,
 )
 from ..core.database import get_session
@@ -153,5 +164,53 @@ def remove_post(
     if entity is None:
         raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다.")
     delete_post(session, slug)
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ====================== FF14 물고기(터주) — 조회는 공개, 쓰기는 관리자 ====================== #
+
+
+@router.get("/fish", response_model=list[FishResponse])
+def get_fish_list(
+    zone_id: int | None = None,
+    weather_id: int | None = None,
+    q: str | None = None,
+    session: Session = Depends(get_session),
+) -> list[FishResponse]:
+    return list_fish(session, zone_id, weather_id, q)
+
+
+@router.get("/fish/{slug}", response_model=FishResponse)
+def get_fish_detail(slug: str, session: Session = Depends(get_session)) -> FishResponse:
+    entity = get_fish(session, slug)
+    if entity is None:
+        raise HTTPException(status_code=404, detail="물고기를 찾을 수 없습니다.")
+    return entity
+
+
+@router.put("/fish/{slug}", response_model=FishResponse)
+def put_fish(
+    slug: str,
+    payload: FishPayload,
+    session: Session = Depends(get_session),
+    _admin_id: str = Depends(require_admin_id),
+) -> FishResponse:
+    if slug != payload.slug:
+        raise HTTPException(status_code=400, detail="URL과 payload slug가 일치하지 않습니다.")
+    entity = upsert_fish(session, payload)
+    session.commit()
+    return entity
+
+
+@router.delete("/fish/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_fish(
+    slug: str,
+    session: Session = Depends(get_session),
+    _admin_id: str = Depends(require_admin_id),
+) -> Response:
+    entity = delete_fish(session, slug)
+    if entity is None:
+        raise HTTPException(status_code=404, detail="물고기를 찾을 수 없습니다.")
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

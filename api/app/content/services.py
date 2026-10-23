@@ -106,22 +106,32 @@ def list_fish(
     weather_id: int | None = None,
     q: str | None = None,
 ) -> list[FishModel]:
-    query = select(FishModel).where(FishModel.is_deleted.is_(False))
-    if zone_id is not None:
-        query = query.where(FishModel.zone_id == zone_id)
-    if q:
-        pattern = f"%{q}%"
-        query = query.where(
-            FishModel.name.ilike(pattern)
-            | FishModel.name_en.ilike(pattern)
-            | FishModel.name_ja.ilike(pattern)
-            | FishModel.spot_name.ilike(pattern)
+    fish = list(
+        session.scalars(
+            select(FishModel)
+            .where(FishModel.is_deleted.is_(False))
+            .order_by(FishModel.level.desc(), FishModel.name)
         )
-    fish = list(session.scalars(query.order_by(FishModel.level.desc(), FishModel.name)))
-    # weathers는 JSON 목록이라 DB(Postgres json/SQLite)마다 포함 검사 문법이 달라 여기서 거른다.
+    )
+    # 낚시터(spots)·날씨는 JSON 목록이라 DB(Postgres JSONB/SQLite)마다 포함 검사 문법이 달라
+    # 파이썬에서 거른다. 물고기는 수백 마리 수준이라 충분하다.
+    if zone_id is not None:
+        fish = [
+            f for f in fish if f.zone_id == zone_id or any(s["zone_id"] == zone_id for s in f.spots)
+        ]
     # 날씨 조건이 없는(빈 목록) 물고기는 어떤 날씨에서든 나오므로 포함.
     if weather_id is not None:
         fish = [f for f in fish if not f.weathers or weather_id in f.weathers]
+    if q:
+        needle = q.lower()
+        fish = [
+            f
+            for f in fish
+            if any(
+                needle in text.lower()
+                for text in (f.name, f.name_en, f.name_ja, f.spot_name, *(s["spot_name"] for s in f.spots))
+            )
+        ]
     return fish
 
 

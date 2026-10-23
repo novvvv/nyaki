@@ -34,6 +34,7 @@ def _fish(**overrides: object) -> dict:
         "name_ja": "メテオサバイバー",
         "zone_id": 135,
         "spot_name": "소금기둥 해변",
+        "spots": [{"zone_id": 135, "spot_name": "소금기둥 해변"}],
         "water": "바닷가",
         "level": 50,
         "stars": 3,
@@ -79,6 +80,10 @@ def test_fish_crud_and_filters() -> None:
             name="평범한 물고기",
             name_en="Plain Fish",
             zone_id=134,
+            spots=[
+                {"zone_id": 134, "spot_name": "중부 낚시터"},
+                {"zone_id": 137, "spot_name": "동부 낚시터"},
+            ],
             level=10,
             start_hour=None,
             end_hour=None,
@@ -100,6 +105,9 @@ def test_fish_crud_and_filters() -> None:
     slugs = lambda resp: sorted(f["slug"] for f in resp.json() if f["slug"] in own)  # noqa: E731
     assert slugs(client.get("/v1/content/fish")) == ["meteor-survivor", "plain-fish"]
     assert slugs(client.get("/v1/content/fish?zone_id=135")) == ["meteor-survivor"]
+    # 대표 지역이 아니어도 낚시터 목록(spots)에 있으면 걸린다
+    assert slugs(client.get("/v1/content/fish?zone_id=137")) == ["plain-fish"]
+    assert slugs(client.get("/v1/content/fish?q=동부 낚시터")) == ["plain-fish"]
     assert slugs(client.get("/v1/content/fish?weather_id=4")) == ["meteor-survivor", "plain-fish"]
     assert slugs(client.get("/v1/content/fish?weather_id=7")) == ["plain-fish"]
     assert slugs(client.get("/v1/content/fish?q=투구게")) == ["meteor-survivor"]

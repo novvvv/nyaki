@@ -66,8 +66,11 @@ class FishModel(Base):
     name_en: Mapped[str] = mapped_column(String(200), default="", server_default="")
     name_ja: Mapped[str] = mapped_column(String(200), default="", server_default="")
 
+    # 대표 낚시터(조건 있는 물고기는 조건이 걸린 곳). 날씨 계산은 이 지역 기준.
     zone_id: Mapped[int] = mapped_column(Integer)
     spot_name: Mapped[str] = mapped_column(String(200))
+    # 낚이는 곳 전부 [{"zone_id": 135, "spot_name": "소금기둥 해변"}, …] — 대표 낚시터가 맨 앞.
+    spots: Mapped[list[dict]] = mapped_column(_JSON_LIST, default=list, server_default="[]")
     # 낚시 종류 표기 그대로 ("바닷가", "민물", "모래", "구름바다" …)
     water: Mapped[str] = mapped_column(String(40), default="", server_default="")
     level: Mapped[int] = mapped_column(Integer)

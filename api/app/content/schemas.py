@@ -45,6 +45,11 @@ class MoochStep(BaseModel):
     hookset: str = Field(default="", max_length=50)
 
 
+class FishSpot(BaseModel):
+    zone_id: int = Field(ge=1)
+    spot_name: str = Field(min_length=1, max_length=200)
+
+
 class FishPayload(BaseModel):
     slug: str = Field(min_length=1, max_length=120)
     item_id: int = Field(ge=1)
@@ -55,6 +60,7 @@ class FishPayload(BaseModel):
     # zone_id·날씨 id는 게임 데이터 id (models/content.py FishModel 참고)
     zone_id: int = Field(ge=1)
     spot_name: str = Field(min_length=1, max_length=200)
+    spots: list[FishSpot] = Field(default_factory=list)
     water: str = Field(default="", max_length=40)
     level: int = Field(ge=1, le=100)
     stars: int = Field(default=0, ge=0, le=5)

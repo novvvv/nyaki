@@ -1,0 +1,12 @@
+{
+  "mazlaya-marlin": {
+    "_source": "eorzea-weather.com 마즐라야 청새치·항만청어·오거 창꼬치어 페이지(2026-10-23 확인). 일반 물고기라 Carbuncle·tar.to에 낚는 법이 없다.",
+    "bait": "쥐며느리",
+    "mooches": [
+      {"name": "항만청어", "tug": "!!", "hookset": "강력한 낚아채기"},
+      {"name": "오거 창꼬치어", "tug": "!!", "hookset": "강력한 낚아채기"}
+    ],
+    "tug": "!!!",
+    "hookset": "강력한 낚아채기"
+  }
+}

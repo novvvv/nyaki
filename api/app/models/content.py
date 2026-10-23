@@ -84,7 +84,11 @@ class FishModel(Base):
         _JSON_LIST, default=list, server_default="[]"
     )
 
+    # 처음 쓰는 미끼 하나. 생미끼로 이어 낚는 중간 물고기는 mooches에 순서대로.
     bait: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    # [{"name": "구리붕어", "tug": "!", "hookset": "섬세한 낚아채기"}, …] — 단계마다 입질·챔질.
+    mooches: Mapped[list[dict]] = mapped_column(_JSON_LIST, default=list, server_default="[]")
+    # 이 물고기 자체를 낚을 때의 입질·챔질(마지막 단계).
     tug: Mapped[str] = mapped_column(String(5), default="", server_default="")
     hookset: Mapped[str] = mapped_column(String(50), default="", server_default="")
     # 관련 버프 ("물고기의 눈" …). 필수 조건이 아니다 — 물고기의 눈은 쓰면 시간 조건을

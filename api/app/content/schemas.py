@@ -34,6 +34,17 @@ class PostResponse(PostPayload):
     model_config = ConfigDict(from_attributes=True)
 
 
+Tug = Literal["", "!", "!!", "!!!"]
+
+
+class MoochStep(BaseModel):
+    """생미끼로 이어 낚는 중간 물고기 한 단계."""
+
+    name: str = Field(min_length=1, max_length=200)
+    tug: Tug = ""
+    hookset: str = Field(default="", max_length=50)
+
+
 class FishPayload(BaseModel):
     slug: str = Field(min_length=1, max_length=120)
     item_id: int = Field(ge=1)
@@ -55,7 +66,8 @@ class FishPayload(BaseModel):
     weathers: list[int] = Field(default_factory=list)
     previous_weathers: list[int] = Field(default_factory=list)
     bait: str = Field(default="", max_length=200)
-    tug: Literal["", "!", "!!", "!!!"] = ""
+    mooches: list[MoochStep] = Field(default_factory=list)
+    tug: Tug = ""
     hookset: str = Field(default="", max_length=50)
     buffs: list[str] = Field(default_factory=list)
     description: str = ""

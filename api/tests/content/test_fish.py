@@ -44,6 +44,7 @@ def _fish(**overrides: object) -> dict:
         "weathers": [3, 4, 5],
         "previous_weathers": [],
         "bait": "쥐꼬리",
+        "mooches": [{"name": "구리붕어", "tug": "!", "hookset": "섬세한 낚아채기"}],
         "tug": "!!!",
         "hookset": "강력한 낚아채기",
         "buffs": ["물고기의 눈"],
@@ -67,6 +68,7 @@ def test_fish_crud_and_filters() -> None:
     assert body["weathers"] == [3, 4, 5]
     assert body["start_hour"] == 3 and body["end_hour"] == 5
     assert body["buffs"] == ["물고기의 눈"]
+    assert body["mooches"] == [{"name": "구리붕어", "tug": "!", "hookset": "섬세한 낚아채기"}]
 
     # 날씨 조건이 없는 상시 물고기 하나 더 — 날씨 필터에서 항상 포함돼야 함
     r = client.put(
@@ -108,6 +110,11 @@ def test_fish_crud_and_filters() -> None:
     r = client.put("/v1/content/fish/bad", json=_fish(slug="bad", item_id=1, end_hour=None))
     assert r.status_code == 422
     r = client.put("/v1/content/fish/bad", json=_fish(slug="bad", item_id=1, tug="!!!!"))
+    assert r.status_code == 422
+    r = client.put(
+        "/v1/content/fish/bad",
+        json=_fish(slug="bad", item_id=1, mooches=[{"name": "구리붕어", "tug": "?"}]),
+    )
     assert r.status_code == 422
     r = client.put("/v1/content/fish/other-slug", json=_fish())
     assert r.status_code == 400

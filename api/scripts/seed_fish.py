@@ -5,7 +5,8 @@ nyaki-web 터주 페이지에 보일 물고기를 아래 FISH 목록에 적고 �
 created_at을 그대로 두고 나머지 칸만 갱신한다.
 
 조건 출처: 한국 클라이언트 데이터(FishingSpot·FishParameter·Item 시트,
-Ra-Workspace/ffxiv-datamining-ko) + 공략 사이트(ff14.tar.to)의 날씨·시간·미끼.
+Ra-Workspace/ffxiv-datamining-ko) + 공략 사이트(ff14.tar.to, eorzea-weather.com)의
+날씨·시간·미끼. 생미끼 경로는 bait(처음 미끼) + mooches(중간 물고기와 그 입질·챔질).
 zone_id는 TerritoryType id, 날씨는 Weather id (2 맑음, 3 흐림, 4 안개, 5 바람 …).
 
 실행 (Lightsail 호스트의 api/ 디렉터리에서, 마이그레이션 0022_fish 적용 후):
@@ -99,13 +100,16 @@ FISH: list[dict] = [
         "end_hour": None,
         "weathers": [],
         "previous_weathers": [],
-        "bait": "쥐며느리 → 항만청어 → 오거 창꼬치어",
+        "bait": "쥐며느리",
+        "mooches": [
+            {"name": "항만청어", "tug": "!!", "hookset": "강력한 낚아채기"},
+            {"name": "오거 창꼬치어", "tug": "!!", "hookset": "강력한 낚아채기"},
+        ],
         "tug": "!!!",
         "hookset": "강력한 낚아채기",
         "buffs": [],
         "description": "엄청난 속도로 헤엄치는 대형어. 먼 옛날 여신 리믈렌이 목욕하는 걸 "
         "훔쳐봤기 때문에 멈추면 죽는 저주를 받았다고 한다.",
-        "note": "항만청어·오거 창꼬치어를 차례로 생미끼로 써서 낚는다.",
     },
     {
         # 시간 조건 없이 날씨(폭풍)만 맞으면 나오는 터주.
@@ -151,13 +155,13 @@ FISH: list[dict] = [
         "end_hour": 16,
         "weathers": [1, 2],  # 쾌청, 맑음
         "previous_weathers": [],
-        "bait": "깔따구 → 구리붕어",
+        "bait": "깔따구",
+        "mooches": [{"name": "구리붕어", "tug": "!", "hookset": "섬세한 낚아채기"}],
         "tug": "!!!",
         "hookset": "섬세한 낚아채기",
         "buffs": ["물고기의 눈"],
         "description": "비늘이 마치 잘 닦은 은 거울처럼 아름다운 개체. "
         "이 물고기를 잡아먹으려고 하는 자는 비늘에 비친 자기 모습에 현혹된다.",
-        "note": "깔따구로 구리붕어를 낚아 생미끼로 쓴다.",
     },
 ]
 

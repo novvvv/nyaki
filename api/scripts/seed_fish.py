@@ -55,6 +55,31 @@ FISH: list[dict] = [
         "description": "비정상적으로 단단한 외골격을 가진 투구게. "
         "떨어지는 달라가브 파편을 튕겨내고 살아남았다는 소문도 있다.",
     },
+    {
+        "slug": "bombardfish",
+        "item_id": 7924,
+        "icon_id": 29087,
+        "name": "봄바드 복어",
+        "name_en": "Bombardfish",
+        "name_ja": "ボンバードフィッシュ",
+        "zone_id": 137,  # 동부 라노시아
+        "spot_name": "북부 핏빛해안",
+        "water": "바닷가",
+        "level": 50,
+        "stars": 3,
+        "is_legendary": True,
+        "is_big_fish": True,
+        "start_hour": 9,
+        "end_hour": 15,
+        "weathers": [1],  # 쾌청
+        "previous_weathers": [],
+        "bait": "청어살 떡밥",
+        "tug": "!!!",
+        "hookset": "강력한 낚아채기",
+        "buffs": ["물고기의 눈"],
+        "description": "거대 가시복. 그 커다란 몸집 때문에 오래 전 에오르제아를 뒤흔든 "
+        "거대 봄의 이름이 붙었다.",
+    },
 ]
 
 

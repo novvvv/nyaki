@@ -340,10 +340,13 @@ def main() -> None:
         tug = hookset = ""
         tar_steps = tar.get("steps") or []
         if cb and cb.get("bestCatchPath"):
-            path = [ko_by_en.get(n, n) for n in cb["bestCatchPath"]]
+            # 한 단계가 목록이면 그중 아무거나 써도 된다(["Mayfly", "Leech"] → "하루살이 / 거머리").
+            # 입질·챔질은 첫 번째 물고기 값으로.
+            steps_en = [n if isinstance(n, list) else [n] for n in cb["bestCatchPath"]]
+            path = [" / ".join(ko_by_en.get(n, n) for n in alts) for alts in steps_en]
             bait = path[0]
-            for en_name, ko_name in zip(cb["bestCatchPath"][1:], path[1:]):
-                m = carbuncle.get(en_name) or {}
+            for alts, ko_name in zip(steps_en[1:], path[1:]):
+                m = carbuncle.get(alts[0]) or {}
                 mooches.append(
                     {
                         "name": ko_name,
@@ -398,15 +401,19 @@ def main() -> None:
         if cb and cb.get("predators"):
             for en_name, count in cb["predators"].items():
                 pid = id_by_en.get(en_name)
+                if pid is None:
+                    # 낚시 미끼·수산물 분류 밖의 아이템(작살 물고기 등) — 이름만 남긴다
+                    report.append(f"PREDATOR {name}: 밑작 '{en_name}'의 아이템 id를 못 찾음")
                 predators.append(
                     {"item_id": pid, "slug": slugify(en_name), "name": ko_by_en.get(en_name, en_name), "count": int(count)}
                 )
             intuition = cb.get("intuitionLength")
         tpred = sorted(tar.get("predators", []))
-        cpred = sorted((p["item_id"], p["count"]) for p in predators)
+        cpred = sorted((p["item_id"] or 0, p["count"]) for p in predators)
         if tpred != cpred:
             report.append(f"DIFF 밑작 {name}: carbuncle={cpred} tar.to={tpred}")
-            if not predators and tpred:
+            # Carbuncle 쪽이 비었거나 영문 이름으로 아이템을 못 찾은 칸이 있으면 tar.to(아이템 id) 값으로
+            if tpred and (not predators or any(p["item_id"] is None for p in predators)):
                 predators = [
                     {"item_id": i, "slug": slugify(en.get(i, {}).get("Name", "")), "name": items[str(i)][col(ih, "Name")], "count": n}
                     for i, n in tpred

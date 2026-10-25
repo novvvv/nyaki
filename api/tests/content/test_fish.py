@@ -181,3 +181,40 @@ def test_caught_fish_is_per_user() -> None:
     assert client.get("/v1/content/caught-fish").json() == []
 
     app.dependency_overrides.clear()
+
+
+def test_favorite_fish_is_per_user() -> None:
+    """찜한 물고기는 로그인한 본인 것만 보이고, 없는 물고기는 찜할 수 없다."""
+    Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[require_admin_id] = lambda: "admin-uid"
+    client = TestClient(app)
+    client.put(
+        "/v1/content/fish/favorite-test",
+        json=_fish(slug="favorite-test", item_id=99002, name="찜용 물고기"),
+    )
+
+    # 로그인 안 하면 401
+    assert client.get("/v1/content/favorite-fish").status_code == 401
+
+    app.dependency_overrides[get_current_user_id] = lambda: "fav-a"
+    first = client.put("/v1/content/favorite-fish/favorite-test")
+    assert first.status_code == 200
+    # 두 번 찜해도 처음 시각 그대로(SQLite는 시간대 표시를 떼고 돌려줘서 시각으로 비교)
+    def created_at(resp) -> datetime:  # noqa: ANN001
+        return datetime.fromisoformat(resp.json()["created_at"].removesuffix("Z")).replace(tzinfo=None)
+
+    assert created_at(client.put("/v1/content/favorite-fish/favorite-test")) == created_at(first)
+    assert [f["fish_slug"] for f in client.get("/v1/content/favorite-fish").json()] == ["favorite-test"]
+    assert client.put("/v1/content/favorite-fish/no-such-fish").status_code == 404
+
+    # 다른 사용자에겐 안 보인다
+    app.dependency_overrides[get_current_user_id] = lambda: "fav-b"
+    assert client.get("/v1/content/favorite-fish").json() == []
+
+    # 해제는 두 번 해도 204
+    app.dependency_overrides[get_current_user_id] = lambda: "fav-a"
+    assert client.delete("/v1/content/favorite-fish/favorite-test").status_code == 204
+    assert client.delete("/v1/content/favorite-fish/favorite-test").status_code == 204
+    assert client.get("/v1/content/favorite-fish").json() == []
+
+    app.dependency_overrides.clear()

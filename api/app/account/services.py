@@ -18,6 +18,7 @@ from ..models import (
     CardModel,
     CaughtFishModel,
     ClozeNoteModel,
+    FavoriteFishModel,
     FolderModel,
     GuestbookEntryModel,
     PackImportModel,
@@ -44,6 +45,7 @@ USER_TABLES = (
     QuestStateModel,
     AttendanceLogModel,
     CaughtFishModel,
+    FavoriteFishModel,
     GuestbookEntryModel,
 )
 

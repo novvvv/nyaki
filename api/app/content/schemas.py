@@ -110,6 +110,13 @@ class CaughtFishResponse(BaseModel):
     caught_at: datetime
 
 
+class FavoriteFishResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    fish_slug: str
+    created_at: datetime
+
+
 class GuestbookPayload(BaseModel):
     body: str = Field(min_length=1, max_length=500)
 

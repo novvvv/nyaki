@@ -87,6 +87,7 @@ def _fill(client: TestClient) -> None:
     ).status_code == 200
     del app.dependency_overrides[require_admin_id]
     assert client.put("/v1/content/caught-fish/account-fish").status_code == 200
+    assert client.put("/v1/content/favorite-fish/account-fish").status_code == 200
     # 방명록 — 작성자 이름까지 쓰는 의존성이라 같은 사용자로 따로 바꿔치기
     uid = app.dependency_overrides[get_current_user_id]()
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(uid=uid, name="탈퇴 확인")

@@ -3,7 +3,14 @@ from datetime import datetime, timezone
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from ..models import ArtistModel, CaughtFishModel, FishModel, GuestbookEntryModel, PostModel
+from ..models import (
+    ArtistModel,
+    CaughtFishModel,
+    FavoriteFishModel,
+    FishModel,
+    GuestbookEntryModel,
+    PostModel,
+)
 from .schemas import ArtistPayload, FishPayload, PostPayload
 
 
@@ -192,6 +199,38 @@ def unmark_caught(session: Session, user_id: str, fish_slug: str) -> None:
         delete(CaughtFishModel).where(
             CaughtFishModel.user_id == user_id,
             CaughtFishModel.fish_slug == fish_slug,
+        )
+    )
+
+
+# ====================== 찜한 물고기 — 로그인 사용자 본인 것만 ====================== #
+
+
+def list_favorite_fish(session: Session, user_id: str) -> list[FavoriteFishModel]:
+    return list(
+        session.scalars(
+            select(FavoriteFishModel)
+            .where(FavoriteFishModel.user_id == user_id)
+            .order_by(FavoriteFishModel.created_at.desc())
+        )
+    )
+
+
+def mark_favorite(session: Session, user_id: str, fish_slug: str) -> FavoriteFishModel:
+    """이미 찜돼 있으면 처음 찜한 시각을 그대로 둔다(두 번 눌러도 같은 결과)."""
+    entity = session.get(FavoriteFishModel, (user_id, fish_slug))
+    if entity is None:
+        entity = FavoriteFishModel(user_id=user_id, fish_slug=fish_slug, created_at=utc_now())
+        session.add(entity)
+        session.flush()
+    return entity
+
+
+def unmark_favorite(session: Session, user_id: str, fish_slug: str) -> None:
+    session.execute(
+        delete(FavoriteFishModel).where(
+            FavoriteFishModel.user_id == user_id,
+            FavoriteFishModel.fish_slug == fish_slug,
         )
     )
 

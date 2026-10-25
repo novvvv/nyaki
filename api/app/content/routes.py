@@ -14,6 +14,7 @@ from .schemas import (
     ArtistPayload,
     ArtistResponse,
     CaughtFishResponse,
+    FavoriteFishResponse,
     GuestbookEntryResponse,
     GuestbookPayload,
     FishPayload,
@@ -34,11 +35,14 @@ from .services import (
     last_guestbook_at,
     list_artists,
     list_caught_fish,
+    list_favorite_fish,
     list_fish,
     list_guestbook,
     list_posts,
     mark_caught,
+    mark_favorite,
     unmark_caught,
+    unmark_favorite,
     upsert_artist,
     upsert_fish,
     upsert_post,
@@ -267,6 +271,42 @@ def remove_caught_fish(
 ) -> Response:
     # 체크 안 된 걸 해제해도 204 — 화면에서 두 번 눌러도 오류가 나지 않게.
     unmark_caught(session, user_id, slug)
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ====================== 찜한 물고기 — 로그인한 본인 기록만 ====================== #
+
+
+@router.get("/favorite-fish", response_model=list[FavoriteFishResponse])
+def get_favorite_fish(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[FavoriteFishResponse]:
+    return list_favorite_fish(session, user_id)
+
+
+@router.put("/favorite-fish/{slug}", response_model=FavoriteFishResponse)
+def put_favorite_fish(
+    slug: str,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> FavoriteFishResponse:
+    if get_fish(session, slug) is None:
+        raise HTTPException(status_code=404, detail="물고기를 찾을 수 없습니다.")
+    entity = mark_favorite(session, user_id, slug)
+    session.commit()
+    return entity
+
+
+@router.delete("/favorite-fish/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_favorite_fish(
+    slug: str,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    # 찜 안 된 걸 해제해도 204 — 화면에서 두 번 눌러도 오류가 나지 않게.
+    unmark_favorite(session, user_id, slug)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

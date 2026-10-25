@@ -1,17 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from ..core.auth import get_current_user_id, require_admin_id
+from ..core.auth import (
+    CurrentUser,
+    get_current_user,
+    get_current_user_id,
+    get_optional_user_id,
+    is_admin,
+    require_admin_id,
+)
+from ..models import GuestbookEntryModel
 from .schemas import (
     ArtistPayload,
     ArtistResponse,
     CaughtFishResponse,
+    GuestbookEntryResponse,
+    GuestbookPayload,
     FishPayload,
     FishResponse,
     PostPayload,
     PostResponse,
 )
 from .services import (
+    GUESTBOOK_COOLDOWN_SECONDS,
+    add_guestbook,
     delete_artist,
     delete_fish,
     delete_post,
@@ -19,15 +31,18 @@ from .services import (
     get_fish,
     get_post,
     get_post_for_artist,
+    last_guestbook_at,
     list_artists,
     list_caught_fish,
     list_fish,
+    list_guestbook,
     list_posts,
     mark_caught,
     unmark_caught,
     upsert_artist,
     upsert_fish,
     upsert_post,
+    utc_now,
 )
 from ..core.database import get_session
 
@@ -252,5 +267,61 @@ def remove_caught_fish(
 ) -> Response:
     # 체크 안 된 걸 해제해도 204 — 화면에서 두 번 눌러도 오류가 나지 않게.
     unmark_caught(session, user_id, slug)
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ====================== 방명록 — 읽기는 누구나, 쓰기는 로그인한 사용자 ====================== #
+
+
+def _guestbook_response(entity: GuestbookEntryModel, viewer_id: str | None) -> GuestbookEntryResponse:
+    return GuestbookEntryResponse(
+        id=entity.id,
+        author_name=entity.author_name,
+        body=entity.body,
+        created_at=entity.created_at,
+        can_delete=viewer_id is not None and (entity.user_id == viewer_id or is_admin(viewer_id)),
+    )
+
+
+@router.get("/guestbook", response_model=list[GuestbookEntryResponse])
+def get_guestbook(
+    limit: int = Query(default=30, ge=1, le=100),
+    before_id: int | None = Query(default=None, ge=1),
+    session: Session = Depends(get_session),
+    viewer_id: str | None = Depends(get_optional_user_id),
+) -> list[GuestbookEntryResponse]:
+    return [_guestbook_response(e, viewer_id) for e in list_guestbook(session, limit, before_id)]
+
+
+@router.post("/guestbook", response_model=GuestbookEntryResponse, status_code=status.HTTP_201_CREATED)
+def post_guestbook(
+    payload: GuestbookPayload,
+    session: Session = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+) -> GuestbookEntryResponse:
+    last = last_guestbook_at(session, user.uid)
+    if last is not None:
+        if last.tzinfo is None:  # SQLite는 시간대를 떼고 돌려준다
+            last = last.replace(tzinfo=utc_now().tzinfo)
+        if (utc_now() - last).total_seconds() < GUESTBOOK_COOLDOWN_SECONDS:
+            raise HTTPException(status_code=429, detail="잠시 뒤에 다시 남겨 주세요.")
+    entity = add_guestbook(session, user.uid, (user.name or "익명")[:60], payload.body)
+    session.commit()
+    return _guestbook_response(entity, user.uid)
+
+
+@router.delete("/guestbook/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_guestbook(
+    entry_id: int,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    entity = session.get(GuestbookEntryModel, entry_id)
+    if entity is None:
+        raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다.")
+    if entity.user_id != user_id and not is_admin(user_id):
+        raise HTTPException(status_code=403, detail="본인 글만 지울 수 있습니다.")
+    session.delete(entity)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -108,3 +108,23 @@ class CaughtFishResponse(BaseModel):
 
     fish_slug: str
     caught_at: datetime
+
+
+class GuestbookPayload(BaseModel):
+    body: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def strip_body(self) -> "GuestbookPayload":
+        self.body = self.body.strip()
+        if not self.body:
+            raise ValueError("내용을 입력해 주세요.")
+        return self
+
+
+class GuestbookEntryResponse(BaseModel):
+    id: int
+    author_name: str
+    body: str
+    created_at: datetime
+    # 보는 사람이 지울 수 있는지(본인 글이거나 관리자) — 작성자 uid는 내보내지 않는다
+    can_delete: bool = False

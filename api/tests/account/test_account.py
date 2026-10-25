@@ -17,7 +17,7 @@ from firebase_admin import auth
 from sqlalchemy import func, select
 
 from app.account.services import USER_TABLES
-from app.core.auth import get_current_user_id, require_admin_id
+from app.core.auth import CurrentUser, get_current_user, get_current_user_id, require_admin_id
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 
@@ -87,6 +87,11 @@ def _fill(client: TestClient) -> None:
     ).status_code == 200
     del app.dependency_overrides[require_admin_id]
     assert client.put("/v1/content/caught-fish/account-fish").status_code == 200
+    # 방명록 — 작성자 이름까지 쓰는 의존성이라 같은 사용자로 따로 바꿔치기
+    uid = app.dependency_overrides[get_current_user_id]()
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(uid=uid, name="탈퇴 확인")
+    assert client.post("/v1/content/guestbook", json={"body": "탈퇴 확인용 글"}).status_code == 201
+    del app.dependency_overrides[get_current_user]
 
 
 def _counts(user: str) -> dict[str, int]:

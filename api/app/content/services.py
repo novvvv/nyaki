@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from ..models import ArtistModel, CaughtFishModel, FishModel, PostModel
+from ..models import ArtistModel, CaughtFishModel, FishModel, GuestbookEntryModel, PostModel
 from .schemas import ArtistPayload, FishPayload, PostPayload
 
 
@@ -194,3 +194,32 @@ def unmark_caught(session: Session, user_id: str, fish_slug: str) -> None:
             CaughtFishModel.fish_slug == fish_slug,
         )
     )
+
+
+# 같은 사람이 연달아 쓰는 걸 막는 간격(초) — 도배 방지
+GUESTBOOK_COOLDOWN_SECONDS = 30
+
+
+def list_guestbook(session: Session, limit: int, before_id: int | None) -> list[GuestbookEntryModel]:
+    query = select(GuestbookEntryModel).order_by(GuestbookEntryModel.id.desc()).limit(limit)
+    if before_id is not None:
+        query = query.where(GuestbookEntryModel.id < before_id)
+    return list(session.scalars(query))
+
+
+def last_guestbook_at(session: Session, user_id: str) -> datetime | None:
+    return session.scalar(
+        select(GuestbookEntryModel.created_at)
+        .where(GuestbookEntryModel.user_id == user_id)
+        .order_by(GuestbookEntryModel.created_at.desc())
+        .limit(1)
+    )
+
+
+def add_guestbook(session: Session, user_id: str, author_name: str, body: str) -> GuestbookEntryModel:
+    entity = GuestbookEntryModel(
+        user_id=user_id, author_name=author_name, body=body, created_at=utc_now()
+    )
+    session.add(entity)
+    session.flush()
+    return entity

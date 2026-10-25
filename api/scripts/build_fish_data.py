@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """FF14 물고기 시드 데이터(scripts/data/fish.json) 만들기 — 개발 PC에서 돌리는 일회성 도구.
 
-  .venv/bin/python scripts/build_fish_data.py --expansion 0 --cache /tmp/fish-cache
+  .venv/bin/python scripts/build_fish_data.py --expansion 0 2 --cache /tmp/fish-cache
+
+--expansion은 ExVersion(0=신생, 1=창천, 2=홍련 …)을 여러 개 받아 한 fish.json에 담는다.
+시드가 이 파일 하나라 이미 넣은 확장팩도 빼지 말고 같이 적는다.
 
 세 출처를 합치고, 두 공략 출처가 서로 다른 곳은 보고서로 출력한다.
 
@@ -187,7 +190,7 @@ def slugify(name: str) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--expansion", type=int, default=0, help="ExVersion (0=신생)")
+    ap.add_argument("--expansion", type=int, nargs="+", default=[0], help="ExVersion (0=신생, 2=홍련)")
     ap.add_argument("--cache", type=Path, required=True)
     args = ap.parse_args()
     cache: Path = args.cache
@@ -208,7 +211,7 @@ def main() -> None:
     zones = {
         int(k): place_name(r[col(th, "PlaceName")])
         for k, r in territory.items()
-        if r[col(th, "ExVersion")] == str(args.expansion)
+        if int(r[col(th, "ExVersion")] or 0) in args.expansion
         and r[col(th, "TerritoryIntendedUse")] in ("0", "1")
         and r[col(th, "WeatherRate")] != "0"
         and not r[col(th, "Name")].endswith("_test")

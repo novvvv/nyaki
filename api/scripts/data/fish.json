@@ -400,6 +400,10 @@
     "spot_name": "저녁별 만"
    },
    {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
+   },
+   {
     "zone_id": 137,
     "spot_name": "로타노 해 먼바다: 뱃머리"
    }
@@ -959,6 +963,10 @@
    {
     "zone_id": 140,
     "spot_name": "저녁별 만"
+   },
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
    }
   ],
   "water": "먼바다",
@@ -1000,6 +1008,10 @@
    {
     "zone_id": 140,
     "spot_name": "초승달 만"
+   },
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
    },
    {
     "zone_id": 137,
@@ -1209,6 +1221,10 @@
    {
     "zone_id": 137,
     "spot_name": "코스타 델 솔"
+   },
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
    }
   ],
   "water": "먼바다",
@@ -1357,6 +1373,10 @@
    {
     "zone_id": 140,
     "spot_name": "은 장터"
+   },
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
    }
   ],
   "water": "바닷가",
@@ -1394,6 +1414,10 @@
    {
     "zone_id": 137,
     "spot_name": "북부 핏빛해안"
+   },
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
    },
    {
     "zone_id": 137,
@@ -1488,6 +1512,10 @@
    {
     "zone_id": 138,
     "spot_name": "사프사 산란지"
+   },
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
    }
   ],
   "water": "바닷가",
@@ -1847,6 +1875,10 @@
    {
     "zone_id": 138,
     "spot_name": "환영 제도 남부"
+   },
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
    }
   ],
   "water": "바닷가",
@@ -3048,6 +3080,10 @@
    {
     "zone_id": 133,
     "spot_name": "그리다니아: 홍차강 상류"
+   },
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
    }
   ],
   "water": "강/시내",
@@ -3227,6 +3263,10 @@
    {
     "zone_id": 141,
     "spot_name": "악마의 손아귀"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    }
   ],
   "water": "호수/늪",
@@ -3688,6 +3728,10 @@
    {
     "zone_id": 148,
     "spot_name": "하우케타 별궁"
+   },
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
    }
   ],
   "water": "호수/늪",
@@ -3759,6 +3803,10 @@
    {
     "zone_id": 139,
     "spot_name": "청동호수 얕은 물"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    }
   ],
   "water": "호수/늪",
@@ -3869,6 +3917,10 @@
    {
     "zone_id": 154,
     "spot_name": "가을박 호수"
+   },
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
    }
   ],
   "water": "강/시내",
@@ -4054,6 +4106,10 @@
    {
     "zone_id": 146,
     "spot_name": "잊힌 오아시스"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    }
   ],
   "water": "호수/늪",
@@ -4219,6 +4275,10 @@
    {
     "zone_id": 154,
     "spot_name": "술렁이는 강"
+   },
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
    }
   ],
   "water": "강/시내",
@@ -4290,6 +4350,10 @@
    {
     "zone_id": 140,
     "spot_name": "발자국 계곡"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    }
   ],
   "water": "강/시내",
@@ -4661,6 +4725,10 @@
    {
     "zone_id": 141,
     "spot_name": "악마의 손아귀"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    }
   ],
   "water": "호수/늪",
@@ -4809,6 +4877,10 @@
    {
     "zone_id": 154,
     "spot_name": "가을박 호수"
+   },
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
    }
   ],
   "water": "호수/늪",
@@ -4895,6 +4967,10 @@
    {
     "zone_id": 146,
     "spot_name": "잊힌 오아시스"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    }
   ],
   "water": "강/시내",
@@ -5026,6 +5102,10 @@
    {
     "zone_id": 152,
     "spot_name": "청록의 나락"
+   },
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
    }
   ],
   "water": "호수/늪",
@@ -5237,6 +5317,10 @@
     "spot_name": "노래하는 열곡"
    },
    {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
+   },
+   {
     "zone_id": 180,
     "spot_name": "청동호수 북서부"
    }
@@ -5369,6 +5453,10 @@
    {
     "zone_id": 148,
     "spot_name": "하우케타 별궁"
+   },
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
    }
   ],
   "water": "강/시내",
@@ -5544,6 +5632,10 @@
    {
     "zone_id": 140,
     "spot_name": "달샘 동굴"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    },
    {
     "zone_id": 180,
@@ -7061,6 +7153,10 @@
    {
     "zone_id": 156,
     "spot_name": "노래하는 열곡 북부"
+   },
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
    }
   ],
   "water": "호수/늪",
@@ -10525,6 +10621,50 @@
   "description": "녹색이 몹시 선명한 대형장어. 전설의 마물 '톤베리'를 삼키고 그런 색이 되었다고 한다."
  },
  {
+  "slug": "twitchbeard",
+  "item_id": 7917,
+  "icon_id": 29374,
+  "name": "씰룩수염문어",
+  "name_en": "Twitchbeard",
+  "name_ja": "トゥイッチビアード",
+  "zone_id": 339,
+  "spot_name": "안갯빛 마을",
+  "spots": [
+   {
+    "zone_id": 339,
+    "spot_name": "안갯빛 마을"
+   }
+  ],
+  "water": "먼바다",
+  "level": 50,
+  "stars": 3,
+  "is_legendary": true,
+  "is_big_fish": true,
+  "start_hour": 4.0,
+  "end_hour": 6.0,
+  "weathers": [
+   1,
+   2
+  ],
+  "previous_weathers": [],
+  "bait": "개불",
+  "mooches": [
+   {
+    "name": "보름정어리",
+    "tug": "!",
+    "hookset": "섬세한 낚아채기"
+   }
+  ],
+  "tug": "!!!",
+  "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
+  "buffs": [
+   "물고기의 눈"
+  ],
+  "description": "해적왕 '안개수염'이 숨겨둔 보물을 지키기 위해 풀었다는 거대문어. 피막을 펼치고 유유히 헤엄치는 모습이 압권이다."
+ },
+ {
   "slug": "the-wardens-wand",
   "item_id": 7918,
   "icon_id": 29356,
@@ -10560,6 +10700,44 @@
    "물고기의 눈"
   ],
   "description": "유달리 강한 빛을 내는 장어. 저녁이 되면 잠자리에 드는 태양신 '아제마'에게 가서 남은 빛을 얻는다고 한다."
+ },
+ {
+  "slug": "spearnose",
+  "item_id": 7919,
+  "icon_id": 29611,
+  "name": "코창어",
+  "name_en": "Spearnose",
+  "name_ja": "スピアノーズ",
+  "zone_id": 341,
+  "spot_name": "하늘잔 마루",
+  "spots": [
+   {
+    "zone_id": 341,
+    "spot_name": "하늘잔 마루"
+   }
+  ],
+  "water": "강/시내",
+  "level": 50,
+  "stars": 3,
+  "is_legendary": true,
+  "is_big_fish": true,
+  "start_hour": 21.0,
+  "end_hour": 24.0,
+  "weathers": [
+   4,
+   3
+  ],
+  "previous_weathers": [],
+  "bait": "날도래 유충",
+  "mooches": [],
+  "tug": "!!!",
+  "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
+  "buffs": [
+   "물고기의 눈"
+  ],
+  "description": "창처럼 긴 입을 가진 기묘한 물고기. 작은 돌 사이에 숨은 먹잇감을 빨아들이기 위해 입 모양이 그렇게 발달했다고 한다."
  },
  {
   "slug": "levinlight",
@@ -10677,6 +10855,49 @@
    "물고기의 눈"
   ],
   "description": "고블린족 어부들이 줄곧 노리는 대형농어. 수많은 어부를 좌절시키고 은퇴하게 만들었다."
+ },
+ {
+  "slug": "sweetnewt",
+  "item_id": 7923,
+  "icon_id": 29375,
+  "name": "개다래고기",
+  "name_en": "Sweetnewt",
+  "name_ja": "スウィートニュート",
+  "zone_id": 340,
+  "spot_name": "라벤더 안식처",
+  "spots": [
+   {
+    "zone_id": 340,
+    "spot_name": "라벤더 안식처"
+   }
+  ],
+  "water": "강/시내",
+  "level": 50,
+  "stars": 3,
+  "is_legendary": true,
+  "is_big_fish": true,
+  "start_hour": 23.0,
+  "end_hour": 4.0,
+  "weathers": [
+   4
+  ],
+  "previous_weathers": [],
+  "bait": "깔따구",
+  "mooches": [
+   {
+    "name": "검투어",
+    "tug": "!",
+    "hookset": "섬세한 낚아채기"
+   }
+  ],
+  "tug": "!!!",
+  "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
+  "buffs": [
+   "물고기의 눈"
+  ],
+  "description": "육식 양서류. 적에게 공격당하면 약한 독성을 가진 점액을 분비한다. 미코테족은 그 냄새에 사족을 못 쓴다고 한다."
  },
  {
   "slug": "bombardfish",
@@ -13598,9 +13819,13 @@
   "name": "송사리",
   "name_en": "Killifish",
   "name_ja": "メダカ",
-  "zone_id": 622,
-  "spot_name": "넴 칼",
+  "zone_id": 641,
+  "spot_name": "시로가네 수로",
   "spots": [
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네 수로"
+   },
    {
     "zone_id": 622,
     "spot_name": "넴 칼"
@@ -15609,6 +15834,10 @@
    {
     "zone_id": 613,
     "spot_name": "난바위 근해"
+   },
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네"
    }
   ],
   "water": "먼바다",
@@ -16224,6 +16453,10 @@
    {
     "zone_id": 613,
     "spot_name": "베코우 섬 근해"
+   },
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네"
    }
   ],
   "water": "먼바다",
@@ -16314,6 +16547,10 @@
    {
     "zone_id": 613,
     "spot_name": "살귀도 근해"
+   },
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네"
    }
   ],
   "water": "먼바다",
@@ -16349,6 +16586,10 @@
    {
     "zone_id": 628,
     "spot_name": "부두 전체"
+   },
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네"
    }
   ],
   "water": "먼바다",
@@ -16564,6 +16805,10 @@
    {
     "zone_id": 614,
     "spot_name": "매천향"
+   },
+   {
+    "zone_id": 759,
+    "spot_name": "도마 도읍지"
    }
   ],
   "water": "강/시내",
@@ -16732,6 +16977,14 @@
    {
     "zone_id": 614,
     "spot_name": "매천향"
+   },
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네 수로"
+   },
+   {
+    "zone_id": 759,
+    "spot_name": "도마 도읍지"
    }
   ],
   "water": "강/시내",
@@ -16800,6 +17053,10 @@
    {
     "zone_id": 622,
     "spot_name": "도탈 카"
+   },
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네 수로"
    }
   ],
   "water": "호수/늪",
@@ -17248,6 +17505,10 @@
    {
     "zone_id": 614,
     "spot_name": "나마이 마을 저수지"
+   },
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네 수로"
    }
   ],
   "water": "호수/늪",
@@ -18053,6 +18314,41 @@
   "description": "톱니처럼 생긴 이빨로 암염을 갈아내고 그 틈에 숨어서 작은 물고기를 잡아먹는 고대어. 제염촌 제염업자들에게는 행운의 상징으로 여겨진다."
  },
  {
+  "slug": "bonsai-fish",
+  "item_id": 22395,
+  "icon_id": 29440,
+  "name": "분재어",
+  "name_en": "Bonsai Fish",
+  "name_ja": "盆栽魚",
+  "zone_id": 641,
+  "spot_name": "시로가네 수로",
+  "spots": [
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네 수로"
+   }
+  ],
+  "water": "강/시내",
+  "level": 70,
+  "stars": 2,
+  "is_legendary": false,
+  "is_big_fish": false,
+  "start_hour": null,
+  "end_hour": null,
+  "weathers": [],
+  "previous_weathers": [],
+  "bait": "산지렁이",
+  "mooches": [],
+  "tug": "!",
+  "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
+  "buffs": [
+   "물고기의 눈"
+  ],
+  "description": "수면에 나뭇가지나 나뭇잎이 비친 것처럼 의태하여 새의 눈을 속이는 물고기. 작은 분재 같다고 하여 이런 이름이 붙여졌다."
+ },
+ {
   "slug": "ribbon-eel",
   "item_id": 22396,
   "icon_id": 29143,
@@ -18562,6 +18858,41 @@
    "물고기의 눈"
   ],
   "description": "일찍이 동방에서는 대형 신도해마를 용으로 간주하여 만능약이라며 팔았었다. 단, 이렇다 할 약효는 없다."
+ },
+ {
+  "slug": "the-gambler",
+  "item_id": 23064,
+  "icon_id": 29156,
+  "name": "도박어",
+  "name_en": "The Gambler",
+  "name_ja": "バクチウチ",
+  "zone_id": 641,
+  "spot_name": "시로가네",
+  "spots": [
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네"
+   }
+  ],
+  "water": "먼바다",
+  "level": 70,
+  "stars": 2,
+  "is_legendary": true,
+  "is_big_fish": true,
+  "start_hour": null,
+  "end_hour": null,
+  "weathers": [],
+  "previous_weathers": [],
+  "bait": "청개비",
+  "mooches": [],
+  "tug": "!!!",
+  "hookset": "강력한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
+  "buffs": [
+   "물고기의 눈"
+  ],
+  "description": "맛은 뛰어나지만, 특수한 조리법을 사용해도 독을 제거할 수 있는 확률은 반반이기에 목숨을 건 도박을 하지 않으면 먹을 수 없다."
  },
  {
   "slug": "the-winter-queen",
@@ -19278,6 +19609,41 @@
    "물고기의 눈"
   ],
   "description": "제7재해 때 가사 상태에 빠졌으나 5년이라는 세월이 지난 후 되살아난 명상어. 그 정신은 물고기를 초월해 해탈한 승려의 영역에 다다랐다."
+ },
+ {
+  "slug": "princess-killifish",
+  "item_id": 24213,
+  "icon_id": 29540,
+  "name": "공주송사리",
+  "name_en": "Princess Killifish",
+  "name_ja": "ヒメダカ",
+  "zone_id": 641,
+  "spot_name": "시로가네 수로",
+  "spots": [
+   {
+    "zone_id": 641,
+    "spot_name": "시로가네 수로"
+   }
+  ],
+  "water": "강/시내",
+  "level": 70,
+  "stars": 3,
+  "is_legendary": true,
+  "is_big_fish": true,
+  "start_hour": 4.0,
+  "end_hour": 6.0,
+  "weathers": [],
+  "previous_weathers": [],
+  "bait": "산지렁이",
+  "mooches": [],
+  "tug": "!!!",
+  "hookset": "섬세한 낚아채기",
+  "predators": [],
+  "intuition_seconds": null,
+  "buffs": [
+   "물고기의 눈"
+  ],
+  "description": "돌연변이를 일으킨 송사리. 일반 송사리보다 노란빛이 강한 몸통을 지니고 있어, 관상어로 가치가 높다."
  },
  {
   "slug": "kuer",

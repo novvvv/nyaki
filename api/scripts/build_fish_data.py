@@ -49,6 +49,8 @@ TUG = {"Light": "!", "Medium": "!!", "Heavy": "!!!", "Legendary": "!!!"}
 HOOKSET = {"Precision": "섬세한 낚아채기", "Powerful": "강력한 낚아채기"}
 HOOKSET_KO = {"섬낚": "섬세한 낚아채기", "강낚": "강력한 낚아채기"}
 TUG_KO = {"약한 입질": "!", "중간 입질": "!!", "강한 입질": "!!!"}
+# 게임 데이터에 지역(TerritoryType)이 비어 있는 낚시터 — 낚시터 id → 지역 id
+SPOT_ZONE = {10000: 759}  # 도마 도읍지
 
 
 # ------------------------------------------------------------------ 받기
@@ -207,12 +209,13 @@ def main() -> None:
 
     place_name = lambda pid: place.get(pid, [""] * 2)[col(ph, "Name")]  # noqa: E731
 
-    # 날씨 예보와 같은 기준의 지역(마을·필드, 날씨 있음)만
+    # 날씨 예보와 같은 기준의 지역(마을·필드·주택가, 날씨 있음)만. 주택가는 ExVersion이 실제와
+    # 달라(시로가네가 0) 신생 쪽에 같이 걸리고, 웹은 지역 id로 확장팩을 따로 정한다.
     zones = {
         int(k): place_name(r[col(th, "PlaceName")])
         for k, r in territory.items()
         if int(r[col(th, "ExVersion")] or 0) in args.expansion
-        and r[col(th, "TerritoryIntendedUse")] in ("0", "1")
+        and r[col(th, "TerritoryIntendedUse")] in ("0", "1", "13")
         and r[col(th, "WeatherRate")] != "0"
         and not r[col(th, "Name")].endswith("_test")
     }
@@ -221,7 +224,7 @@ def main() -> None:
     fish_spots: dict[int, list[dict]] = defaultdict(list)
     spot_ids = []
     for sid, r in spots.items():
-        zone = int(r[col(sh, "TerritoryType")] or 0)
+        zone = int(r[col(sh, "TerritoryType")] or 0) or SPOT_ZONE.get(int(sid), 0)
         if zone not in zones:
             continue
         spot_ids.append(int(sid))

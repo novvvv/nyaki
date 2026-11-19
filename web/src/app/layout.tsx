@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     url: "/",
     type: "website",
     locale: "ko_KR",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Nyaki 고양이" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Nyaki" }],
   },
   twitter: {
     card: "summary_large_image",

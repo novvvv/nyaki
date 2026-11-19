@@ -17,11 +17,11 @@ function LandingScreen({
     <main className="flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center px-6 py-16 text-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/cat.png"
-        alt="Nyaki 고양이"
-        width={500}
-        height={500}
-        className="block h-auto w-[min(260px,68vw)]"
+        src="/nyaki_normal.webp"
+        alt="Nyaki"
+        width={1792}
+        height={2400}
+        className="block h-auto w-[min(320px,72vw)]"
       />
 
       {message ? <p className="mt-8 text-sm text-ink/40">{message}</p> : null}
@@ -33,6 +33,8 @@ function LandingScreen({
 }
 
 export function isPublicPath(pathname: string): boolean {
+  // 메인은 소개(랜딩)라 누구나 본다. 무엇인지 알아야 가입한다.
+  if (pathname === "/") return true;
   return pathname === "/downloads" || /^\/downloads\/[^/]+$/.test(pathname);
 }
 

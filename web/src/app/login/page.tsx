@@ -73,11 +73,11 @@ function LoginScreen() {
     <main className={SCREEN}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/cat.png"
-        alt="Nyaki 고양이"
-        width={500}
-        height={500}
-        className="block h-auto w-[min(220px,58vw)]"
+        src="/nyaki_normal.webp"
+        alt="Nyaki"
+        width={1792}
+        height={2400}
+        className="block h-auto w-[min(320px,72vw)]"
       />
 
       {configured ? (

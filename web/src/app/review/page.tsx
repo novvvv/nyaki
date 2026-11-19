@@ -71,7 +71,11 @@ function ClozeText({
     <>
       {toBlocks(segments).map((block, index) =>
         block.kind === "text" ? (
-          <ClozePieces key={index} segments={block.pieces} revealed={revealed} />
+          <ClozePieces
+            key={index}
+            segments={block.pieces}
+            revealed={revealed}
+          />
         ) : (
           <ClozeTable
             key={index}
@@ -204,7 +208,9 @@ function loadSelection(): string[] | null {
   try {
     const raw = window.localStorage.getItem(SELECTION_KEY);
     const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : null;
+    return Array.isArray(parsed)
+      ? parsed.filter((v) => typeof v === "string")
+      : null;
   } catch {
     return null;
   }
@@ -509,7 +515,9 @@ function NoteSheet({
         ) : null}
       </p>
 
-      {reading && recall && flipped ? <p className={NOTE_LINE}>{reading}</p> : null}
+      {reading && recall && flipped ? (
+        <p className={NOTE_LINE}>{reading}</p>
+      ) : null}
 
       {flipped && word?.example ? (
         <p className={cn(NOTE_LINE, "mt-8")}>
@@ -553,9 +561,8 @@ export default function ReviewPage() {
   // 바뀌어 보이고, 세션 안에서 같은 단어가 다시 나와도 맞게 보이게.
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   // 단어장 목록에서 접어 둔 폴더. 초기값으로 읽는다(목록은 단어장을 받은 뒤 그려진다).
-  const [collapsedFolders, setCollapsedFolders] = useState<string[]>(
-    loadCollapsedFolders,
-  );
+  const [collapsedFolders, setCollapsedFolders] =
+    useState<string[]>(loadCollapsedFolders);
   const [result, setResult] = useState({ again: 0, good: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -584,6 +591,15 @@ export default function ReviewPage() {
   const sent = useRef(false);
 
   const current = queue[index];
+  // 고양이 표정 — 외움이면 happy, 모름이면 angry, 잠깐 뒤 normal로 돌아온다.
+  const [mood, setMood] = useState<"normal" | "happy" | "angry">("normal");
+  const moodTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(moodTimer.current), []);
+  // 표정 그림을 미리 받아둔다 — 처음 채점할 때 그림이 늦게 떠서 표정이 안 바뀌는 일이 없게.
+  useEffect(() => {
+    for (const face of ["happy", "angry"])
+      new Image().src = `/nyaki_${face}.webp`;
+  }, []);
 
   // 단어장이 하나뿐이면 고를 이유가 없어 선택 줄을 숨긴다.
   const showBookPicker = wordBooks.length > 1;
@@ -598,7 +614,8 @@ export default function ReviewPage() {
       folder: null,
       books: wordBooks.filter(
         (book) =>
-          !book.folderId || !folders.some((folder) => folder.id === book.folderId),
+          !book.folderId ||
+          !folders.some((folder) => folder.id === book.folderId),
       ),
     },
   ].filter((group) => group.books.length > 0);
@@ -669,6 +686,10 @@ export default function ReviewPage() {
 
       setResult((prev) => ({ ...prev, [value]: prev[value] + 1 }));
       setFlipped(false);
+
+      setMood(value === "good" ? "happy" : "angry");
+      clearTimeout(moodTimer.current);
+      moodTimer.current = setTimeout(() => setMood("normal"), 1200);
 
       // 채점한 카드는 이 세션에서 빠진다. 학습 단계가 잡아둔 다음 시각(1분·10분 뒤)은
       // 서버가 계산하고, 그 카드는 **다음 테스트**에서 다시 나온다.
@@ -745,7 +766,9 @@ export default function ReviewPage() {
       } catch (reason) {
         if (cancelled) return;
         setError(
-          reason instanceof Error ? reason.message : "단어를 불러오지 못했어요.",
+          reason instanceof Error
+            ? reason.message
+            : "단어를 불러오지 못했어요.",
         );
       } finally {
         if (!cancelled) setLoading(false);
@@ -876,9 +899,18 @@ export default function ReviewPage() {
   if (phase === "session" && current) {
     return (
       // 노트 스킨은 화면 전체가 종이다. 바깥을 칠해야 가운데 단만 뜨지 않는다.
-      <div className={cn(skin === "note" && "bg-paper")}>
+      // 큰 화면에서는 캐릭터가 카드 오른쪽에 크게 선다.
+      <div
+        className={cn(
+          "flex items-center justify-center lg:gap-12 lg:px-6",
+          skin === "note" && "bg-paper",
+        )}
+      >
         <main
-          className={cn(SCREEN, "mx-auto flex w-full max-w-xl flex-col px-6 py-10")}
+          className={cn(
+            SCREEN,
+            "flex w-full max-w-xl flex-col px-6 py-10 lg:px-0",
+          )}
         >
           <div className="mb-6 flex justify-end gap-2">
             <button
@@ -953,7 +985,10 @@ export default function ReviewPage() {
                 )}
               >
                 {current.cloze ? (
-                  <ClozeText segments={current.cloze.segments} revealed={flipped} />
+                  <ClozeText
+                    segments={current.cloze.segments}
+                    revealed={flipped}
+                  />
                 ) : (
                   front(current)
                 )}
@@ -989,6 +1024,15 @@ export default function ReviewPage() {
               )}
             </button>
           )}
+
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/nyaki_${mood}.webp`}
+            alt=""
+            width={1792}
+            height={2400}
+            className="mx-auto mb-4 block h-auto w-20 lg:hidden"
+          />
 
           {/* 안키가 버튼 위에 <1m / <10m를 띄우는 것과 같다. 계산은 서버가 한다. */}
           {showDelays ? (
@@ -1035,6 +1079,15 @@ export default function ReviewPage() {
             </button>
           </div>
         </main>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/nyaki_${mood}.webp`}
+          alt=""
+          width={1792}
+          height={2400}
+          className="hidden h-auto w-[min(360px,28vw)] shrink-0 lg:block"
+        />
       </div>
     );
   }
@@ -1093,209 +1146,226 @@ export default function ReviewPage() {
   }
 
   return (
-    <main
-      className={cn(
-        SCREEN,
-        "mx-auto grid w-full max-w-3xl items-center gap-12 px-6 py-14",
-        // 넓으면 왼쪽에 시작 흐름, 오른쪽에 단어장 목록. 좁으면 위아래로 쌓인다.
-        showBookPicker ? "sm:grid-cols-[1fr_17rem]" : "max-w-xl",
-      )}
-    >
-      <div className="flex flex-col items-center text-center">
-        <p aria-hidden className="text-lg text-ink/75">
-          /ᐠ .⑅.ᐟ\ﾉ
-        </p>
+    // 큰 화면에서는 오른쪽에 싸울 준비를 한 냐키가 선다.
+    <div className="flex items-center justify-center lg:gap-2 lg:px-6">
+      <main
+        className={cn(
+          SCREEN,
+          "mx-auto grid w-full max-w-3xl items-center gap-12 px-6 py-14 lg:mx-0 lg:pr-0",
+          // 넓으면 왼쪽에 시작 흐름, 오른쪽에 단어장 목록. 좁으면 위아래로 쌓인다.
+          showBookPicker ? "sm:grid-cols-[1fr_17rem]" : "max-w-xl",
+        )}
+      >
+        <div className="flex flex-col items-center text-center">
+          <p aria-hidden className="text-lg text-ink/75">
+            /ᐠ .⑅.ᐟ\ﾉ
+          </p>
 
-        <h1 className="mt-5 flex items-center justify-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
-          {/* 픽셀 폰트는 한자·한글이 없다 — 이 가나 문구에만 쓴다 */}
-          <span className="font-pixel text-xl">テスト</span>
-          <span>테스트</span>
-        </h1>
+          <h1 className="mt-5 flex items-center justify-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
+            {/* 픽셀 폰트는 한자·한글이 없다 — 이 가나 문구에만 쓴다 */}
+            <span className="font-pixel text-xl">テスト</span>
+            <span>테스트</span>
+          </h1>
 
-        <p className="mt-3 text-sm text-ink/40">
-          {loading ? (
-            "단어를 세는 중이냥"
-          ) : dueCount === 0 ? (
-            "오늘은 복습할 단어가 없다냥"
-          ) : (
-            <>
-              복습할 때가 된 단어{" "}
-              <span className="font-semibold tabular-nums text-ink">
-                {dueCount}
-              </span>
-              개가 기다리는 중이냥
-            </>
-          )}
-        </p>
+          <p className="mt-3 text-sm text-ink/40">
+            {loading ? (
+              "단어를 세는 중이냥"
+            ) : dueCount === 0 ? (
+              "오늘은 복습할 단어가 없다냥"
+            ) : (
+              <>
+                복습할 때가 된 단어{" "}
+                <span className="font-semibold tabular-nums text-ink">
+                  {dueCount}
+                </span>
+                개가 기다리는 중이냥
+              </>
+            )}
+          </p>
 
-        <div className="mt-12 flex items-end justify-center gap-2">
+          <div className="mt-12 flex items-end justify-center gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={limit === 0 ? 0 : 1}
+              max={limit}
+              disabled={limit === 0}
+              value={countValue}
+              onChange={(e) => setCountText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void start();
+              }}
+              aria-label="출제할 단어 개수"
+              className="w-24 border-b border-taupe/60 bg-transparent pb-1.5 text-center text-4xl font-semibold tabular-nums text-ink outline-none transition focus:border-ink"
+            />
+            <span className="pb-2.5 text-sm text-ink/35">개</span>
+          </div>
+
           <input
-            type="number"
-            inputMode="numeric"
+            type="range"
             min={limit === 0 ? 0 : 1}
-            max={limit}
+            // max가 min보다 작으면 브라우저가 값을 제멋대로 잡는다.
+            max={Math.max(limit, 1)}
             disabled={limit === 0}
-            value={countValue}
+            value={size}
             onChange={(e) => setCountText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void start();
-            }}
-            aria-label="출제할 단어 개수"
-            className="w-24 border-b border-taupe/60 bg-transparent pb-1.5 text-center text-4xl font-semibold tabular-nums text-ink outline-none transition focus:border-ink"
+            aria-label="출제할 단어 개수 조절"
+            className="mt-8 h-1 w-full max-w-xs cursor-pointer accent-ink"
           />
-          <span className="pb-2.5 text-sm text-ink/35">개</span>
+
+          <SubtleButton
+            onClick={() => setShuffle((prev) => !prev)}
+            aria-pressed={shuffle}
+            className={cn(
+              "mt-8 px-3.5 py-1.5 text-xs",
+              shuffle && "border-ink bg-ink text-cream hover:text-cream",
+            )}
+          >
+            {shuffle ? "랜덤 섞기 ON" : "랜덤 섞기"}
+          </SubtleButton>
+
+          {error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null}
+
+          <PrimaryButton
+            onClick={start}
+            disabled={!due || size < 1 || loading || picked.length === 0}
+            className="mt-10 gap-2 px-7 py-2.5"
+          >
+            {loading ? "불러오는 중…" : "시작하기"}
+            {loading ? null : <span aria-hidden>→</span>}
+          </PrimaryButton>
         </div>
 
-        <input
-          type="range"
-          min={limit === 0 ? 0 : 1}
-          // max가 min보다 작으면 브라우저가 값을 제멋대로 잡는다.
-          max={Math.max(limit, 1)}
-          disabled={limit === 0}
-          value={size}
-          onChange={(e) => setCountText(e.target.value)}
-          aria-label="출제할 단어 개수 조절"
-          className="mt-8 h-1 w-full max-w-xs cursor-pointer accent-ink"
-        />
-
-        <SubtleButton
-          onClick={() => setShuffle((prev) => !prev)}
-          aria-pressed={shuffle}
-          className={cn(
-            "mt-8 px-3.5 py-1.5 text-xs",
-            shuffle && "border-ink bg-ink text-cream hover:text-cream",
-          )}
-        >
-          {shuffle ? "랜덤 섞기 ON" : "랜덤 섞기"}
-        </SubtleButton>
-
-        {error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null}
-
-        <PrimaryButton
-          onClick={start}
-          disabled={!due || size < 1 || loading || picked.length === 0}
-          className="mt-10 gap-2 px-7 py-2.5"
-        >
-          {loading ? "불러오는 중…" : "시작하기"}
-          {loading ? null : <span aria-hidden>→</span>}
-        </PrimaryButton>
-      </div>
-
-      {/* 단어장 — 칩을 늘어놓으면 개수가 늘수록 줄이 접힌다. 세로 목록이 읽기 쉽다. */}
-      {showBookPicker ? (
-        // 사이드바와 같은 순서로 묶는다 — 폴더들, 그다음 폴더 밖 단어장.
-        <div className="flex flex-col gap-4 sm:border-l sm:border-taupe/30 sm:pl-6">
-          {bookGroups.map((group) => {
-            const ids = group.books.map((book) => book.id);
-            const allOn = ids.every((id) => selected.includes(id));
-            const someOn = ids.some((id) => selected.includes(id));
-            const due = ids.reduce((sum, id) => sum + (counts?.byBook[id] ?? 0), 0);
-            const open =
-              !group.folder || !collapsedFolders.includes(group.folder.id);
-            return (
-              <div key={group.folder?.id ?? "loose"}>
-                {group.folder ? (
-                  <div className="mb-0.5 flex items-center gap-1">
-                    {/* 폴더 줄을 누르면 안의 단어장을 한꺼번에 고른다. 다 켜졌으면
+        {/* 단어장 — 칩을 늘어놓으면 개수가 늘수록 줄이 접힌다. 세로 목록이 읽기 쉽다. */}
+        {showBookPicker ? (
+          // 사이드바와 같은 순서로 묶는다 — 폴더들, 그다음 폴더 밖 단어장.
+          <div className="flex flex-col gap-4 sm:border-l sm:border-taupe/30 sm:pl-6">
+            {bookGroups.map((group) => {
+              const ids = group.books.map((book) => book.id);
+              const allOn = ids.every((id) => selected.includes(id));
+              const someOn = ids.some((id) => selected.includes(id));
+              const due = ids.reduce(
+                (sum, id) => sum + (counts?.byBook[id] ?? 0),
+                0,
+              );
+              const open =
+                !group.folder || !collapsedFolders.includes(group.folder.id);
+              return (
+                <div key={group.folder?.id ?? "loose"}>
+                  {group.folder ? (
+                    <div className="mb-0.5 flex items-center gap-1">
+                      {/* 폴더 줄을 누르면 안의 단어장을 한꺼번에 고른다. 다 켜졌으면
                         단어장 줄처럼 칠하고, 일부만 켜졌으면 옅게 칠한다. */}
-                    <button
-                      type="button"
-                      onClick={() => toggleFolder(ids)}
-                      aria-pressed={allOn}
-                      className={cn(
-                        "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium transition",
-                        allOn
-                          ? "bg-ink text-cream"
-                          : someOn
-                            ? "bg-subtle text-ink/70 hover:text-ink"
-                            : "text-ink/35 hover:text-ink/60",
-                      )}
-                    >
-                      <ItemIcon
-                        src={
-                          open
-                            ? "/sidebar/folder_clicked.png"
-                            : "/sidebar/folder_unclicked.png"
-                        }
-                        onFilled={allOn}
-                      />
-                      <span className="min-w-0 flex-1 truncate">
-                        {group.folder.title}
-                      </span>
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => toggleFolder(ids)}
+                        aria-pressed={allOn}
                         className={cn(
-                          "shrink-0 tabular-nums",
-                          allOn ? "text-cream/55" : "text-ink/25",
+                          "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium transition",
+                          allOn
+                            ? "bg-ink text-cream"
+                            : someOn
+                              ? "bg-subtle text-ink/70 hover:text-ink"
+                              : "text-ink/35 hover:text-ink/60",
                         )}
                       >
-                        {due}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleCollapsed(group.folder!.id)}
-                      aria-expanded={open}
-                      aria-label={`${group.folder.title} ${open ? "접기" : "펼치기"}`}
-                      className="shrink-0 rounded-md p-1.5 text-ink/45 transition hover:bg-subtle hover:text-ink"
+                        <ItemIcon
+                          src={
+                            open
+                              ? "/sidebar/folder_clicked.png"
+                              : "/sidebar/folder_unclicked.png"
+                          }
+                          onFilled={allOn}
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {group.folder.title}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 tabular-nums",
+                            allOn ? "text-cream/55" : "text-ink/25",
+                          )}
+                        >
+                          {due}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleCollapsed(group.folder!.id)}
+                        aria-expanded={open}
+                        aria-label={`${group.folder.title} ${open ? "접기" : "펼치기"}`}
+                        className="shrink-0 rounded-md p-1.5 text-ink/45 transition hover:bg-subtle hover:text-ink"
+                      >
+                        <Chevron open={open} />
+                      </button>
+                    </div>
+                  ) : null}
+                  {open ? (
+                    <ul
+                      className={cn(
+                        "flex flex-col gap-0.5",
+                        // 폴더 안 단어장은 사이드바처럼 한 칸 들여 선을 긋는다.
+                        group.folder && "ml-3 border-l border-taupe/30 pl-1.5",
+                      )}
                     >
-                      <Chevron open={open} />
-                    </button>
-                  </div>
-                ) : null}
-                {open ? (
-                  <ul
-                    className={cn(
-                      "flex flex-col gap-0.5",
-                      // 폴더 안 단어장은 사이드바처럼 한 칸 들여 선을 긋는다.
-                      group.folder && "ml-3 border-l border-taupe/30 pl-1.5",
-                    )}
-                  >
-                    {group.books.map((book) => {
-                      const n = counts?.byBook[book.id] ?? 0;
-                      const on = selected.includes(book.id);
-                      return (
-                        <li key={book.id}>
-                          <button
-                            type="button"
-                            onClick={() => toggleBook(book.id)}
-                            aria-pressed={on}
-                            className={cn(
-                              "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition",
-                              // 켜진 줄은 행 전체를 Obsidian으로 채운다.
-                              // 디자인 토큰의 "선택은 Obsidian 채움" 규칙 그대로다.
-                              on
-                                ? "bg-ink text-cream"
-                                : "text-ink/35 hover:text-ink/60",
-                            )}
-                          >
-                            <ItemIcon
-                              src={
-                                on
-                                  ? "/sidebar/doc_clicked.png"
-                                  : "/sidebar/doc_unclicked.png"
-                              }
-                              onFilled={on}
-                            />
-                            <span className="min-w-0 flex-1 truncate">{book.title}</span>
-                            <span
+                      {group.books.map((book) => {
+                        const n = counts?.byBook[book.id] ?? 0;
+                        const on = selected.includes(book.id);
+                        return (
+                          <li key={book.id}>
+                            <button
+                              type="button"
+                              onClick={() => toggleBook(book.id)}
+                              aria-pressed={on}
                               className={cn(
-                                "shrink-0 tabular-nums",
-                                on ? "text-cream/55" : "text-ink/25",
+                                "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition",
+                                // 켜진 줄은 행 전체를 Obsidian으로 채운다.
+                                // 디자인 토큰의 "선택은 Obsidian 채움" 규칙 그대로다.
+                                on
+                                  ? "bg-ink text-cream"
+                                  : "text-ink/35 hover:text-ink/60",
                               )}
                             >
-                              {n}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
-    </main>
+                              <ItemIcon
+                                src={
+                                  on
+                                    ? "/sidebar/doc_clicked.png"
+                                    : "/sidebar/doc_unclicked.png"
+                                }
+                                onFilled={on}
+                              />
+                              <span className="min-w-0 flex-1 truncate">
+                                {book.title}
+                              </span>
+                              <span
+                                className={cn(
+                                  "shrink-0 tabular-nums",
+                                  on ? "text-cream/55" : "text-ink/25",
+                                )}
+                              >
+                                {n}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </main>
+
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/nyaki_fighting.webp"
+        alt=""
+        width={1792}
+        height={2400}
+        className="hidden h-auto w-[min(320px,24vw)] shrink-0 lg:block"
+      />
+    </div>
   );
 }

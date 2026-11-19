@@ -20,6 +20,8 @@ from .schemas import (
     CardResponse,
     DailyAddedResponse,
     DailyReviewedResponse,
+    MasteryHistoryResponse,
+    MasteryPointResponse,
     FolderPayload,
     FolderResponse,
     ClozeFaceResponse,
@@ -55,6 +57,7 @@ from .services import (
     list_pack_imports,
     daily_added_counts,
     daily_reviewed_counts,
+    mastery_history,
     delete_folder,
     list_folders,
     upsert_folder,
@@ -276,6 +279,30 @@ def get_daily_reviewed(
         for date, count, reviews in daily_reviewed_counts(
             session, user_id, days, tz_offset
         )
+    ]
+
+
+@router.get("/stats/mastery-history", response_model=list[MasteryHistoryResponse])
+def get_mastery_history(
+    days: int = Query(default=30, ge=1, le=366),
+    tz_offset: int = Query(default=0, ge=-720, le=840),
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_current_user_id),
+) -> list[MasteryHistoryResponse]:
+    """단어장별 날짜별 암기 카드 수 · 전체 카드 수. 통계 화면의 암기율 곡선이 쓴다.
+
+    지난날 값은 채점 기록을 다시 돌려 되살린다(mastery_history 참고). 마지막
+    날(오늘)은 지금 카드 상태라 /word-books/summaries의 암기율과 같다.
+    """
+    return [
+        MasteryHistoryResponse(
+            word_book_id=book_id,
+            points=[
+                MasteryPointResponse(date=date, ok=ok, cards=cards)
+                for date, ok, cards in points
+            ],
+        )
+        for book_id, points in mastery_history(session, user_id, days, tz_offset).items()
     ]
 
 

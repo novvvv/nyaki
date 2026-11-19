@@ -119,6 +119,22 @@ class DailyReviewedResponse(BaseModel):
     reviews: int
 
 
+class MasteryPointResponse(BaseModel):
+    """그날 끝의 암기 카드 수(ok)와 전체 카드 수(cards). 암기율은 클라이언트가 나눈다 —
+    그룹은 단어장 여러 개를 더한 뒤 나눠야 맞아서다."""
+
+    date: str  # YYYY-MM-DD, 요청한 시차 기준
+    ok: int
+    cards: int
+
+
+class MasteryHistoryResponse(BaseModel):
+    """단어장 하나의 날짜별 암기 추이. 카드가 없던 날은 빠진다."""
+
+    word_book_id: str
+    points: list[MasteryPointResponse]
+
+
 class ClozeNotePayload(BaseModel):
     """빈칸 노트. 텍스트 한 덩이에 `{{cN::답}}`으로 빈칸을 찍는다."""
 

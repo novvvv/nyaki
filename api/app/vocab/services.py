@@ -488,6 +488,15 @@ def _stage(interval_days: int, last_reviewed_at: datetime | None) -> int:
     return 5
 
 
+def _is_stale(interval_days: int, due_at: datetime | None, now: datetime) -> bool:
+    """외운 카드인데 복습일을 자기 간격만큼 넘겼다 — 암기율에서는 X로 본다."""
+    return (
+        interval_days >= 1
+        and due_at is not None
+        and _as_utc(due_at) + timedelta(days=interval_days) <= now
+    )
+
+
 def book_summaries(session: Session, user_id: str) -> dict[str, dict]:
     """단어장별 항목 수와 암기율.
 
@@ -557,11 +566,7 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict]:
         book_id = word_book_of.get(word_id or "") or note_book_of.get(note_id or "")
         if book_id is None:
             continue
-        stale = (
-            interval >= 1
-            and due_at is not None
-            and _as_utc(due_at) + timedelta(days=interval) <= now
-        )
+        stale = _is_stale(interval, due_at, now)
         bucket(book_id)["card_count"] += 1
         bucket(book_id)["stages"][1 if stale else _stage(interval, reviewed_at)] += 1
         if interval >= 1 and not stale:
@@ -574,6 +579,121 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict]:
             )
 
     return summaries
+
+
+def mastery_history(
+    session: Session,
+    user_id: str,
+    days: int,
+    tz_offset_minutes: int = 0,
+) -> dict[str, list[tuple[str, int, int]]]:
+    """단어장별 날짜별 (OK 카드 수, 전체 카드 수). 통계 화면의 암기율 곡선이 쓴다.
+
+    지난 암기율은 저장해 두지 않았다. 대신 review_logs에 채점이 전부 남아 있어서
+    카드마다 채점을 처음부터 다시 돌려(SM-2 재생) 그날 밤 카드 상태를 되살린다.
+    OK 기준은 book_summaries와 같다 — 간격 1일 이상이고 너무 밀리지 않은 카드.
+
+    - 그날 끝(로컬 자정 직전)의 상태로 센다. **오늘은 지금 카드 상태**를 그대로
+      써서 막대 · 단어장 화면의 암기율과 마지막 점이 반드시 같다.
+    - 그날 아직 없던 카드(created_at 이후)는 분모에도 넣지 않는다.
+    - 재생에는 지금의 복습 흐름 설정을 쓴다. 설정을 바꾼 적이 있거나 앱에서
+      기록 없이 동기화된 카드는 지난날 값이 실제와 조금 다를 수 있다.
+
+    지워진 단어 · 노트 · 카드는 뺀다. 카드가 하나도 없던 날은 보내지 않는다.
+    """
+    offset = timedelta(minutes=tz_offset_minutes)
+    now = utc_now()
+    today_local = (now + offset).date()
+    dates = [today_local - timedelta(days=i) for i in range(days - 1, -1, -1)]
+    # 날마다 상태를 볼 시각 — 그날 로컬 자정 직전(UTC). 오늘은 따로 센다.
+    checkpoints = [
+        datetime.combine(d + timedelta(days=1), time.min, tzinfo=timezone.utc)
+        - offset
+        - timedelta(microseconds=1)
+        for d in dates[:-1]
+    ]
+
+    book_of: dict[str, str] = {}
+    for word_id, book_id in session.execute(
+        select(WordModel.id, WordModel.word_book_id).where(
+            WordModel.user_id == user_id, WordModel.is_deleted.is_(False)
+        )
+    ):
+        book_of[f"w:{word_id}"] = book_id
+    for note_id, book_id in session.execute(
+        select(ClozeNoteModel.id, ClozeNoteModel.word_book_id).where(
+            ClozeNoteModel.user_id == user_id, ClozeNoteModel.is_deleted.is_(False)
+        )
+    ):
+        book_of[f"n:{note_id}"] = book_id
+
+    cards: dict[str, tuple[str, datetime, int, datetime | None]] = {}
+    for card_id, word_id, note_id, created_at, interval, due_at in session.execute(
+        select(
+            CardModel.id,
+            CardModel.word_id,
+            CardModel.note_id,
+            CardModel.created_at,
+            CardModel.srs_interval_days,
+            CardModel.srs_due_at,
+        ).where(CardModel.user_id == user_id, CardModel.is_deleted.is_(False))
+    ):
+        book_id = book_of.get(f"w:{word_id}") or book_of.get(f"n:{note_id}")
+        if book_id is not None:
+            cards[card_id] = (book_id, _as_utc(created_at), interval, due_at)
+
+    # 카드별 채점 기록, 받은 순서대로. 카드 도입 전 기록은 recognition 카드다.
+    grades: dict[str, list[tuple[datetime, str]]] = {}
+    for card_id, word_id, grade_value, created_at in session.execute(
+        select(
+            ReviewLogModel.card_id,
+            ReviewLogModel.word_id,
+            ReviewLogModel.grade,
+            ReviewLogModel.created_at,
+        )
+        .where(ReviewLogModel.user_id == user_id)
+        .order_by(ReviewLogModel.created_at)
+    ):
+        key = card_id or card_id_for(word_id, "recognition")
+        if key in cards:
+            grades.setdefault(key, []).append((_as_utc(created_at), grade_value))
+
+    config = load_step_config(session, user_id)
+    ok = [dict[str, int]() for _ in dates]
+    total = [dict[str, int]() for _ in dates]
+
+    for card_id, (book_id, created_at, interval_now, due_now) in cards.items():
+        state = Sm2State(
+            ease_factor=2.5, interval_days=0, repetitions=0, lapses=0, due_at=created_at
+        )
+        history = grades.get(card_id, [])
+        step = 0
+        for i, checkpoint in enumerate(checkpoints):
+            if created_at > checkpoint:
+                continue
+            while step < len(history) and history[step][0] <= checkpoint:
+                reviewed_at, grade_value = history[step]
+                state = grade(state, grade_value, reviewed_at, config).state  # type: ignore[arg-type]
+                step += 1
+            total[i][book_id] = total[i].get(book_id, 0) + 1
+            if state.interval_days >= 1 and not _is_stale(
+                state.interval_days, state.due_at, checkpoint
+            ):
+                ok[i][book_id] = ok[i].get(book_id, 0) + 1
+
+        # 오늘 — 지금 카드 상태
+        last = len(dates) - 1
+        total[last][book_id] = total[last].get(book_id, 0) + 1
+        if interval_now >= 1 and not _is_stale(interval_now, due_now, now):
+            ok[last][book_id] = ok[last].get(book_id, 0) + 1
+
+    result: dict[str, list[tuple[str, int, int]]] = {}
+    for i, d in enumerate(dates):
+        for book_id, count in total[i].items():
+            result.setdefault(book_id, []).append(
+                (d.isoformat(), ok[i].get(book_id, 0), count)
+            )
+    return result
 
 
 def daily_added_counts(

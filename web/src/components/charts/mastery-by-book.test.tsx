@@ -137,7 +137,21 @@ class FakeResizeObserver {
   disconnect() {}
 }
 
-describe("MasteryByBook — 곡선", () => {
+/** 단어장별 날짜별 OK · 카드 수. 나는 사흘, 다는 이틀 전부터, 라는 기록 없음. */
+const HISTORY = {
+  b: [
+    { date: "2026-11-17", ok: 0, cards: 10 },
+    { date: "2026-11-18", ok: 5, cards: 10 },
+    { date: "2026-11-19", ok: 8, cards: 10 },
+  ],
+  c: [
+    { date: "2026-11-18", ok: 1, cards: 4 },
+    { date: "2026-11-19", ok: 2, cards: 4 },
+  ],
+  d: [],
+};
+
+describe("MasteryByBook — 곡선(날짜별 암기율)", () => {
   beforeEach(() => {
     vi.stubGlobal("ResizeObserver", FakeResizeObserver);
   });
@@ -145,66 +159,62 @@ describe("MasteryByBook — 곡선", () => {
     vi.unstubAllGlobals();
   });
 
-  it("곡선으로 바꾸면 보이는 단어장마다 선 하나와 범례가 생긴다", async () => {
+  it("기록이 있는 단어장마다 선 하나와 범례, x축은 날짜 · 끝은 오늘", async () => {
     const user = userEvent.setup();
-    const { container } = render(<MasteryByBook data={DATA} />);
+    const { container } = render(
+      <MasteryByBook data={DATA} history={HISTORY} />,
+    );
 
     await user.click(screen.getByRole("button", { name: "곡선" }));
 
     expect(
-      screen.getByRole("img", { name: "단어장별 암기 단계 분포" }),
+      screen.getByRole("img", { name: "날짜별 암기율 추이" }),
     ).toBeInTheDocument();
-    // 기본 3개(단어 많은 순) — 나 · 다 · 라
-    expect(container.querySelectorAll("path")).toHaveLength(3);
+    // 기본 3개(나 · 다 · 라) 중 기록 없는 라는 그리지 않는다.
+    expect(container.querySelectorAll("path")).toHaveLength(2);
     const legend = screen.getByRole("list", { name: "범례" });
     expect(
       within(legend)
         .getAllByRole("listitem")
         .map((li) => li.textContent),
-    ).toEqual(["나", "다", "라"]);
-    // 단계 6칸이 x축에 깔린다.
-    for (const label of ["새 카드", "학습 중", "1일", "3일", "1주", "1달+"]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
+    ).toEqual(["나", "다"]);
+    expect(screen.getByText("11/17")).toBeInTheDocument();
+    expect(screen.getByText("오늘")).toBeInTheDocument();
   });
 
-  it("곡선은 0 아래로 내려가지 않는다", async () => {
+  it("그룹은 단어장들의 개수를 더해 나눈다", async () => {
     const user = userEvent.setup();
-    const { container } = render(<MasteryByBook data={DATA} />);
-
-    await user.click(screen.getByRole("button", { name: "곡선" }));
-
-    // 바닥선의 y보다 아래(큰 y)로 가는 제어점이 없어야 한다.
-    const base = Math.max(
-      ...Array.from(container.querySelectorAll("line")).map((l) =>
-        Number(l.getAttribute("y1")),
-      ),
+    window.localStorage.setItem(
+      "nyaki.stats.masteryGroups",
+      JSON.stringify([{ id: "group:1", name: "묶음", bookIds: ["b", "c"] }]),
     );
-    for (const path of container.querySelectorAll("path")) {
-      const ys = (path.getAttribute("d") ?? "")
-        .split(/[ MC]/)
-        .filter(Boolean)
-        .map((pair) => Number(pair.split(",")[1]));
-      expect(Math.max(...ys)).toBeLessThanOrEqual(base + 0.001);
-    }
-  });
-
-  it("서버가 단계를 아직 안 보내면 안내만 보인다", async () => {
-    const user = userEvent.setup();
-    render(
-      <MasteryByBook data={DATA.map((row) => ({ ...row, stages: [] }))} />,
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(["group:1"]));
+    const { container } = render(
+      <MasteryByBook data={DATA} history={HISTORY} />,
     );
 
     await user.click(screen.getByRole("button", { name: "곡선" }));
 
-    expect(
-      screen.getByText("단계 정보를 아직 불러오지 못했어요."),
-    ).toBeInTheDocument();
+    // 오늘: (8 + 2) / (10 + 4) = 71% — 평균(50%)이 아니다.
+    expect(container.querySelector("title")?.textContent).toBe(
+      "묶음 — 11/17 0% → 오늘 71%",
+    );
+  });
+
+  it("아직 못 받았으면 불러오는 중, 기록이 없으면 안내", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<MasteryByBook data={DATA} />);
+
+    await user.click(screen.getByRole("button", { name: "곡선" }));
+    expect(screen.getByText("암기율 추이를 불러오는 중…")).toBeInTheDocument();
+
+    rerender(<MasteryByBook data={DATA} history={{}} />);
+    expect(screen.getByText("아직 암기율 기록이 없어요.")).toBeInTheDocument();
   });
 
   it("막대로 돌아오면 막대 목록이 다시 보인다", async () => {
     const user = userEvent.setup();
-    render(<MasteryByBook data={DATA} />);
+    render(<MasteryByBook data={DATA} history={HISTORY} />);
 
     await user.click(screen.getByRole("button", { name: "곡선" }));
     await user.click(screen.getByRole("button", { name: "막대" }));
@@ -374,7 +384,7 @@ describe("MasteryByBook — 그룹", () => {
       JSON.stringify([{ id: "group:g", name: "묶음", bookIds: ["a", "b"] }]),
     );
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(["group:g", "c"]));
-    const { container } = render(<MasteryByBook data={DATA} />);
+    const { container } = render(<MasteryByBook data={DATA} history={HISTORY} />);
 
     await user.click(screen.getByRole("button", { name: "곡선" }));
 

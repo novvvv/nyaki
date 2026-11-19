@@ -9,8 +9,10 @@ import { Card, PageHeader } from "@/components/ui";
 import {
   fetchDailyAdded,
   fetchDailyReviewed,
+  fetchMasteryHistory,
   type DailyAdded,
   type DailyReviewed,
+  type MasteryPoint,
 } from "@/lib/api-client";
 import {
   computeMasteryByBook,
@@ -48,6 +50,8 @@ export default function OverviewPage() {
   const [added, setAdded] = useState<DailyAdded[]>([]);
   const [reviewed, setReviewed] = useState<DailyReviewed[]>([]);
   const [reviewMetric, setReviewMetric] = useState<ReviewMetric>("cards");
+  const [masteryHistory, setMasteryHistory] =
+    useState<Record<string, MasteryPoint[]>>();
 
   // 날짜별 개수는 서버가 센다 — 단어와 빈칸 노트를 함께 세려면 여기서는 셀 수 없다.
   // 이펙트 본문에서 곧바로 setState가 일어나지 않도록 async 블록으로 감싼다
@@ -82,6 +86,24 @@ export default function OverviewPage() {
       try {
         const rows = await fetchDailyReviewed(token, REVIEW_DAYS);
         if (!cancelled) setReviewed(rows);
+      } catch {
+        // 차트 하나 때문에 화면 전체를 못 보게 만들지 않는다.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, wordBooks]);
+
+  // 암기율 곡선 — 최근 30일 날짜별. 복습 기록과 같이 단어장 목록이 바뀌면 다시 받는다.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const token = await getToken();
+      if (!token) return;
+      try {
+        const rows = await fetchMasteryHistory(token, REVIEW_DAYS);
+        if (!cancelled) setMasteryHistory(rows);
       } catch {
         // 차트 하나 때문에 화면 전체를 못 보게 만들지 않는다.
       }
@@ -159,7 +181,7 @@ export default function OverviewPage() {
           </Card>
 
           <Card className="px-5 py-5">
-            <MasteryByBook data={mastery} />
+            <MasteryByBook data={mastery} history={masteryHistory} />
           </Card>
 
           <Card className="px-5 py-5">

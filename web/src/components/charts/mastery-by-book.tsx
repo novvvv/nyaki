@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { GhostButton, SubtleButton, TextInput } from "@/components/ui";
 import {
@@ -12,6 +12,7 @@ import {
   saveGroups,
   type MasteryGroup,
 } from "@/lib/mastery-groups";
+import type { MasteryPoint } from "@/lib/api-client";
 import type { MasteryRow } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +25,8 @@ import { smoothPath } from "./smooth-path";
 // SVG를 고정 폭으로 그려 줄이면 폰에서 글씨까지 절반으로 작아져서, HTML로
 // 그리고 막대만 남는 폭을 채운다.
 //
-// 곡선 — 단어장 안의 카드가 어느 암기 단계에 몰려 있는지. 오른쪽으로 갈수록
-// 오래 기억하는 카드다. 막대의 단어장들을 곡선으로 이으면 의미가 없어서(단어장
-// 사이에는 순서가 없다) 축을 "단계"로 바꿔 그린다.
+// 곡선 — 날짜별 암기율. 최근 30일 동안 암기율이 어떻게 오르내렸는지 본다.
+// 지난날 값은 서버가 채점 기록을 다시 돌려 되살린다(/v1/stats/mastery-history).
 
 /** 고른 적이 없을 때 보여줄 개수. 단어 많은 단어장부터. */
 const DEFAULT_COUNT = 3;
@@ -36,8 +36,6 @@ const MAX_SHOWN = 5;
 
 const STORAGE_KEY = "nyaki.stats.masteryBooks";
 
-/** 서버 집계(stages)와 같은 순서. api/app/vocab/services.py STAGE_LABELS */
-const STAGE_LABELS = ["새 카드", "학습 중", "1일", "3일", "1주", "1달+"];
 
 /**
  * 고른 단어장 · 그룹 id(고른 순서). 고른 적이 없으면 null — 빈 배열(전부
@@ -89,7 +87,14 @@ interface GroupDraft {
   bookIds: string[];
 }
 
-export function MasteryByBook({ data }: { data: MasteryRow[] }) {
+export function MasteryByBook({
+  data,
+  history,
+}: {
+  data: MasteryRow[];
+  /** 단어장 id → 날짜별 암기 추이. 아직 못 받았으면 undefined. */
+  history?: Record<string, MasteryPoint[]>;
+}) {
   // 초기값으로 읽는다 — 이펙트에서 읽으면 기본 3개가 한 프레임 보였다 바뀐다.
   const [selected, setSelected] = useState<string[] | null>(loadSelected);
   const [groups, setGroups] = useState<MasteryGroup[]>(loadGroups);
@@ -375,7 +380,17 @@ export function MasteryByBook({ data }: { data: MasteryRow[] }) {
           <BarView rows={rows} measure={measure} />
         </>
       ) : (
-        <CurveView rows={rows} />
+        <CurveView
+          lines={
+            history
+              ? rows.map((row) => ({
+                  id: row.id,
+                  title: row.title,
+                  points: seriesFor(row.id, groups, history),
+                }))
+              : undefined
+          }
+        />
       )}
     </div>
   );
@@ -503,66 +518,111 @@ const PAD_BOTTOM = 26;
 // 사이트가 흑백이라 선은 진하기로 구분한다. 넷째부터는 점선을 얹는다.
 const LINE_OPACITY = [0.85, 0.5, 0.28];
 
-/** 축에 쓸 깔끔한 상한(%) — 10 단위로 올림, 최대 100. */
-function percentCeil(value: number): number {
-  return Math.min(100, Math.max(10, Math.ceil(value / 10) * 10));
+interface RatePoint {
+  date: string;
+  rate: number;
 }
 
-function CurveView({ rows }: { rows: MasteryRow[] }) {
+interface CurveLine {
+  id: string;
+  title: string;
+  points: RatePoint[];
+}
+
+/**
+ * 단어장 · 그룹 하나의 날짜별 암기율. 그룹은 단어장들의 OK · 카드 수를 날짜별로
+ * 더한 뒤 나눈다 — 암기율을 평균 내면 작은 단어장이 크게 반영된다.
+ */
+function seriesFor(
+  id: string,
+  groups: MasteryGroup[],
+  history: Record<string, MasteryPoint[]>,
+): RatePoint[] {
+  const bookIds = isGroupId(id)
+    ? (groups.find((group) => group.id === id)?.bookIds ?? [])
+    : [id];
+  const byDate = new Map<string, { ok: number; cards: number }>();
+  for (const bookId of bookIds) {
+    for (const point of history[bookId] ?? []) {
+      const sum = byDate.get(point.date) ?? { ok: 0, cards: 0 };
+      sum.ok += point.ok;
+      sum.cards += point.cards;
+      byDate.set(point.date, sum);
+    }
+  }
+  return [...byDate.entries()]
+    .filter(([, sum]) => sum.cards > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, sum]) => ({ date, rate: (sum.ok / sum.cards) * 100 }));
+}
+
+/** "2026-11-19" → "11/19" */
+function shortDate(date: string): string {
+  const [, month, day] = date.split("-");
+  return `${Number(month)}/${Number(day)}`;
+}
+
+function CurveView({ lines }: { lines?: CurveLine[] }) {
   const [width, setWidth] = useState(0);
-  const boxRef = useRef<HTMLDivElement>(null);
+  // 콜백 ref — 불러오는 중 · 빈 안내 뒤에 그래프 상자가 늦게 생겨도 그때 잰다.
+  const [box, setBox] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const el = boxRef.current;
-    if (!el) return;
+    if (!box) return;
     // observe() 직후 한 번 호출되므로 초기값도 여기서 채워진다.
     const observer = new ResizeObserver(([entry]) => {
       setWidth(entry.contentRect.width);
     });
-    observer.observe(el);
+    observer.observe(box);
     return () => observer.disconnect();
-  }, []);
+  }, [box]);
 
-  // 단어장마다 카드 수가 달라 개수로 그리면 큰 단어장만 보인다. 비율(%)로 그린다.
-  // 서버가 아직 단계를 안 보내는 단어장은 뺀다.
-  const lines = rows
-    .filter((row) => row.stages.length === STAGE_LABELS.length)
-    .map((row) => {
-      const total = row.stages.reduce((sum, n) => sum + n, 0);
-      return {
-        ...row,
-        percents: row.stages.map((n) => (total > 0 ? (n / total) * 100 : 0)),
-      };
-    });
-
-  if (lines.length === 0) {
+  if (lines === undefined) {
     return (
       <p className="mt-6 text-center text-sm text-umber/40">
-        단계 정보를 아직 불러오지 못했어요.
+        암기율 추이를 불러오는 중…
       </p>
     );
   }
 
-  const yMax = percentCeil(Math.max(...lines.flatMap((line) => line.percents)));
+  const drawn = lines.filter((line) => line.points.length > 0);
+  if (drawn.length === 0) {
+    return (
+      <p className="mt-6 text-center text-sm text-umber/40">
+        아직 암기율 기록이 없어요.
+      </p>
+    );
+  }
+
+  // x축 — 보이는 선들이 가진 날짜를 모두 모은다. 늦게 만든 단어장은 중간부터 그린다.
+  const dates = [...new Set(drawn.flatMap((line) => line.points.map((p) => p.date)))].sort();
+  const xIndex = new Map(dates.map((date, i) => [date, i]));
+
   const plotWidth = Math.max(0, width - PAD_LEFT - PAD_RIGHT);
   const plotHeight = CURVE_HEIGHT - PAD_TOP - PAD_BOTTOM;
   const baseY = PAD_TOP + plotHeight;
   const xAt = (i: number) =>
-    PAD_LEFT + (plotWidth * i) / (STAGE_LABELS.length - 1);
-  const yAt = (percent: number) => baseY - (percent / yMax) * plotHeight;
+    dates.length === 1
+      ? PAD_LEFT + plotWidth / 2
+      : PAD_LEFT + (plotWidth * i) / (dates.length - 1);
+  // 암기율은 0~100으로 상한이 정해져 있어 눈금을 고정한다 — 날마다 축이 바뀌지 않게.
+  const yAt = (percent: number) => baseY - (percent / 100) * plotHeight;
+
+  // x축 라벨 — 처음 · 가운데 · 끝(오늘).
+  const labelIndexes = [...new Set([0, Math.floor((dates.length - 1) / 2), dates.length - 1])];
 
   return (
     <div className="mt-5">
-      <div ref={boxRef}>
+      <div ref={setBox}>
         <svg
           viewBox={`0 0 ${Math.max(width, 1)} ${CURVE_HEIGHT}`}
           width="100%"
           height={CURVE_HEIGHT}
           role="img"
-          aria-label="단어장별 암기 단계 분포"
+          aria-label="날짜별 암기율 추이"
         >
           {/* 가로 그리드 + y축 라벨(%) */}
-          {[0, yMax / 2, yMax].map((v) => (
+          {[0, 50, 100].map((v) => (
             <g key={v}>
               <line
                 x1={PAD_LEFT}
@@ -580,44 +640,46 @@ function CurveView({ rows }: { rows: MasteryRow[] }) {
                 dominantBaseline="middle"
                 className="fill-umber/42 text-[10px] tabular-nums"
               >
-                {Math.round(v)}%
+                {v}%
               </text>
             </g>
           ))}
 
-          {/* x축 — 단계 */}
-          {STAGE_LABELS.map((label, i) => (
+          {/* x축 — 날짜 */}
+          {labelIndexes.map((i) => (
             <text
-              key={label}
+              key={dates[i]}
               x={xAt(i)}
               y={CURVE_HEIGHT - 6}
               textAnchor={
-                i === 0
-                  ? "start"
-                  : i === STAGE_LABELS.length - 1
-                    ? "end"
-                    : "middle"
+                dates.length === 1
+                  ? "middle"
+                  : i === 0
+                    ? "start"
+                    : i === dates.length - 1
+                      ? "end"
+                      : "middle"
               }
-              className="fill-umber/42 text-[10px]"
+              className="fill-umber/42 text-[10px] tabular-nums"
             >
-              {label}
+              {i === dates.length - 1 ? "오늘" : shortDate(dates[i]!)}
             </text>
           ))}
 
           {plotWidth > 0
-            ? lines.map((line, index) => {
-                const points = line.percents.map((p, i) => ({
-                  x: xAt(i),
-                  y: yAt(p),
+            ? drawn.map((line, index) => {
+                const points = line.points.map((p) => ({
+                  x: xAt(xIndex.get(p.date)!),
+                  y: yAt(p.rate),
                 }));
+                const last = points.at(-1)!;
                 const opacity =
                   LINE_OPACITY[index % LINE_OPACITY.length] ?? LINE_OPACITY[0];
+                const first = line.points[0]!;
+                const end = line.points.at(-1)!;
                 return (
                   <g key={line.id}>
-                    <title>{`${line.title} — ${STAGE_LABELS.map(
-                      (label, i) =>
-                        `${label} ${Math.round(line.percents[i]!)}%`,
-                    ).join(" · ")}`}</title>
+                    <title>{`${line.title} — ${shortDate(first.date)} ${Math.round(first.rate)}% → 오늘 ${Math.round(end.rate)}%`}</title>
                     <path
                       d={smoothPath(points)}
                       fill="none"
@@ -629,16 +691,14 @@ function CurveView({ rows }: { rows: MasteryRow[] }) {
                       }
                       strokeLinecap="round"
                     />
-                    {points.map((p, i) => (
-                      <circle
-                        key={i}
-                        cx={p.x}
-                        cy={p.y}
-                        r={2.25}
-                        fill="var(--nyaki-ink)"
-                        fillOpacity={opacity}
-                      />
-                    ))}
+                    {/* 오늘 값 — 끝점만 찍는다. 30개를 다 찍으면 선이 안 보인다. */}
+                    <circle
+                      cx={last.x}
+                      cy={last.y}
+                      r={2.75}
+                      fill="var(--nyaki-ink)"
+                      fillOpacity={opacity}
+                    />
                   </g>
                 );
               })
@@ -646,9 +706,9 @@ function CurveView({ rows }: { rows: MasteryRow[] }) {
         </svg>
       </div>
 
-      {/* 범례 — 선 진하기와 이름을 잇는다 */}
+      {/* 범례 — 선 진하기와 이름, 오늘 암기율 */}
       <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5" aria-label="범례">
-        {lines.map((line, index) => (
+        {drawn.map((line, index) => (
           <li
             key={line.id}
             className="flex items-center gap-1.5 text-xs text-ink/70"

@@ -302,6 +302,34 @@ export async function fetchDailyReviewed(
   return request<DailyReviewed[]>(`/v1/stats/daily-reviewed?${params}`, token);
 }
 
+/** 그날 끝의 암기 카드 수(ok)와 전체 카드 수(cards). */
+export interface MasteryPoint {
+  /** YYYY-MM-DD, 보낸 시차 기준 */
+  date: string;
+  ok: number;
+  cards: number;
+}
+
+/**
+ * 단어장별 날짜별 암기 추이(최근 days일). 단어장 id → 날짜순 점들.
+ * 카드가 없던 날은 빠진다. 마지막 점(오늘)은 지금 암기율과 같다.
+ * 비율이 아니라 개수로 받는 이유: 그룹은 단어장들을 더한 뒤 나눠야 맞다.
+ */
+export async function fetchMasteryHistory(
+  token: string,
+  days: number,
+): Promise<Record<string, MasteryPoint[]>> {
+  const params = new URLSearchParams({
+    days: String(days),
+    tz_offset: String(-new Date().getTimezoneOffset()),
+  });
+  const rows = await request<{ word_book_id: string; points: MasteryPoint[] }[]>(
+    `/v1/stats/mastery-history?${params}`,
+    token,
+  );
+  return Object.fromEntries(rows.map((row) => [row.word_book_id, row.points]));
+}
+
 export async function fetchClozeNotes(
   token: string,
   wordBookId: string,

@@ -499,9 +499,15 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict]:
     - X: 새 카드, 학습 단계(분 단위) 중인 카드, 틀려서 다시 배우는 카드.
       틀리면 간격이 0으로 돌아가 X가 된다.
 
-    **복습일이 돌아와도 OK다.** 그걸 X로 치면 아무것도 안 했는데 아침마다
-    암기율이 떨어지고, 복습을 마치면 다시 튀어 올라 "아는가"가 아니라 "오늘
-    숙제를 했나"를 보여주는 숫자가 된다. 오늘 할 개수는 /review/due/count가 센다.
+    **복습일이 돌아와도 바로 X가 되지는 않는다.** 그걸 X로 치면 아무것도 안
+    했는데 아침마다 암기율이 떨어지고, 복습을 마치면 다시 튀어 올라 "아는가"가
+    아니라 "오늘 숙제를 했나"를 보여주는 숫자가 된다. 오늘 할 개수는
+    /review/due/count가 센다.
+
+    **다만 너무 밀린 카드는 X다** — 복습일을 자기 간격만큼 넘기면(3일 카드를
+    복습일 뒤 3일 넘게 방치) 기억한다고 보기 어렵다. 한 번 외웠다고 한 카드가
+    영원히 OK로 남아 암기율이 실제보다 높게 나오던 것을 막는다. 분포 곡선에서는
+    "학습 중" 칸에 넣어 암기율과 같은 경계를 지킨다.
 
     전에는 간격을 로그로 점수화해 평균냈는데(1일 = 20점), 다 외워도 한동안 낮게
     나와 숫자가 직관적이지 않았다.
@@ -537,21 +543,28 @@ def book_summaries(session: Session, user_id: str) -> dict[str, dict]:
         note_book_of[note_id] = book_id
         bucket(book_id)["item_count"] += 1
 
+    now = utc_now()
     ok: dict[str, int] = {}
-    for word_id, note_id, interval, reviewed_at in session.execute(
+    for word_id, note_id, interval, reviewed_at, due_at in session.execute(
         select(
             CardModel.word_id,
             CardModel.note_id,
             CardModel.srs_interval_days,
             CardModel.srs_last_reviewed_at,
+            CardModel.srs_due_at,
         ).where(CardModel.user_id == user_id, CardModel.is_deleted.is_(False))
     ):
         book_id = word_book_of.get(word_id or "") or note_book_of.get(note_id or "")
         if book_id is None:
             continue
+        stale = (
+            interval >= 1
+            and due_at is not None
+            and _as_utc(due_at) + timedelta(days=interval) <= now
+        )
         bucket(book_id)["card_count"] += 1
-        bucket(book_id)["stages"][_stage(interval, reviewed_at)] += 1
-        if interval >= 1:
+        bucket(book_id)["stages"][1 if stale else _stage(interval, reviewed_at)] += 1
+        if interval >= 1 and not stale:
             ok[book_id] = ok.get(book_id, 0) + 1
 
     for book_id, summary in summaries.items():

@@ -9,6 +9,7 @@
 - 절반을 외우면 50%, 셋 중 하나면 33% (반올림)
 - 외운 카드를 틀리면 X로 내려간다
 - **복습일이 지나도 OK다** — 아무것도 안 했는데 아침마다 떨어지지 않게
+- 단, 복습일을 자기 간격만큼 넘긴 카드는 X다 — 너무 밀리면 기억한다고 보기 어렵다
 """
 
 import uuid
@@ -149,3 +150,17 @@ def test_overdue_learned_card_stays_ok() -> None:
     assert _rate(client) == 100
     # 오늘 할 일로는 잡힌다 — 암기율과 별개로 센다.
     assert client.get("/v1/review/due/count").json()["by_book"][BOOK] == 2
+
+
+def test_card_overdue_by_its_own_interval_drops_to_x() -> None:
+    """3일 카드를 복습일 뒤 3일 넘게 방치하면 X다. 분포 곡선에서는 학습 중 칸이다."""
+    client, user = _client()
+    _words(client, "w1", "w2")
+    _set_card(user, "w1", interval_days=3, due_in=-timedelta(days=3, minutes=1))
+    _set_card(user, "w2", interval_days=3, due_in=-timedelta(days=2, hours=23))
+
+    assert _rate(client) == 50
+    rows = client.get("/v1/word-books/summaries").json()
+    stages = next(row for row in rows if row["word_book_id"] == BOOK)["stages"]
+    #        새 카드 · 학습 중 · 1일 · 3일 · 1주 · 1달+
+    assert stages == [0, 1, 0, 1, 0, 0]

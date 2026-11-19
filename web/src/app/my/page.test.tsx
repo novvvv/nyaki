@@ -67,7 +67,7 @@ beforeEach(() => {
 });
 
 describe("마이페이지 — 출석", () => {
-  it("출석 전에는 출석하기, 누르면 츄르가 오르고 완료로 바뀐다", async () => {
+  it("출석 전에는 출석하기, 누르면 완료로 바뀐다", async () => {
     const user = userEvent.setup();
     checkIn.mockResolvedValue({
       granted: 5,
@@ -78,14 +78,12 @@ describe("마이페이지 — 출석", () => {
     render(<MyPage />);
 
     const button = await screen.findByRole("button", { name: "출석하기" });
-    expect(screen.getByText("10")).toBeInTheDocument();
 
     await user.click(button);
 
     expect(
       await screen.findByRole("button", { name: "출석 완료 · 3일 연속" }),
     ).toBeDisabled();
-    expect(screen.getByText("15")).toBeInTheDocument();
     expect(screen.getByText(/다음 출석까지 \d+시간/)).toBeInTheDocument();
   });
 

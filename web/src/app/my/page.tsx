@@ -18,7 +18,6 @@ import {
   saveSkin,
   type ReviewSkin,
 } from "@/lib/review";
-import { loadTheme, saveTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
 
@@ -76,45 +75,6 @@ function SkinPicker() {
             onClick={() => {
               setSkin(option.value);
               saveSkin(option.value);
-            }}
-            className={cn(
-              "px-3.5 py-1.5 text-xs",
-              on && "border-ink bg-ink text-cream hover:text-cream",
-            )}
-          >
-            {option.label}
-          </SubtleButton>
-        );
-      })}
-    </div>
-  );
-}
-
-const THEMES: { value: Theme; label: string }[] = [
-  { value: "system", label: "시스템" },
-  { value: "light", label: "라이트" },
-  { value: "dark", label: "다크" },
-];
-
-/**
- * 화면 테마. 스킨처럼 이 브라우저에만 남고 누르는 즉시 바뀐다.
- * 기본은 시스템 — 폰 · 컴퓨터가 다크면 다크다.
- */
-function ThemePicker() {
-  // 초기값으로 읽는다 — 이펙트에서 읽으면 시스템이 한 프레임 보인다.
-  const [theme, setTheme] = useState(loadTheme);
-
-  return (
-    <div className="flex gap-2">
-      {THEMES.map((option) => {
-        const on = theme === option.value;
-        return (
-          <SubtleButton
-            key={option.value}
-            aria-pressed={on}
-            onClick={() => {
-              setTheme(option.value);
-              saveTheme(option.value);
             }}
             className={cn(
               "px-3.5 py-1.5 text-xs",
@@ -495,20 +455,9 @@ export default function MyPage() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-4">
         <Stat label="단어장" value={`${wordBooks.length}`} />
         <Stat label="모은 단어" value={`${wordCount}`} />
-        {/* 재화 — 하루 한도와 같은 /v1/progress 응답이다. 받기 전에는 — */}
-        <Stat
-          label="츄르"
-          icon="/churu.png"
-          value={progress ? `${progress.churuBalance}` : "—"}
-        />
-        <Stat
-          label="열빙어"
-          icon="/capelin.png"
-          value={progress ? `${progress.capelinBalance}` : "—"}
-        />
       </div>
 
       <div className="mb-12">
@@ -518,17 +467,6 @@ export default function MyPage() {
       </div>
 
       <DailyLimits onProgress={setProgress} />
-
-      <section className="mb-12">
-        <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">
-          화면
-        </p>
-        <div className="divide-y divide-taupe/25">
-          <Field title="테마" hint="시스템을 고르면 폰 · 컴퓨터 설정을 따라갑니다">
-            <ThemePicker />
-          </Field>
-        </div>
-      </section>
 
       <section>
         <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..core.auth import get_current_user_id
 from ..core.database import get_session
-from ..core.photos import get_photo_store
+from ..core.photos import TMP_PREFIX, get_photo_store
 from .services import delete_account_data, delete_firebase_user
 
 router = APIRouter(prefix="/v1/account", tags=["account"])
@@ -26,5 +26,6 @@ def delete_account(
     store = get_photo_store()
     if store is not None:
         store.delete_prefix(f"u/{user_id}/")
+        store.delete_prefix(f"{TMP_PREFIX}u/{user_id}/")
     delete_firebase_user(user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

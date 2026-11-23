@@ -1,8 +1,8 @@
 """카드 사진 — 유료 기능.
 
-흐름: upload-url로 5분짜리 주소를 받아 브라우저가 R2에 바로 올리고, PUT photo로
-단어에 붙인다. 막는 건 여기다 — 화면이 버튼을 숨기는 것만으로는 주소를 직접
-부르는 걸 못 막는다.
+흐름: upload-url로 5분짜리 주소를 받아 브라우저가 R2의 tmp/에 바로 올리고, PUT
+photo로 단어에 붙인다. 붙일 때 서버가 크기를 재고 정식 자리로 복사한다. 막는 건
+여기다 — 화면이 버튼을 숨기는 것만으로는 주소를 직접 부르는 걸 못 막는다.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,12 +12,11 @@ from ..core.auth import get_current_user_id
 from ..core.database import get_session
 from ..core.photos import (
     MAX_PHOTO_BYTES,
-    PHOTO_TYPES,
+    final_key_for_upload,
     get_photo_store,
     has_card_photos,
-    new_photo_key,
+    new_upload_key,
     schedule_delete,
-    word_prefix,
 )
 from ..models import WordModel
 from .schemas import (
@@ -61,7 +60,7 @@ def post_photo_upload_url(
     _word(session, user_id, word_id)
     store = get_photo_store()
     assert store is not None  # has_card_photos가 확인했다
-    key = new_photo_key(user_id, word_id, payload.content_type)
+    key = new_upload_key(user_id, word_id, payload.content_type)
     return PhotoUploadResponse(
         upload_url=store.presign_put(key, payload.content_type),
         key=key,
@@ -78,27 +77,33 @@ def put_photo(
 ) -> WordModel:
     _require_photos(user_id)
     entity = _word(session, user_id, word_id)
-    key = payload.key
-    # 이 사용자 · 이 단어 앞으로 만든 키만 받는다 — 남의 사진을 붙여 보는 걸 막는다.
-    if not key.startswith(word_prefix(user_id, word_id)) or key.rsplit(".", 1)[-1] not in set(
-        PHOTO_TYPES.values()
-    ):
+    upload_key = payload.key
+    # 이 사용자 · 이 단어 앞으로 만든 업로드 키만, 모양 그대로 받는다 — 남의 사진이나
+    # `../` 같은 키를 붙여 보는 걸 막는다.
+    final_key = final_key_for_upload(user_id, word_id, upload_key)
+    if final_key is None:
         raise HTTPException(status_code=400, detail="올린 사진을 찾을 수 없어요.")
+    # 이미 붙였다(응답이 끊겨 다시 부른 경우) — 임시 파일은 옮기며 지워서 없다.
+    if entity.photo_key == final_key:
+        return entity
     store = get_photo_store()
     assert store is not None
-    size = store.size(key)
+    size = store.size(upload_key)
     if size is None:
         raise HTTPException(status_code=400, detail="올린 사진을 찾을 수 없어요.")
-    # 서명 주소는 크기를 못 막는다 — 올라온 뒤에 재고, 크면 지운다.
+    # 서명 주소는 크기를 못 막는다 — 올라온 뒤에 잰다. 큰 파일은 바로 지우고 거절한다.
+    # 정식 자리에는 크기를 확인한 것만 들어간다. 안 붙이고 버린 파일은 tmp/ 수명
+    # 규칙(하루 뒤 삭제)이 치운다.
     if size > MAX_PHOTO_BYTES:
-        store.delete(key)
+        store.delete(upload_key)
         raise HTTPException(status_code=413, detail="사진이 너무 커요.")
+    store.copy(upload_key, final_key)
+    store.delete(upload_key)
 
-    if entity.photo_key != key:
-        schedule_delete(session, entity.photo_key)
-        entity.photo_key = key
-        # updated_at은 건드리지 않는다 — 클라이언트의 단어 수정과 "더 새 것" 비교가
-        # 꼬이지 않게. 사진은 단어 내용과 따로 산다.
+    schedule_delete(session, entity.photo_key)
+    entity.photo_key = final_key
+    # updated_at은 건드리지 않는다 — 클라이언트의 단어 수정과 "더 새 것" 비교가
+    # 꼬이지 않게. 사진은 단어 내용과 따로 산다.
     session.commit()
     return entity
 

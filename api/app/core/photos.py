@@ -2,8 +2,11 @@
 
 - 버킷은 비공개다. 올리기 · 보기 모두 서버가 서명한 짧은 주소로만 한다.
   사진 파일이 서버를 거치지 않는다(올리기는 브라우저 → R2 직접).
-- 키는 `u/{uid}/w/{단어 id 해시}/{무작위}.{확장자}` — 계정을 지울 때 `u/{uid}/`
-  아래를 통째로 지우고, 다른 사람 · 다른 단어의 키를 붙이지 못하게 앞부분을 검사한다.
+- 키는 `u/{uid}/w/{단어 id 해시}/{무작위 32자}.{확장자}` — 계정을 지울 때 `u/{uid}/`
+  아래를 통째로 지우고, 붙일 때는 이 모양 그대로인지 정규식으로 검사한다.
+- 브라우저는 먼저 `tmp/` 아래에 올린다. 붙일 때 서버가 크기를 보고 정식 자리로
+  복사한다. 올리고 안 붙인 파일(고아) · 너무 큰 파일은 `tmp/`에 남았다가 R2 수명
+  규칙(하루 뒤 삭제)으로 사라진다 — 서명 주소는 크기를 막지 못해서다.
 - 지우기는 DB 커밋이 끝난 뒤에 한다(schedule_delete). 롤백되면 안 지운다.
 """
 
@@ -11,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 import uuid
 from functools import lru_cache
 from typing import Protocol
@@ -27,6 +31,8 @@ MAX_PHOTO_BYTES = 2 * 1024 * 1024
 PHOTO_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 UPLOAD_URL_SECONDS = 5 * 60
 VIEW_URL_SECONDS = 24 * 60 * 60
+# 올리기는 여기 아래로만. R2 버킷에 "tmp/ 하루 뒤 삭제" 수명 규칙을 걸어 둔다.
+TMP_PREFIX = "tmp/"
 
 
 class PhotoStore(Protocol):
@@ -35,6 +41,7 @@ class PhotoStore(Protocol):
     def size(self, key: str) -> int | None: ...
     def delete(self, key: str) -> None: ...
     def delete_prefix(self, prefix: str) -> None: ...
+    def copy(self, source: str, target: str) -> None: ...
 
 
 class R2PhotoStore:
@@ -77,6 +84,13 @@ class R2PhotoStore:
 
     def delete(self, key: str) -> None:
         self.client.delete_object(Bucket=self.bucket, Key=key)
+
+    def copy(self, source: str, target: str) -> None:
+        self.client.copy_object(
+            Bucket=self.bucket,
+            Key=target,
+            CopySource={"Bucket": self.bucket, "Key": source},
+        )
 
     def delete_prefix(self, prefix: str) -> None:
         paginator = self.client.get_paginator("list_objects_v2")
@@ -133,8 +147,23 @@ def word_prefix(user_id: str, word_id: str) -> str:
     return f"u/{user_id}/w/{digest}/"
 
 
-def new_photo_key(user_id: str, word_id: str, content_type: str) -> str:
-    return f"{word_prefix(user_id, word_id)}{uuid.uuid4().hex}.{PHOTO_TYPES[content_type]}"
+def new_upload_key(user_id: str, word_id: str, content_type: str) -> str:
+    """브라우저가 올릴 임시 자리. 붙이면 TMP_PREFIX를 뗀 정식 자리로 옮긴다."""
+    name = f"{uuid.uuid4().hex}.{PHOTO_TYPES[content_type]}"
+    return f"{TMP_PREFIX}{word_prefix(user_id, word_id)}{name}"
+
+
+def final_key_for_upload(user_id: str, word_id: str, key: str) -> str | None:
+    """이 사람 · 이 단어 앞으로 만든 업로드 키면 정식 키를, 아니면 None.
+
+    앞부분만 보면 `…/../남의키` 같은 키가 통과한다 — 모양 전체를 맞춘다.
+    """
+    extensions = "|".join(PHOTO_TYPES.values())
+    pattern = re.escape(TMP_PREFIX + word_prefix(user_id, word_id))
+    pattern += rf"[0-9a-f]{{32}}\.(?:{extensions})"
+    if not re.fullmatch(pattern, key):
+        return None
+    return key[len(TMP_PREFIX):]
 
 
 def photo_url(key: str | None) -> str | None:

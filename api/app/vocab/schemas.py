@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+
+from ..core.photos import MAX_PHOTO_BYTES, photo_url
 
 
 class FolderPayload(BaseModel):
@@ -78,6 +80,41 @@ class WordBookResponse(WordBookPayload):
 
 class WordResponse(WordPayload):
     model_config = ConfigDict(from_attributes=True)
+
+    # 사진 키는 내보내지 않는다 — 대신 하루짜리 서명 주소(photo_url)를 준다.
+    photo_key: str | None = Field(default=None, exclude=True)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def photo_url(self) -> str | None:
+        return photo_url(self.photo_key)
+
+
+class PhotoUploadRequest(BaseModel):
+    """사진 올리기 전에 — 어떤 파일을 올릴지 알린다."""
+
+    content_type: Literal["image/jpeg", "image/png", "image/webp"]
+    size: int = Field(gt=0, le=MAX_PHOTO_BYTES)
+
+
+class PhotoUploadResponse(BaseModel):
+    """이 주소로 PUT하면 된다. Content-Type 헤더는 요청한 값과 같아야 한다(서명에 들어 있다)."""
+
+    upload_url: str
+    key: str
+    content_type: str
+
+
+class PhotoAttachRequest(BaseModel):
+    """다 올린 사진을 단어에 붙인다."""
+
+    key: str = Field(min_length=1, max_length=300)
+
+
+class FeaturesResponse(BaseModel):
+    """이 계정이 쓸 수 있는 유료 기능. 화면은 이 값으로만 연다 — 막는 건 서버다."""
+
+    card_photos: bool
 
 
 class WordBookSummaryResponse(BaseModel):

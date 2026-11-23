@@ -9,6 +9,7 @@ from .core.auth import initialize_firebase
 from .core.config import get_settings
 from .gamification.routes import attendance_router
 from .gamification.routes import router as gamification_router
+from .vocab.photo_routes import router as photo_router
 from .vocab.routes import router
 
 
@@ -32,6 +33,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 app.include_router(router)
+app.include_router(photo_router)
 app.include_router(content_router)
 app.include_router(gamification_router)
 app.include_router(attendance_router)

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..core.auth import get_current_user_id
 from ..core.database import get_session
+from ..core.photos import get_photo_store
 from .services import delete_account_data, delete_firebase_user
 
 router = APIRouter(prefix="/v1/account", tags=["account"])
@@ -20,5 +21,10 @@ def delete_account(
     """
     delete_account_data(session, user_id)
     session.commit()
+    # 카드 사진 — 이 사람 앞으로 된 R2 파일을 통째로 지운다. 실패하면 500이 나가고,
+    # 다시 부르면 여기부터 다시 한다(데이터는 이미 없다).
+    store = get_photo_store()
+    if store is not None:
+        store.delete_prefix(f"u/{user_id}/")
     delete_firebase_user(user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -86,6 +86,8 @@ class WordModel(Base):
     example: Mapped[str | None] = mapped_column(Text, nullable=True)
     example_meaning: Mapped[str | None] = mapped_column(Text, nullable=True)
     image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 카드 사진(R2 키). 서버만 쓴다 — 클라이언트가 보내는 image_path(앱 내장 그림)와 다르다.
+    photo_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
     memorization_status: Mapped[str] = mapped_column(String(20), default="unmemorized")
     is_bookmarked: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"

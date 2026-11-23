@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..core.photos import schedule_delete
 from ..models import (
     CardModel,
     ClozeNoteModel,
@@ -197,6 +198,10 @@ def upsert_word(
         # 뜻 한 글자만 고쳐도 그 단어의 복습 기록이 통째로 초기화됐다.
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(entity, field, value)
+        # 동기화로 지워진 단어 — 사진도 지운다(커밋 뒤).
+        if entity.is_deleted and entity.photo_key:
+            schedule_delete(session, entity.photo_key)
+            entity.photo_key = None
 
     session.flush()
     # 단어가 생기거나 바뀌면 카드도 맞춘다 — 출제되는 것은 카드다.
@@ -212,6 +217,8 @@ def delete_word(session: Session, user_id: str, word_id: str) -> tuple[WordModel
         return entity, None
     entity.is_deleted = True
     entity.updated_at = utc_now()
+    schedule_delete(session, entity.photo_key)
+    entity.photo_key = None
     session.flush()
     # 단어가 지워지면 그 카드도 출제 대상에서 빠져야 한다.
     sync_cards_for_word(session, user_id, entity)
@@ -228,6 +235,15 @@ def delete_word_book(
         return entity, None
     entity.is_deleted = True
     entity.updated_at = utc_now()
+    # 단어 사진은 커밋 뒤에 R2에서 지운다.
+    for key in session.scalars(
+        select(WordModel.photo_key).where(
+            WordModel.user_id == user_id,
+            WordModel.word_book_id == word_book_id,
+            WordModel.photo_key.is_not(None),
+        )
+    ):
+        schedule_delete(session, key)
     session.execute(
         WordModel.__table__.update()
         .where(
@@ -235,7 +251,7 @@ def delete_word_book(
             WordModel.word_book_id == word_book_id,
             WordModel.is_deleted.is_(False),
         )
-        .values(is_deleted=True, updated_at=entity.updated_at)
+        .values(is_deleted=True, updated_at=entity.updated_at, photo_key=None)
     )
     # 단어장이 지워지면 그 안의 카드도 전부 지운다. 단어를 한 건씩 훑지 않고
     # word_id 목록으로 한 번에 처리한다 — 단어가 수백 개일 수 있다.

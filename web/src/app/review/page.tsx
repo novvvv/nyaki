@@ -492,6 +492,17 @@ function NoteSheet({
       onClick={onFlip}
       className="note-lines my-6 flex-1 cursor-pointer font-serif text-ink"
     >
+      {/* 카드 사진(유료) — 앞뒤 모두. 높이를 줄 간격(2rem)의 배수로 둬야 아래 글씨가 줄에 맞는다. */}
+      {word?.photoUrl ? (
+        <div className="mb-8 h-40">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={word.photoUrl}
+            alt=""
+            className="h-full w-auto max-w-full rounded-xl object-contain"
+          />
+        </div>
+      ) : null}
       <p className={NOTE_LINE}>
         <NoteText className="whitespace-pre-wrap text-[22px] font-semibold">
           {front(card)}
@@ -1027,6 +1038,15 @@ export default function ReviewPage() {
                   "my-5 rounded-3xl border border-ink/80 bg-cream px-5 py-8 shadow-[0_8px_0_-1px_#efd6d6] dark:shadow-[0_8px_0_-1px_rgba(239,214,214,0.3)]",
               )}
             >
+              {/* 카드 사진(유료) — 앞면 · 뒷면 모두 같은 자리에 둔다. */}
+              {!current.cloze && current.word?.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={current.word.photoUrl}
+                  alt=""
+                  className="max-h-52 w-auto max-w-full rounded-2xl object-contain"
+                />
+              ) : null}
               {/* div다 — 빈칸 노트에 표가 들어가면 p 안에 표를 둘 수 없다. */}
               <div
                 className={cn(

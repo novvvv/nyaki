@@ -38,6 +38,8 @@ type ApiWord = {
   example: string | null;
   example_meaning: string | null;
   image_path: string | null;
+  /** 카드 사진(유료) — 서버가 서명한 주소. 예전 서버는 안 보낸다. */
+  photo_url?: string | null;
   memorization_status: "unmemorized" | "memorized";
   is_bookmarked: boolean;
   tags: string[];
@@ -71,6 +73,7 @@ function toWord(value: ApiWord): Word {
     description: value.description ?? undefined,
     example: value.example ?? undefined,
     exampleMeaning: value.example_meaning ?? undefined,
+    photoUrl: value.photo_url ?? null,
     memorizationStatus: value.memorization_status,
     srsIntervalDays: value.srs_interval_days ?? 0,
     srsLearningStep: value.srs_learning_step ?? null,
@@ -447,6 +450,60 @@ export async function removeWord(
   await request<void>(`/v1/word-books/${wordBookId}/words/${wordId}`, token, {
     method: "DELETE",
   });
+}
+
+/** 이 계정이 쓸 수 있는 유료 기능. 화면은 이 값으로만 연다 — 막는 건 서버다. */
+export interface Features {
+  cardPhotos: boolean;
+}
+
+export async function fetchFeatures(token: string): Promise<Features> {
+  const value = await request<{ card_photos: boolean }>(
+    "/v1/me/features",
+    token,
+  );
+  return { cardPhotos: value.card_photos };
+}
+
+/**
+ * 카드 사진 올리기 — 서버에 5분짜리 주소를 받아 R2에 바로 올리고, 단어에 붙인다.
+ * 사진 파일은 우리 서버를 거치지 않는다.
+ */
+export async function uploadWordPhoto(
+  token: string,
+  wordId: string,
+  photo: Blob,
+): Promise<Word> {
+  const ticket = await request<{
+    upload_url: string;
+    key: string;
+    content_type: string;
+  }>(`/v1/words/${wordId}/photo/upload-url`, token, {
+    method: "POST",
+    body: JSON.stringify({ content_type: photo.type, size: photo.size }),
+  });
+  // Content-Type은 서명에 들어 있다 — 받은 값 그대로 보낸다.
+  const put = await fetch(ticket.upload_url, {
+    method: "PUT",
+    headers: { "Content-Type": ticket.content_type },
+    body: photo,
+  });
+  if (!put.ok) throw new Error("사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요.");
+  const word = await request<ApiWord>(`/v1/words/${wordId}/photo`, token, {
+    method: "PUT",
+    body: JSON.stringify({ key: ticket.key }),
+  });
+  return toWord(word);
+}
+
+export async function removeWordPhoto(
+  token: string,
+  wordId: string,
+): Promise<Word> {
+  const word = await request<ApiWord>(`/v1/words/${wordId}/photo`, token, {
+    method: "DELETE",
+  });
+  return toWord(word);
 }
 
 // =============== ✨ removeWordBook API ✨ =============== //

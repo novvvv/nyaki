@@ -24,6 +24,11 @@ export interface Word {
    * 세션 안에서 이 카드를 다시 보여줄지 정할 때 쓴다 — 계산은 서버가 한다.
    */
   srsLearningStep?: number | null;
+  /**
+   * 카드 사진(유료). 서버가 서명한 하루짜리 주소라 저장해 두고 쓰지 않는다 —
+   * 단어를 다시 받을 때마다 새 주소가 온다. 없으면 null.
+   */
+  photoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   isDeleted: boolean;

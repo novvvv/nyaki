@@ -30,6 +30,10 @@ export default function PrivacyPage() {
             담은 단어 팩 기록.
           </li>
           <li>
+            <strong className="font-medium text-ink">카드 사진</strong> —
+            프리미엄 이용자가 단어에 넣은 사진. 본인 계정에서만 볼 수 있습니다.
+          </li>
+          <li>
             <strong className="font-medium text-ink">자동으로 남는 정보</strong>{" "}
             — 서버와 호스팅 업체가 보안과 장애 대응을 위해 접속 IP, 접속 시각,
             브라우저 정보를 기록할 수 있습니다.
@@ -54,8 +58,10 @@ export default function PrivacyPage() {
       <LegalSection title="3. 보관 기간과 파기">
         <p>
           정보는 회원 탈퇴 전까지 보관합니다. 마이페이지에서 탈퇴하면 서버에
-          저장된 단어장과 학습 기록을 지체 없이 삭제합니다. 법령에 따라 보관해야
-          하는 정보가 생기면 그 기간 동안만 따로 보관합니다.
+          저장된 단어장과 학습 기록을 지체 없이 삭제합니다. 카드 사진은 단어 ·
+          단어장을 지우거나 사진을 빼면 바로 삭제되고, 탈퇴하면 모두 삭제됩니다.
+          법령에 따라 보관해야 하는 정보가 생기면 그 기간 동안만 따로
+          보관합니다.
         </p>
       </LegalSection>
 
@@ -70,7 +76,10 @@ export default function PrivacyPage() {
         <p>서비스 운영을 위해 아래 업체의 서비스를 이용합니다.</p>
         <ul>
           <li>Google LLC (Firebase Authentication) — 로그인 인증</li>
-          <li>Cloudflare, Inc. — 웹사이트 호스팅과 전송</li>
+          <li>
+            Cloudflare, Inc. — 웹사이트 호스팅과 전송, 카드 사진 보관
+            (Cloudflare R2)
+          </li>
           <li>Amazon Web Services, Inc. — 서버와 데이터베이스 운영</li>
         </ul>
         <p>

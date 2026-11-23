@@ -79,6 +79,8 @@ interface VocabContextValue {
     input: WordInput,
   ) => Promise<Word | undefined>;
   deleteWord: (wordBookId: string, wordId: string) => Promise<void>;
+  /** 서버가 돌려준 단어로 갈아 끼운다 — 사진을 붙이거나 뺀 뒤에 쓴다. */
+  replaceWord: (word: Word) => void;
   deleteWordBook: (wordBookId: string) => Promise<void>;
   /** 내가 담은 단어 묶음. 담은 단어장이 지워진 것은 빠져 있다. */
   packImports: PackImport[];
@@ -466,6 +468,21 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     [getToken, syncSummaries, wordBooks],
   );
 
+  const replaceWord = useCallback((word: Word) => {
+    setWordBooks((prev) =>
+      prev.map((book) =>
+        book.id !== word.wordBookId
+          ? book
+          : {
+              ...book,
+              words: book.words.map((item) =>
+                item.id === word.id && !item.isDeleted ? word : item,
+              ),
+            },
+      ),
+    );
+  }, []);
+
   const deleteWord = useCallback(async (wordBookId: string, wordId: string) => {
     const token = await getToken();
     if (!token) throw new Error("로그인이 필요합니다.");
@@ -547,6 +564,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       createWord,
       updateWord,
       deleteWord,
+      replaceWord,
       deleteWordBook,
       packImports,
       importPack,
@@ -572,6 +590,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       createWord,
       updateWord,
       deleteWord,
+      replaceWord,
       deleteWordBook,
       packImports,
       importPack,

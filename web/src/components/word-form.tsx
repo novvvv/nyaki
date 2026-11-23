@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { useAuth } from "@/components/auth-provider";
 import {
   FieldLabel,
   GhostButton,
@@ -12,7 +13,10 @@ import {
   TextArea,
   TextInput,
 } from "@/components/ui";
+import { WordPhotoField, type PhotoChange } from "@/components/word-photo-field";
+import { removeWordPhoto, uploadWordPhoto } from "@/lib/api-client";
 import { WORD_PAGE_SIZE } from "@/lib/constants";
+import { PHOTO_MESSAGES } from "@/lib/photo";
 import { activeWords, useVocab } from "@/lib/vocab-store";
 import type { WordInput } from "@/lib/types";
 
@@ -23,7 +27,9 @@ interface WordFormProps {
 export function WordForm({ mode }: WordFormProps) {
   const params = useParams<{ id: string; wordId?: string }>();
   const router = useRouter();
-  const { getWordBook, createWord, updateWord, deleteWord } = useVocab();
+  const { getWordBook, createWord, updateWord, deleteWord, replaceWord } =
+    useVocab();
+  const { getToken } = useAuth();
 
   const book = getWordBook(params.id);
   const existing = useMemo(() => {
@@ -45,6 +51,8 @@ export function WordForm({ mode }: WordFormProps) {
     () => (existing?.tags ?? []).join(", "),
   );
   const [errors, setErrors] = useState<{ term?: string; meaning?: string }>({});
+  const [photo, setPhoto] = useState<PhotoChange>(null);
+  const [saving, setSaving] = useState(false);
 
   if (!book) {
     return (
@@ -80,9 +88,11 @@ export function WordForm({ mode }: WordFormProps) {
       .filter((tag) => tag.length > 0);
     const payload: WordInput = { ...form, tags };
 
+    setSaving(true);
     try {
       if (mode === "create") {
-        await createWord(book.id, payload);
+        const created = await createWord(book.id, payload);
+        await applyPhoto(created.id);
         // 새 단어는 목록 맨 끝에 추가되므로(전체/최신순 기준), 그 단어가
         // 실제로 있는 페이지로 이동한다 — 항상 1페이지로 보내지 않는다.
         const newCount = activeWords(book).length + 1;
@@ -91,12 +101,37 @@ export function WordForm({ mode }: WordFormProps) {
       } else {
         if (existing) {
           await updateWord(book.id, existing.id, payload);
+          await applyPhoto(existing.id);
         }
         router.push(`/word-books/${book.id}`);
       }
     } catch (reason) {
       window.alert(
         reason instanceof Error ? reason.message : "단어를 저장하지 못했어요.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * 단어를 저장한 뒤 사진을 올리거나 뺀다. 새 단어는 서버에 생긴 뒤라야 사진을
+   * 붙일 수 있다. 사진만 실패하면 단어는 저장된 채로 알려 준다 — 다시 누르면
+   * 새 단어가 하나 더 생기니 폼에 머물지 않는다.
+   */
+  async function applyPhoto(wordId: string) {
+    if (!photo) return;
+    try {
+      const token = await getToken();
+      if (!token) throw new Error(PHOTO_MESSAGES.failed);
+      const word =
+        photo.kind === "set"
+          ? await uploadWordPhoto(token, wordId, photo.blob)
+          : await removeWordPhoto(token, wordId);
+      replaceWord(word);
+    } catch (reason) {
+      window.alert(
+        reason instanceof Error ? reason.message : PHOTO_MESSAGES.failed,
       );
     }
   }
@@ -203,6 +238,12 @@ export function WordForm({ mode }: WordFormProps) {
           />
         </div>
 
+        <WordPhotoField
+          savedUrl={existing?.photoUrl}
+          change={photo}
+          onChange={setPhoto}
+        />
+
         <div>
           <FieldLabel>태그</FieldLabel>
           <TextInput
@@ -223,8 +264,12 @@ export function WordForm({ mode }: WordFormProps) {
         </label>
 
         <div className="flex flex-wrap items-center gap-1.5 border-t border-taupe/25 pt-6">
-          <PrimaryButton type="submit">
-            {mode === "create" ? "추가" : "저장"}
+          <PrimaryButton type="submit" disabled={saving}>
+            {saving && photo?.kind === "set"
+              ? "올리는 중…"
+              : mode === "create"
+                ? "추가"
+                : "저장"}
           </PrimaryButton>
           <GhostButton type="button" onClick={() => router.back()}>
             취소

@@ -6,6 +6,7 @@ import {
   fetchProgress,
   pushGrades,
   updateSettings,
+  uploadWordPhoto,
 } from "./api-client";
 
 /**
@@ -230,5 +231,84 @@ describe("pushGrades", () => {
     );
 
     await expect(pushGrades(TOKEN, [])).rejects.toThrow("Not Found");
+  });
+});
+
+describe("uploadWordPhoto", () => {
+  const apiWord = {
+    id: "w1",
+    word_book_id: "b1",
+    term: "猫",
+    meaning: "고양이",
+    photo_url: "https://r2.test/get/u/a/w/x/p.webp",
+    memorization_status: "unmemorized",
+    is_bookmarked: false,
+    tags: [],
+    srs_interval_days: 0,
+    srs_learning_step: null,
+    created_at: "2026-11-23T00:00:00Z",
+    updated_at: "2026-11-23T00:00:00Z",
+    is_deleted: false,
+  };
+
+  it("주소를 받아 R2에 바로 올리고, 키로 단어에 붙인다", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          upload_url: "https://r2.test/put/u/a/w/x/p.webp?sig=1",
+          key: "u/a/w/x/p.webp",
+          content_type: "image/webp",
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => apiWord });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const photo = new Blob(["x".repeat(10)], { type: "image/webp" });
+    const word = await uploadWordPhoto(TOKEN, "w1", photo);
+
+    const [ticketUrl, ticketInit] = fetchMock.mock.calls[0];
+    expect(ticketUrl).toMatch(/\/v1\/words\/w1\/photo\/upload-url$/);
+    expect(JSON.parse(ticketInit.body)).toEqual({
+      content_type: "image/webp",
+      size: 10,
+    });
+
+    // R2에는 우리 토큰을 싣지 않는다 — 서명된 주소 하나로 간다.
+    const [putUrl, putInit] = fetchMock.mock.calls[1];
+    expect(putUrl).toBe("https://r2.test/put/u/a/w/x/p.webp?sig=1");
+    expect(putInit.method).toBe("PUT");
+    expect(putInit.headers).toEqual({ "Content-Type": "image/webp" });
+    expect(putInit.body).toBe(photo);
+
+    const [attachUrl, attachInit] = fetchMock.mock.calls[2];
+    expect(attachUrl).toMatch(/\/v1\/words\/w1\/photo$/);
+    expect(JSON.parse(attachInit.body)).toEqual({ key: "u/a/w/x/p.webp" });
+
+    expect(word.photoUrl).toBe("https://r2.test/get/u/a/w/x/p.webp");
+  });
+
+  it("R2 업로드가 실패하면 붙이지 않고 알린다", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          upload_url: "https://r2.test/put/x",
+          key: "k",
+          content_type: "image/webp",
+        }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      uploadWordPhoto(TOKEN, "w1", new Blob(["x"], { type: "image/webp" })),
+    ).rejects.toThrow("사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요.");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

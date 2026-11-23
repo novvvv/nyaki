@@ -1,6 +1,7 @@
 "use client";
 
 import { FirebaseError } from "firebase/app";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -71,33 +72,95 @@ function LoginScreen() {
 
   return (
     <main className={SCREEN}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/nyaki_normal.webp"
-        alt="Nyaki"
-        width={1792}
-        height={2400}
-        className="block h-auto w-[min(320px,72vw)]"
-      />
+      <div className="flex w-full max-w-3xl flex-col items-center gap-8 break-keep sm:flex-row sm:items-center sm:gap-12">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/nyaki_normal.webp"
+          alt="Nyaki"
+          width={1792}
+          height={2400}
+          className="block h-auto w-[min(200px,52vw)] shrink-0 sm:w-[260px]"
+        />
 
-      {configured ? (
-        <button
-          type="button"
-          disabled={signingIn}
-          onClick={() => void handleSignIn()}
-          className="mt-10 inline-flex items-center gap-2.5 rounded-lg border border-taupe/45 px-5 py-2.5 text-sm text-ink transition hover:border-taupe/80 disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          <GoogleMark />
-          {signingIn ? "로그인 중…" : "Google로 계속하기"}
-        </button>
-      ) : (
-        <p className="mt-8 text-sm text-ink/40">
-          NEXT_PUBLIC_FIREBASE_* 환경 변수를 설정해 주세요.
-        </p>
-      )}
+        <div className="w-full max-w-sm rounded-2xl border border-taupe/40 bg-card px-6 py-8 text-left sm:px-8">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">
+            냐키 시작하기
+          </h1>
+          <p className="mt-1.5 text-sm text-ink/55">
+            로그인하면 내 단어장과 복습 기록이 저장돼요.
+          </p>
 
-      {error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null}
+          <ul className="mt-6 space-y-2.5 text-sm text-ink/70">
+            {BENEFITS.map((item) => (
+              <li key={item} className="flex items-start gap-2.5">
+                <CheckMark />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          {configured ? (
+            <button
+              type="button"
+              disabled={signingIn}
+              onClick={() => void handleSignIn()}
+              className="mt-7 flex w-full items-center justify-center gap-2.5 rounded-lg border border-taupe/60 bg-white px-5 py-3 text-sm font-medium text-neutral-800 shadow-sm transition hover:border-taupe hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <GoogleMark />
+              {signingIn ? "로그인 중…" : "Google로 계속하기"}
+            </button>
+          ) : (
+            <p className="mt-7 text-sm text-ink/40">
+              NEXT_PUBLIC_FIREBASE_* 환경 변수를 설정해 주세요.
+            </p>
+          )}
+
+          {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+
+          <p className="mt-5 text-xs leading-relaxed text-ink/45">
+            비밀번호는 받지 않아요. Google 계정으로 본인 확인만 하고, 단어장과
+            복습 기록 외의 정보는 저장하지 않아요.
+          </p>
+          <p className="mt-3 border-t border-taupe/30 pt-3 text-xs leading-relaxed text-ink/45">
+            계속하면 냐키의{" "}
+            <Link href="/terms" className={LEGAL_LINK}>
+              이용약관
+            </Link>
+            과{" "}
+            <Link href="/privacy" className={LEGAL_LINK}>
+              개인정보처리방침
+            </Link>
+            에 동의하는 것으로 봐요.
+          </p>
+        </div>
+      </div>
     </main>
+  );
+}
+
+const LEGAL_LINK =
+  "text-ink/70 underline decoration-taupe/60 underline-offset-2 transition hover:text-ink";
+
+const BENEFITS = [
+  "‘모름 / 외움’만 고르면 복습일은 냐키가 정해요",
+  "내 단어장을 만들고 어느 기기에서나 이어서 외워요",
+  "언제든 마이페이지에서 탈퇴하고 모든 기록을 지울 수 있어요",
+];
+
+function CheckMark() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="mt-0.5 size-4 shrink-0 text-ink/60"
+    >
+      <path d="M3.5 8.5l3 3 6-7" />
+    </svg>
   );
 }
 

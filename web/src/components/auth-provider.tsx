@@ -4,6 +4,7 @@ import { FirebaseError } from "firebase/app";
 import {
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User,
 } from "firebase/auth";
@@ -19,6 +20,19 @@ import {
 } from "react";
 
 import { firebaseAuth, firebaseEnabled, googleProvider } from "@/lib/firebase";
+import { isStandalone } from "@/lib/pwa";
+
+/**
+ * 홈 화면에 설치한 앱(특히 아이폰)은 팝업 창을 열지 못할 때가 있다. 그때만
+ * 페이지를 넘기는 방식으로 다시 시도한다 — 돌아오면 onAuthStateChanged가 받는다.
+ */
+function popupUnavailable(error: unknown) {
+  return (
+    error instanceof FirebaseError &&
+    (error.code === "auth/popup-blocked" ||
+      error.code === "auth/operation-not-supported-in-this-environment")
+  );
+}
 
 function isBenignAuthError(error: unknown) {
   return (
@@ -70,6 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithPopup(firebaseAuth, googleProvider);
     } catch (error) {
       if (isBenignAuthError(error)) return;
+      if (isStandalone() && popupUnavailable(error)) {
+        await signInWithRedirect(firebaseAuth, googleProvider);
+        return;
+      }
       throw error;
     } finally {
       signInInProgress.current = false;
@@ -91,13 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOutUser,
       getToken,
     }),
-    [
-      user,
-      ready,
-      signIn,
-      signOutUser,
-      getToken,
-    ],
+    [user, ready, signIn, signOutUser, getToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

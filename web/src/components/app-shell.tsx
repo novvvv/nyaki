@@ -269,7 +269,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {showSidebar ? (
         <aside
           style={{ width: sidebarWidth }}
-          className="relative hidden shrink-0 border-r border-taupe/30 py-14 pl-6 pr-3 lg:block"
+          className="web-only relative hidden shrink-0 border-r border-taupe/30 py-14 pl-6 pr-3 lg:block"
         >
           {/* 오른쪽 경계선을 끌어 폭을 바꾼다. 두 번 누르면 기본 폭으로. */}
           <div

@@ -1,10 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
+import { useAppMode } from "@/lib/app-mode";
 import type { DailyCount } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 
+import {
+  APP_PINK,
+  APP_PINK_DEEP,
+  APP_PINK_SOFT,
+  ChartToggle,
+  topRoundedBar,
+} from "./chart-theme";
 import { smoothPath } from "./smooth-path";
 
 const HEIGHT = 200;
@@ -73,6 +88,10 @@ export function WordAddedTrend({
   const [shape, setShape] = useState<"bar" | "curve">("bar");
   const [width, setWidth] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
+  // 앱은 분홍 막대 · 분홍 면, 오늘 · 가리킨 날만 검정(chart-theme.tsx).
+  const app = useAppMode();
+  // 한 화면에 차트가 둘이라 면 그라데이션 id가 겹치면 안 된다. ":"는 url()에서 깨진다.
+  const gradientId = `trend-${useId().replace(/:/g, "")}`;
 
   useEffect(() => {
     const el = boxRef.current;
@@ -155,29 +174,14 @@ export function WordAddedTrend({
           ) : null}
         </div>
         {shapeToggle ? (
-          <div className="flex items-center gap-3.5">
-            {(
-              [
-                ["bar", "막대"],
-                ["curve", "곡선"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={shape === key}
-                onClick={() => setShape(key)}
-                className={cn(
-                  "text-xs transition",
-                  shape === key
-                    ? "font-semibold text-ink"
-                    : "font-medium text-umber/45 hover:text-umber/70",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <ChartToggle
+            options={[
+              ["bar", "막대"],
+              ["curve", "곡선"],
+            ]}
+            value={shape}
+            onChange={setShape}
+          />
         ) : (
           <button
             type="button"
@@ -231,8 +235,9 @@ export function WordAddedTrend({
                     y1={y}
                     y2={y}
                     stroke="var(--nyaki-taupe)"
-                    strokeOpacity={v === 0 ? 0.45 : 0.18}
+                    strokeOpacity={v === 0 ? 0.45 : app ? 0.5 : 0.18}
                     strokeWidth={1}
+                    strokeDasharray={app && v !== 0 ? "2 4" : undefined}
                   />
                   <text
                     x={PAD_LEFT - 8}
@@ -248,12 +253,18 @@ export function WordAddedTrend({
             })}
 
             {/* x축 날짜 라벨 */}
+            {/* 마지막 라벨은 오른쪽 끝에 맞춘다 — 가운데 정렬이면 좁은 화면에서
+                차트 밖으로 넘쳐 잘린다("11/2…"). */}
             {labelIndices.map((i) => (
               <text
                 key={i}
-                x={bars[i]?.center ?? 0}
+                x={
+                  i === data.length - 1
+                    ? Math.min((bars[i]?.center ?? 0) + 12, width - 1)
+                    : (bars[i]?.center ?? 0)
+                }
                 y={HEIGHT - 6}
-                textAnchor="middle"
+                textAnchor={i === data.length - 1 ? "end" : "middle"}
                 className="fill-umber/42 text-[10px] tabular-nums"
               >
                 {formatDateLabel(data[i]!.date)}
@@ -262,34 +273,76 @@ export function WordAddedTrend({
 
             {shape === "curve" ? (
               <g>
+                {app ? (
+                  <defs>
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={APP_PINK} stopOpacity={0.95} />
+                      <stop offset="100%" stopColor={APP_PINK} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                ) : null}
                 {area ? (
-                  <path d={area} fill="var(--nyaki-ink)" fillOpacity={0.06} />
+                  app ? (
+                    <path d={area} fill={`url(#${gradientId})`} />
+                  ) : (
+                    <path d={area} fill="var(--nyaki-ink)" fillOpacity={0.06} />
+                  )
                 ) : null}
                 {line ? (
                   <path
                     d={line}
                     fill="none"
-                    stroke="var(--nyaki-ink)"
-                    strokeOpacity={0.82}
-                    strokeWidth={1.75}
+                    stroke={app ? APP_PINK_DEEP : "var(--nyaki-ink)"}
+                    strokeOpacity={app ? 1 : 0.82}
+                    strokeWidth={app ? 2.25 : 1.75}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 ) : null}
                 {dot ? (
-                  <circle
-                    cx={dot.center}
-                    cy={dot.y}
-                    r={3.5}
-                    fill="var(--nyaki-ink)"
-                  />
+                  app ? (
+                    <g>
+                      <circle cx={dot.center} cy={dot.y} r={8} fill={APP_PINK} fillOpacity={0.7} />
+                      <circle
+                        cx={dot.center}
+                        cy={dot.y}
+                        r={4}
+                        fill="var(--nyaki-ink)"
+                        stroke="var(--nyaki-cream)"
+                        strokeWidth={1.5}
+                      />
+                    </g>
+                  ) : (
+                    <circle
+                      cx={dot.center}
+                      cy={dot.y}
+                      r={3.5}
+                      fill="var(--nyaki-ink)"
+                    />
+                  )
                 ) : null}
               </g>
             ) : null}
 
             {/* 막대 — 값이 0인 날은 아무것도 그리지 않는다 */}
             {shape === "curve" ? null : bars.map((bar, i) =>
-              bar.count === 0 ? null : (
+              bar.count === 0 ? null : app ? (
+                // 앱 — 위만 둥근 분홍 막대. 오늘(강조할 때) · 가리킨 날만 검정.
+                <path
+                  key={bar.date}
+                  d={topRoundedBar(bar.x, bar.y, bar.width, Math.max(bar.height, 2))}
+                  fill={
+                    hoverIndex !== null
+                      ? hoverIndex === i
+                        ? "var(--nyaki-ink)"
+                        : APP_PINK_SOFT
+                      : highlightLast && i === bars.length - 1
+                        ? "var(--nyaki-ink)"
+                        : APP_PINK_DEEP
+                  }
+                  className="transition-[fill] duration-150"
+                />
+              ) : (
                 <rect
                   key={bar.date}
                   x={bar.x}
@@ -330,7 +383,11 @@ export function WordAddedTrend({
 
           {hovered ? (
             <div
-              className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-md border border-taupe/30 bg-card px-2.5 py-1.5 text-xs shadow-sm"
+              className={cn(
+                "pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-md border border-taupe/30 bg-card px-2.5 py-1.5 text-xs shadow-sm",
+                // 앱 — 검정 말풍선
+                app && "rounded-xl border-transparent bg-ink [&_div]:text-cream [&_div+div]:text-cream/60",
+              )}
               style={{
                 // 가장자리 날짜에서 툴팁이 카드 밖으로 잘리지 않게 붙잡는다.
                 left: `${Math.min(Math.max(hovered.center, 52), Math.max(width - 52, 52))}px`,

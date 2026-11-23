@@ -13,9 +13,15 @@ import {
   type MasteryGroup,
 } from "@/lib/mastery-groups";
 import type { MasteryPoint } from "@/lib/api-client";
+import { useAppMode } from "@/lib/app-mode";
 import type { MasteryRow } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 
+import {
+  APP_LINE_COLORS,
+  APP_PINK,
+  ChartToggle,
+} from "./chart-theme";
 import { smoothPath } from "./smooth-path";
 
 // 단어장별 암기율. 두 가지로 본다.
@@ -187,27 +193,14 @@ export function MasteryByBook({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-ink">단어장별 암기율</h3>
         <div className="flex items-center gap-3.5">
-          {(
-            [
+          <ChartToggle
+            options={[
               ["bar", "막대"],
               ["curve", "곡선"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={view === key}
-              onClick={() => setView(key)}
-              className={cn(
-                "text-xs transition",
-                view === key
-                  ? "font-semibold text-ink"
-                  : "font-medium text-umber/45 hover:text-umber/70",
-              )}
-            >
-              {label}
-            </button>
-          ))}
+            ]}
+            value={view}
+            onChange={setView}
+          />
           <SubtleButton
             className="py-1 text-xs"
             aria-expanded={picking}
@@ -354,29 +347,15 @@ export function MasteryByBook({
         </p>
       ) : view === "bar" ? (
         <>
-          <div className="mt-4 flex items-center gap-3.5">
-            {(
-              [
-                ["rate", "암기율"],
-                ["count", "암기 카드 수"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={measure === key}
-                onClick={() => setMeasure(key)}
-                className={cn(
-                  "text-xs transition",
-                  measure === key
-                    ? "font-semibold text-ink"
-                    : "font-medium text-umber/45 hover:text-umber/70",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <ChartToggle
+            className="mt-4 w-fit"
+            options={[
+              ["rate", "암기율"],
+              ["count", "암기 카드 수"],
+            ]}
+            value={measure}
+            onChange={setMeasure}
+          />
           <BarView rows={rows} measure={measure} />
         </>
       ) : (
@@ -431,6 +410,12 @@ function Choice({
  * 많은 단어장을 끝으로 잡는다 — 옅은 막대가 전체 카드, 진한 막대가 암기 카드다.
  */
 function BarView({ rows, measure }: { rows: MasteryRow[]; measure: Measure }) {
+  // 앱 — 분홍 막대(옅은 바탕 위 진한 분홍). 웹은 흑백 그대로.
+  const app = useAppMode();
+  const fill = app
+    ? "bg-[linear-gradient(90deg,#f0d3d3,#e2a7a7)]"
+    : "bg-chart-1/85";
+  const track = app ? "bg-[#f6e7e7] dark:bg-[#efd6d6]/15" : "bg-taupe/30";
   const counted = rows.map((row) => ({ row, ...cardCounts(row.stages) }));
   const maxCards = Math.max(1, ...counted.map((item) => item.cards));
   const list =
@@ -460,22 +445,28 @@ function BarView({ rows, measure }: { rows: MasteryRow[]; measure: Measure }) {
             ) : null}
           </span>
           {measure === "count" ? (
-            <div className="relative h-[10px] min-w-0 flex-1">
+            <div className={cn("relative min-w-0 flex-1", app ? "h-3" : "h-[10px]")}>
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-taupe/30"
+                className={cn("absolute inset-y-0 left-0 rounded-full", track)}
                 style={{ width: `${(cards / maxCards) * 100}%` }}
               />
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-chart-1/85"
+                className={cn("absolute inset-y-0 left-0 rounded-full", fill)}
                 style={{ width: `max(${(ok / maxCards) * 100}%, 2px)` }}
               />
             </div>
           ) : (
             // 50% 기준선 — 상한이 정해진 값이라 눈금이 고정이다
-            <div className="relative h-[10px] min-w-0 flex-1 rounded-full bg-taupe/30">
+            <div
+              className={cn(
+                "relative min-w-0 flex-1 rounded-full",
+                app ? "h-3" : "h-[10px]",
+                track,
+              )}
+            >
               <div className="absolute inset-y-[-3px] left-1/2 w-px bg-taupe/40" />
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-chart-1/85"
+                className={cn("absolute inset-y-0 left-0 rounded-full", fill)}
                 style={{ width: `max(${row.rate}%, 2px)` }}
               />
             </div>
@@ -510,7 +501,7 @@ function BarView({ rows, measure }: { rows: MasteryRow[]; measure: Measure }) {
 }
 
 const CURVE_HEIGHT = 200;
-const PAD_LEFT = 34;
+const PAD_LEFT = 40; // "100%" 라벨이 들어갈 폭
 const PAD_RIGHT = 12;
 const PAD_TOP = 14;
 const PAD_BOTTOM = 26;
@@ -563,6 +554,7 @@ function shortDate(date: string): string {
 }
 
 function CurveView({ lines }: { lines?: CurveLine[] }) {
+  const app = useAppMode();
   const [width, setWidth] = useState(0);
   // 콜백 ref — 불러오는 중 · 빈 안내 뒤에 그래프 상자가 늦게 생겨도 그때 잰다.
   const [box, setBox] = useState<HTMLDivElement | null>(null);
@@ -630,8 +622,9 @@ function CurveView({ lines }: { lines?: CurveLine[] }) {
                 y1={yAt(v)}
                 y2={yAt(v)}
                 stroke="var(--nyaki-taupe)"
-                strokeOpacity={v === 0 ? 0.45 : 0.18}
+                strokeOpacity={v === 0 ? 0.45 : app ? 0.5 : 0.18}
                 strokeWidth={1}
+                strokeDasharray={app && v !== 0 ? "2 4" : undefined}
               />
               <text
                 x={PAD_LEFT - 8}
@@ -675,29 +668,41 @@ function CurveView({ lines }: { lines?: CurveLine[] }) {
                 const last = points.at(-1)!;
                 const opacity =
                   LINE_OPACITY[index % LINE_OPACITY.length] ?? LINE_OPACITY[0];
+                // 앱 — 진하기 대신 검정 · 분홍 · 회색. 첫 선 아래만 분홍 면을 깐다.
+                const color = app
+                  ? APP_LINE_COLORS[index % APP_LINE_COLORS.length]!
+                  : "var(--nyaki-ink)";
+                const dashed = index >= LINE_OPACITY.length;
                 const first = line.points[0]!;
                 const end = line.points.at(-1)!;
                 return (
                   <g key={line.id}>
                     <title>{`${line.title} — ${shortDate(first.date)} ${Math.round(first.rate)}% → 오늘 ${Math.round(end.rate)}%`}</title>
+                    {app && index === 0 && points.length > 1 ? (
+                      <path
+                        d={`${smoothPath(points)} L${last.x},${baseY} L${points[0]!.x},${baseY} Z`}
+                        fill={APP_PINK}
+                        fillOpacity={0.45}
+                      />
+                    ) : null}
                     <path
                       d={smoothPath(points)}
                       fill="none"
-                      stroke="var(--nyaki-ink)"
-                      strokeOpacity={opacity}
-                      strokeWidth={1.75}
-                      strokeDasharray={
-                        index >= LINE_OPACITY.length ? "4 3" : undefined
-                      }
+                      stroke={color}
+                      strokeOpacity={app ? 1 : opacity}
+                      strokeWidth={app ? 2.25 : 1.75}
+                      strokeDasharray={dashed ? "4 3" : undefined}
                       strokeLinecap="round"
                     />
                     {/* 오늘 값 — 끝점만 찍는다. 30개를 다 찍으면 선이 안 보인다. */}
                     <circle
                       cx={last.x}
                       cy={last.y}
-                      r={2.75}
-                      fill="var(--nyaki-ink)"
-                      fillOpacity={opacity}
+                      r={app ? 4 : 2.75}
+                      fill={color}
+                      fillOpacity={app ? 1 : opacity}
+                      stroke={app ? "var(--nyaki-cream)" : undefined}
+                      strokeWidth={app ? 1.5 : undefined}
                     />
                   </g>
                 );
@@ -719,11 +724,18 @@ function CurveView({ lines }: { lines?: CurveLine[] }) {
                 x2="16"
                 y1="3"
                 y2="3"
-                stroke="var(--nyaki-ink)"
-                strokeOpacity={
-                  LINE_OPACITY[index % LINE_OPACITY.length] ?? LINE_OPACITY[0]
+                stroke={
+                  app
+                    ? APP_LINE_COLORS[index % APP_LINE_COLORS.length]
+                    : "var(--nyaki-ink)"
                 }
-                strokeWidth={1.75}
+                strokeOpacity={
+                  app
+                    ? 1
+                    : (LINE_OPACITY[index % LINE_OPACITY.length] ??
+                      LINE_OPACITY[0])
+                }
+                strokeWidth={app ? 2.25 : 1.75}
                 strokeDasharray={
                   index >= LINE_OPACITY.length ? "4 3" : undefined
                 }

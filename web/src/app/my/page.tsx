@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -18,8 +19,69 @@ import {
   saveSkin,
   type ReviewSkin,
 } from "@/lib/review";
+import { useAppMode } from "@/lib/app-mode";
+import { loadTheme, saveTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
+
+/** 앱의 켜고 끄기 스위치. */
+function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={onClick}
+      className={cn(
+        "relative h-7 w-12 shrink-0 rounded-full transition",
+        on ? "bg-ink" : "bg-ink/15",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "absolute left-0.5 top-0.5 size-6 rounded-full bg-cream shadow-sm transition-transform",
+          on && "translate-x-5",
+        )}
+      />
+    </button>
+  );
+}
+
+/** 앱의 고르기 — 알약 묶음. 웹은 테두리 버튼 줄(SubtleButton)이다. */
+function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex w-full gap-0.5 rounded-full bg-subtle p-1">
+      {options.map((option) => {
+        const on = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "flex-1 rounded-full py-1.5 text-xs transition",
+              on
+                ? "bg-cream font-semibold text-ink shadow-sm"
+                : "font-medium text-ink/45 hover:text-ink/70",
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 /**
  * 다음 복습 시각을 보여줄지.
@@ -30,6 +92,20 @@ import { bookMeta, useVocab } from "@/lib/vocab-store";
 function DelayHintToggle() {
   // 초기값으로 읽는다 — 이펙트에서 읽으면 꺼짐이 한 프레임 보인다.
   const [on, setOn] = useState(loadShowDelays);
+  const app = useAppMode();
+
+  if (app) {
+    return (
+      <Switch
+        on={on}
+        onClick={() => {
+          const next = !on;
+          setOn(next);
+          saveShowDelays(next);
+        }}
+      />
+    );
+  }
 
   return (
     <SubtleButton
@@ -63,6 +139,20 @@ const SKINS: { value: ReviewSkin; label: string }[] = [
 function SkinPicker() {
   // 초기값으로 읽는다 — 이펙트에서 읽으면 기본이 한 프레임 보인다.
   const [skin, setSkin] = useState(loadSkin);
+  const app = useAppMode();
+
+  if (app) {
+    return (
+      <Segmented
+        options={SKINS}
+        value={skin}
+        onChange={(value) => {
+          setSkin(value);
+          saveSkin(value);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex gap-2">
@@ -89,18 +179,111 @@ function SkinPicker() {
   );
 }
 
+const THEMES: { value: Theme; label: string }[] = [
+  { value: "system", label: "시스템" },
+  { value: "light", label: "라이트" },
+  { value: "dark", label: "다크" },
+];
+
+/**
+ * 화면 테마. 스킨처럼 이 브라우저에만 남고 누르는 즉시 바뀐다.
+ * 기본은 라이트. 시스템을 고르면 폰 · 컴퓨터가 다크일 때 다크다.
+ */
+function ThemePicker() {
+  // 초기값으로 읽는다 — 이펙트에서 읽으면 시스템이 한 프레임 보인다.
+  const [theme, setTheme] = useState(loadTheme);
+  const app = useAppMode();
+
+  if (app) {
+    return (
+      <Segmented
+        options={THEMES}
+        value={theme}
+        onChange={(value) => {
+          setTheme(value);
+          saveTheme(value);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="flex gap-2">
+      {THEMES.map((option) => {
+        const on = theme === option.value;
+        return (
+          <SubtleButton
+            key={option.value}
+            aria-pressed={on}
+            onClick={() => {
+              setTheme(option.value);
+              saveTheme(option.value);
+            }}
+            className={cn(
+              "px-3.5 py-1.5 text-xs",
+              on && "border-ink bg-ink text-cream hover:text-cream",
+            )}
+          >
+            {option.label}
+          </SubtleButton>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 설정 묶음 — 작은 머리글 아래 줄들. 앱은 둥근 카드 하나에 담는다.
+ */
+function Group({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const app = useAppMode();
+  return (
+    <div className={className}>
+      <p
+        className={cn(
+          "mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35",
+          app && "mb-2 px-1 text-xs normal-case tracking-normal text-ink/50",
+        )}
+      >
+        {label}
+      </p>
+      <div
+        className={cn(
+          "divide-y divide-taupe/25",
+          app && "rounded-3xl border border-taupe/70 px-4 divide-taupe/40",
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /** 설정 한 덩어리 — 제목·한 줄 설명 위, 입력 아래. */
 function Field({
   title,
   hint,
+  inline = false,
   children,
 }: {
   title: string;
   hint: string;
+  /** 앱에서 입력을 오른쪽에 둔다(스위치처럼 작은 것). */
+  inline?: boolean;
   children: React.ReactNode;
 }) {
+  const app = useAppMode();
+  if (app && inline) return <Row label={title} value={hint} action={children} />;
   return (
-    <div className="py-5">
+    <div className={app ? "py-4" : "py-5"}>
       <p className="text-sm font-medium text-ink">{title}</p>
       <p className="mt-0.5 text-xs text-umber/45">{hint}</p>
       <div className="mt-3.5">{children}</div>
@@ -127,6 +310,7 @@ function DailyLimits({
   const [reviewText, setReviewText] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>();
+  const app = useAppMode();
 
   const load = useCallback(async () => {
     const token = await getToken();
@@ -192,11 +376,8 @@ function DailyLimits({
   }
 
   return (
-    <section className="mb-12">
-      <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">
-        학습
-      </p>
-      <div className="divide-y divide-taupe/25">
+    <section className={app ? "flex flex-col gap-6" : "mb-12"}>
+      <Group label="학습">
         <Row
           label="하루에 새로 배울 단어"
           value="단어장마다 따로 적용됩니다. 9999면 제한 없음"
@@ -209,7 +390,10 @@ function DailyLimits({
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
               aria-label="하루에 새로 배울 단어 수"
-              className="w-24 text-right tabular-nums"
+              className={cn(
+                "w-24 text-right tabular-nums",
+                app && "w-20 rounded-xl",
+              )}
             />
           }
         />
@@ -225,33 +409,45 @@ function DailyLimits({
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
               aria-label="하루 복습 상한"
-              className="w-24 text-right tabular-nums"
+              className={cn(
+                "w-24 text-right tabular-nums",
+                app && "w-20 rounded-xl",
+              )}
             />
           }
         />
-      </div>
+      </Group>
 
-      <p className="mb-1 mt-8 text-[11px] font-medium uppercase tracking-wider text-ink/35">
-        복습 흐름
-      </p>
-      <div className="divide-y divide-taupe/25">
+      <Group label="복습 흐름" className={app ? undefined : "mt-8"}>
         <Field
           title="다음 복습 시각 표시"
           hint="채점 버튼 위에 즉시 · 10분처럼 띄웁니다"
+          inline
         >
           <DelayHintToggle />
         </Field>
-        <Field title="테스트 화면" hint="노트를 고르면 문제가 줄 노트 위에 나옵니다">
+        <Field
+          title="테스트 화면"
+          hint="노트를 고르면 문제가 줄 노트 위에 나옵니다"
+        >
           <SkinPicker />
         </Field>
-      </div>
+      </Group>
 
-      <div className="mt-4 flex items-center justify-end gap-3">
-        {message ? (
-          <p className="text-xs text-umber/45">{message}</p>
-        ) : null}
+      <div
+        className={cn(
+          "mt-4 flex items-center justify-end gap-3",
+          app && "mt-0",
+          // 앱 — 고친 게 없으면 저장 줄을 숨긴다. 남은 안내 문구는 보인다.
+          app && !dirty && !message && "hidden",
+        )}
+      >
+        {message ? <p className="text-xs text-umber/45">{message}</p> : null}
         <SubtleButton
-          className="py-1.5 text-xs"
+          className={cn(
+            "py-1.5 text-xs",
+            app && "rounded-full border-ink bg-ink px-5 py-2 text-cream hover:text-cream",
+          )}
           disabled={!dirty || saving}
           onClick={() => void save()}
         >
@@ -325,6 +521,7 @@ function CheckIn({
   const [error, setError] = useState<string>();
   const [now, setNow] = useState(() => Date.now());
   const attendance = progress.attendance!;
+  const app = useAppMode();
 
   // 남은 시간 표시를 1분마다 갱신한다.
   useEffect(() => {
@@ -373,6 +570,62 @@ function CheckIn({
     }
   }
 
+  if (app) {
+    return (
+      <section className="flex items-center gap-3 rounded-3xl border border-taupe/70 px-4 py-3.5">
+        <span
+          aria-hidden
+          className="grid size-10 shrink-0 place-items-center rounded-full bg-[#efd6d6] text-ink dark:bg-[#efd6d6]/30"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="4" y="5.5" width="16" height="14.5" rx="2.5" />
+            <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+            <path d="m9 14.8 2 2 4-4" />
+          </svg>
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-ink">
+            {attendance.streak > 0
+              ? `${attendance.streak}일 연속 출석`
+              : "오늘 첫 출석"}
+          </p>
+          <p className="text-xs tabular-nums text-ink/45">
+            {error
+              ? error
+              : attendance.checkedInToday
+                ? `다음 출석까지 ${untilLabel(attendance.nextResetAt, now)}`
+                : "하루 한 번 눌러 주세요"}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={attendance.checkedInToday || pending}
+          onClick={() => void handleCheckIn()}
+          className={cn(
+            "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition",
+            attendance.checkedInToday
+              ? "border border-taupe text-ink/40"
+              : "bg-ink text-cream hover:bg-ink/85 disabled:opacity-60",
+          )}
+        >
+          {attendance.checkedInToday
+            ? "완료"
+            : pending
+              ? "출석 중…"
+              : "출석하기"}
+        </button>
+      </section>
+    );
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
       {error ? <p className="text-xs text-red-700">{error}</p> : null}
@@ -416,6 +669,118 @@ function Row({
   );
 }
 
+/** 앱의 프로필 카드 — 분홍 카드에 사진 · 이름, 아래 흰 칸에 숫자 셋. 냐키가 옆에 선다. */
+function ProfileCard({
+  name,
+  email,
+  photo,
+  books,
+  words,
+  streak,
+}: {
+  name: string;
+  email: string;
+  photo?: string;
+  books: number;
+  words: number;
+  /** 연속 출석. 아직 모르면 undefined */
+  streak?: number;
+}) {
+  const stats = [
+    { label: "단어장", value: books },
+    { label: "모은 단어", value: words },
+    { label: "연속 출석", value: streak, unit: "일" },
+  ];
+  return (
+    <section className="relative overflow-hidden rounded-3xl border border-ink/80 bg-[#f7e9e9] p-4 dark:bg-[#efd6d6]/15">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/nyaki_normal.webp"
+        alt=""
+        width={900}
+        height={1206}
+        className="pointer-events-none absolute -right-4 -top-2 w-[38%] max-w-[150px]"
+      />
+      <div className="relative flex items-center gap-3 pr-[30%] pt-1">
+        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream text-lg font-semibold text-ink/40 ring-2 ring-cream">
+          {photo ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={photo} alt="" className="size-full object-cover" />
+          ) : (
+            name.charAt(0).toUpperCase()
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-[17px] font-bold tracking-tight text-ink">
+            {name}
+          </p>
+          <p className="mt-0.5 truncate text-xs text-ink/50">{email}</p>
+        </div>
+      </div>
+      <dl className="relative mt-5 grid grid-cols-3 divide-x divide-ink/10 rounded-2xl border border-ink/10 bg-cream py-3 text-center">
+        {stats.map((stat) => (
+          <div key={stat.label}>
+            <dt className="text-[11px] text-ink/45">{stat.label}</dt>
+            <dd className="mt-0.5 text-lg font-bold tabular-nums text-ink">
+              {stat.value ?? "–"}
+              {stat.value !== undefined && stat.unit ? (
+                <span className="ml-0.5 text-xs font-semibold">{stat.unit}</span>
+              ) : null}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+/** 앱의 계정 줄 — 줄 전체가 버튼이고 오른쪽에 꺾쇠. */
+function MenuRow({
+  label,
+  hint,
+  danger = false,
+  onClick,
+}: {
+  label: string;
+  hint?: string;
+  danger?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-4 py-3.5 text-left"
+    >
+      <span className="min-w-0">
+        <span
+          className={cn(
+            "block text-sm",
+            danger ? "text-red-600" : "text-ink",
+          )}
+        >
+          {label}
+        </span>
+        {hint ? (
+          <span className="mt-0.5 block text-xs text-umber/45">{hint}</span>
+        ) : null}
+      </span>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden
+        className="size-4 shrink-0 text-ink/30"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  );
+}
+
 export default function MyPage() {
   const router = useRouter();
   const { user, signOutUser } = useAuth();
@@ -427,6 +792,57 @@ export default function MyPage() {
     (sum, book) => sum + bookMeta(book).count,
     0,
   );
+  const appMode = useAppMode();
+
+  if (appMode) {
+    return (
+      <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-5 pb-10 pt-5 break-keep">
+        <ProfileCard
+          name={user?.displayName ?? "이름 없음"}
+          email={user?.email ?? "—"}
+          photo={user?.photoURL ?? undefined}
+          books={wordBooks.length}
+          words={wordCount}
+          streak={progress?.attendance?.streak}
+        />
+        {progress?.attendance ? (
+          <CheckIn progress={progress} onChange={setProgress} />
+        ) : null}
+        <DailyLimits onProgress={setProgress} />
+        <Group label="화면">
+          <Field title="테마" hint="시스템을 고르면 폰 설정을 따라갑니다">
+            <ThemePicker />
+          </Field>
+        </Group>
+        <Group label="계정">
+          <MenuRow label="로그아웃" onClick={() => void signOutUser()} />
+          <MenuRow
+            label="회원 탈퇴"
+            hint="모든 단어장이 삭제됩니다"
+            danger
+            onClick={() => router.push("/my/withdraw")}
+          />
+        </Group>
+        {/* 앱에는 푸터가 없다 — 약관 · 방침으로 가는 길을 여기 둔다. */}
+        <nav className="flex justify-center gap-4 pt-2 text-xs text-ink/40">
+          <Link href="/terms" className="transition hover:text-ink">
+            이용약관
+          </Link>
+          <Link href="/privacy" className="transition hover:text-ink">
+            개인정보처리방침
+          </Link>
+          <a
+            href="https://blog.naver.com/doidev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition hover:text-ink"
+          >
+            블로그
+          </a>
+        </nav>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-4xl px-8 py-14 lg:px-12">
@@ -467,6 +883,20 @@ export default function MyPage() {
       </div>
 
       <DailyLimits onProgress={setProgress} />
+
+      <section className="mb-12">
+        <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">
+          화면
+        </p>
+        <div className="divide-y divide-taupe/25">
+          <Field
+            title="테마"
+            hint="시스템을 고르면 폰 · 컴퓨터 설정을 따라갑니다"
+          >
+            <ThemePicker />
+          </Field>
+        </div>
+      </section>
 
       <section>
         <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink/35">

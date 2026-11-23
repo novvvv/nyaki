@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 
-const navItems = [
+export const navItems = [
   { href: "/word-books", label: "내 단어장" },
   { href: "/review", label: "테스트" },
   { href: "/word-books/overview", label: "전체 통계" },
@@ -13,7 +13,7 @@ const navItems = [
   { href: "/my", label: "마이페이지" },
 ] as const;
 
-function isActive(pathname: string, href: string) {
+export function isActive(pathname: string, href: string) {
   if (href === "/word-books") {
     return pathname === href || /^\/word-books\/(?!overview)/.test(pathname);
   }
@@ -58,7 +58,7 @@ export function SiteHeader() {
   const current = navItems.find((item) => isActive(pathname, item.href));
 
   return (
-    <header className="sticky top-0 z-20 bg-cream">
+    <header className="web-only sticky top-0 z-20 bg-cream">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
         <Link
           href="/"
@@ -73,7 +73,8 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <nav className="overflow-x-auto border-y border-taupe/50 bg-card">
+      {/* 폰 크기에서는 아래 탭 바(MobileTabBar)가 대신한다 — 앱처럼. */}
+      <nav className="hidden overflow-x-auto border-y border-taupe/50 bg-card md:block">
         <div className="mx-auto flex w-max min-w-full max-w-7xl items-center justify-center px-6">
           {navItems.map((item, index) => (
             <div key={item.href} className="flex items-center">

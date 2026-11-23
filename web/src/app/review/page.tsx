@@ -25,13 +25,15 @@ import {
   type ClozePiece,
   type TableRow,
 } from "@/lib/cloze";
+import { useAppMode } from "@/lib/app-mode";
 import { formatDelay, loadShowDelays, loadSkin, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
 type Phase = "setup" | "session" | "done";
 
-const SCREEN = "min-h-[calc(100vh-8.5rem)]";
+// review-screen — 앱에서는 위 바 · 탭 바를 뺀 높이로 바꾼다(globals.css).
+const SCREEN = "review-screen min-h-[calc(100vh-8.5rem)]";
 // 서버 /v1/review/due의 상한과 같다. 실제 출제량은 하루 한도(마이페이지)와
 // 오늘 due인 단어 수가 정한다 — 이 값은 그 위에 얹힌 안전장치일 뿐이다.
 const MAX_COUNT = 9999;
@@ -542,11 +544,49 @@ function saveKey(card: DueCard): string {
     : `word:${card.word?.id ?? card.id}`;
 }
 
+/** 앱의 테스트 시작 머리 — 오늘 화면과 같은 분홍 카드에 파이팅 냐키. */
+function AppTestHeader({
+  loading,
+  dueCount,
+}: {
+  loading: boolean;
+  dueCount: number;
+}) {
+  return (
+    <section className="relative w-full overflow-hidden rounded-3xl border border-ink/80 bg-[#f7e9e9] text-left dark:bg-[#efd6d6]/15">
+      <div className="relative z-10 flex min-h-[150px] flex-col justify-center p-5 pr-[44%]">
+        <p className="text-xs font-medium text-ink/55">복습할 때가 된 단어</p>
+        <p className="mt-1 text-[34px] font-bold leading-none tracking-tight text-ink tabular-nums">
+          {loading ? "–" : dueCount}
+          <span className="ml-1 text-base font-semibold">개</span>
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-ink/55">
+          {loading
+            ? "단어를 세는 중이에요."
+            : dueCount === 0
+              ? "오늘은 복습할 단어가 없어요."
+              : "모름 · 외움만 고르면 다음 복습일은 냐키가 정해요."}
+        </p>
+      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/nyaki_fighting.webp"
+        alt=""
+        width={900}
+        height={1206}
+        className="pointer-events-none absolute -bottom-12 -right-3 w-[46%] max-w-[180px]"
+      />
+    </section>
+  );
+}
+
 export default function ReviewPage() {
   const { getToken } = useAuth();
   const { wordBooks, folders, updateWord } = useVocab();
 
   const [phase, setPhase] = useState<Phase>("setup");
+  // 앱에서는 카드 · 버튼을 둥근 앱 모양으로, 시작 화면 머리를 분홍 카드로 바꾼다.
+  const appMode = useAppMode();
   // 출제 개수. null은 "아직 안 건드림" = 고를 수 있는 걸 전부 낸다는 뜻이다.
   // 예전에는 "20"으로 고정해둬서 단어장을 더 켜도 20에 머물러 있었다.
   const [countText, setCountText] = useState<string | null>(null);
@@ -919,6 +959,7 @@ export default function ReviewPage() {
               aria-pressed={isSaved(current)}
               className={cn(
                 "whitespace-nowrap rounded-lg border px-4 py-1.5 text-xs transition",
+                appMode && "rounded-full",
                 isSaved(current)
                   ? "border-ink/40 text-ink"
                   : "border-taupe text-ink/50 hover:border-ink/40 hover:text-ink",
@@ -929,7 +970,10 @@ export default function ReviewPage() {
             <button
               type="button"
               onClick={stop}
-              className="whitespace-nowrap rounded-lg border border-taupe px-4 py-1.5 text-xs text-ink/50 transition hover:border-ink/40 hover:text-ink"
+              className={cn(
+                "whitespace-nowrap rounded-lg border border-taupe px-4 py-1.5 text-xs text-ink/50 transition hover:border-ink/40 hover:text-ink",
+                appMode && "rounded-full",
+              )}
             >
               그만하기
             </button>
@@ -945,9 +989,17 @@ export default function ReviewPage() {
                 {kindLabel(current)}
               </span>
             ) : null}
-            <div className="h-px flex-1 bg-taupe/50">
+            <div
+              className={cn(
+                "h-px flex-1 bg-taupe/50",
+                appMode && "h-1.5 overflow-hidden rounded-full bg-ink/10",
+              )}
+            >
               <div
-                className="h-px bg-ink transition-all duration-200"
+                className={cn(
+                  "h-px bg-ink transition-all duration-200",
+                  appMode && "h-full rounded-full",
+                )}
                 style={{
                   width: `${sessionSize === 0 ? 0 : (finished / sessionSize) * 100}%`,
                 }}
@@ -965,7 +1017,12 @@ export default function ReviewPage() {
             <button
               type="button"
               onClick={() => setFlipped((prev) => !prev)}
-              className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center"
+              className={cn(
+                "flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center",
+                // 앱에서는 손에 쥔 단어 카드처럼 — 테두리와 분홍 그림자.
+                appMode &&
+                  "my-5 rounded-3xl border border-ink/80 bg-cream px-5 py-8 shadow-[0_8px_0_-1px_#efd6d6] dark:shadow-[0_8px_0_-1px_rgba(239,214,214,0.3)]",
+              )}
             >
               {/* div다 — 빈칸 노트에 표가 들어가면 p 안에 표를 둘 수 없다. */}
               <div
@@ -1031,7 +1088,10 @@ export default function ReviewPage() {
             alt=""
             width={1792}
             height={2400}
-            className="mx-auto mb-4 block h-auto w-20 lg:hidden"
+            className={cn(
+              "mx-auto mb-4 block h-auto w-20 lg:hidden",
+              appMode && "w-16",
+            )}
           />
 
           {/* 안키가 버튼 위에 <1m / <10m를 띄우는 것과 같다. 계산은 서버가 한다. */}
@@ -1046,32 +1106,48 @@ export default function ReviewPage() {
             <button
               type="button"
               onClick={() => grade("again")}
-              className="whitespace-nowrap rounded-lg border border-ink py-3.5 text-sm font-medium text-ink transition hover:bg-subtle"
+              className={cn(
+                "whitespace-nowrap rounded-lg border border-ink py-3.5 text-sm font-medium text-ink transition hover:bg-subtle",
+                appMode && "rounded-full py-4",
+              )}
             >
               모름
             </button>
             <button
               type="button"
               onClick={() => grade("good")}
-              className="group relative whitespace-nowrap rounded-lg border border-ink bg-ink py-3.5 text-sm font-medium text-cream transition hover:bg-ink/85"
+              className={cn(
+                "group relative whitespace-nowrap rounded-lg border border-ink bg-ink py-3.5 text-sm font-medium text-cream transition hover:bg-ink/85",
+                appMode && "rounded-full py-4",
+              )}
             >
               <svg
                 viewBox="0 0 40 14"
                 aria-hidden
-                className="absolute -top-3 right-3 h-3.5 w-10 fill-ink transition group-hover:fill-ink/85"
+                className={cn(
+                  "absolute -top-3 right-3 h-3.5 w-10 fill-ink transition group-hover:fill-ink/85",
+                  // 둥근 버튼은 끝이 휘어 있다 — 귀 · 눈을 안쪽으로 옮긴다.
+                  appMode && "right-7",
+                )}
               >
                 <path d="M1.5 14 C2.6 8.5 4 4 6.2 0 C8.6 4.2 10.8 9 13 14 Z" />
                 <path d="M27 14 C29.2 9 31.4 4.2 33.8 0 C36 4 37.4 8.5 38.5 14 Z" />
               </svg>
               <span
                 aria-hidden
-                className="absolute right-10 top-2 flex size-2 items-center justify-center"
+                className={cn(
+                  "absolute right-10 top-2 flex size-2 items-center justify-center",
+                  appMode && "right-14",
+                )}
               >
                 <span className="h-[2px] w-2 rounded-full bg-cream transition-all duration-200 group-hover:h-2 group-hover:w-[2px]" />
               </span>
               <span
                 aria-hidden
-                className="absolute right-[22px] top-2 flex size-2 items-center justify-center"
+                className={cn(
+                  "absolute right-[22px] top-2 flex size-2 items-center justify-center",
+                  appMode && "right-[38px]",
+                )}
               >
                 <span className="h-[2px] w-2 rounded-full bg-cream transition-all duration-200 group-hover:h-2 group-hover:w-[2px]" />
               </span>
@@ -1086,7 +1162,7 @@ export default function ReviewPage() {
           alt=""
           width={1792}
           height={2400}
-          className="hidden h-auto w-[min(360px,28vw)] shrink-0 lg:block"
+          className="web-only hidden h-auto w-[min(360px,28vw)] shrink-0 lg:block"
         />
       </div>
     );
@@ -1101,13 +1177,34 @@ export default function ReviewPage() {
           "mx-auto flex w-full max-w-xl flex-col items-center justify-center px-6 py-14 text-center",
         )}
       >
+        {appMode ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/nyaki_happy.webp"
+            alt=""
+            width={900}
+            height={1206}
+            className="mb-4 block h-auto w-36"
+          />
+        ) : null}
         <h1 className="text-2xl font-semibold tracking-tight text-ink">
           {total === 0 ? "오늘 복습할 단어가 없습니다" : "테스트 완료"}
         </h1>
 
         {total > 0 ? (
-          <div className="mt-10 grid w-full grid-cols-2 border-y border-taupe/50">
-            <div className="border-r border-taupe/50 py-7">
+          <div
+            className={cn(
+              "mt-10 grid w-full grid-cols-2 border-y border-taupe/50",
+              appMode &&
+                "mt-6 overflow-hidden rounded-3xl border border-ink/80 bg-[#f7e9e9] dark:bg-[#efd6d6]/15",
+            )}
+          >
+            <div
+              className={cn(
+                "border-r border-taupe/50 py-7",
+                appMode && "border-ink/15",
+              )}
+            >
               <p className="text-4xl font-semibold tabular-nums text-ink">
                 {result.good}
               </p>
@@ -1126,19 +1223,31 @@ export default function ReviewPage() {
           </p>
         )}
 
-        <div className="mt-10 flex items-center gap-6">
+        <div
+          className={cn(
+            "mt-10 flex items-center gap-6",
+            appMode && "mt-8 grid w-full grid-cols-2 gap-2.5",
+          )}
+        >
           <button
             type="button"
             onClick={() => setPhase("setup")}
-            className="whitespace-nowrap text-sm font-medium text-ink transition hover:text-ink/55"
+            className={cn(
+              "whitespace-nowrap text-sm font-medium text-ink transition hover:text-ink/55",
+              appMode &&
+                "rounded-full bg-ink py-3.5 text-cream hover:bg-ink/85 hover:text-cream",
+            )}
           >
             다시 하기
           </button>
           <Link
-            href="/word-books"
-            className="whitespace-nowrap text-sm text-ink/40 transition hover:text-ink"
+            href={appMode ? "/today" : "/word-books"}
+            className={cn(
+              "whitespace-nowrap text-sm text-ink/40 transition hover:text-ink",
+              appMode && "rounded-full border border-ink/20 py-3.5 text-ink",
+            )}
           >
-            내 단어장
+            {appMode ? "오늘 화면" : "내 단어장"}
           </Link>
         </div>
       </main>
@@ -1153,21 +1262,26 @@ export default function ReviewPage() {
           SCREEN,
           "mx-auto grid w-full max-w-3xl items-center gap-12 px-6 py-14 lg:mx-0 lg:pr-0",
           // 넓으면 왼쪽에 시작 흐름, 오른쪽에 단어장 목록. 좁으면 위아래로 쌓인다.
-          showBookPicker ? "sm:grid-cols-[1fr_17rem]" : "max-w-xl",
+          // 앱은 폭과 상관없이 위아래로 — 분홍 카드, 개수 카드, 단어장 카드 순.
+          showBookPicker && !appMode ? "sm:grid-cols-[1fr_17rem]" : "max-w-xl",
+          appMode && "content-start items-start gap-4",
         )}
       >
         <div className="flex flex-col items-center text-center">
-          <p aria-hidden className="text-lg text-ink/75">
+          {appMode ? (
+            <AppTestHeader loading={loading} dueCount={dueCount} />
+          ) : null}
+          <p aria-hidden className="web-only text-lg text-ink/75">
             /ᐠ .⑅.ᐟ\ﾉ
           </p>
 
-          <h1 className="mt-5 flex items-center justify-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
+          <h1 className="web-only mt-5 flex items-center justify-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
             {/* 픽셀 폰트는 한자·한글이 없다 — 이 가나 문구에만 쓴다 */}
             <span className="font-pixel text-xl">テスト</span>
             <span>테스트</span>
           </h1>
 
-          <p className="mt-3 text-sm text-ink/40">
+          <p className="web-only mt-3 text-sm text-ink/40">
             {loading ? (
               "단어를 세는 중이냥"
             ) : dueCount === 0 ? (
@@ -1183,53 +1297,76 @@ export default function ReviewPage() {
             )}
           </p>
 
-          <div className="mt-12 flex items-end justify-center gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={limit === 0 ? 0 : 1}
-              max={limit}
-              disabled={limit === 0}
-              value={countValue}
-              onChange={(e) => setCountText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void start();
-              }}
-              aria-label="출제할 단어 개수"
-              className="w-24 border-b border-taupe/60 bg-transparent pb-1.5 text-center text-4xl font-semibold tabular-nums text-ink outline-none transition focus:border-ink"
-            />
-            <span className="pb-2.5 text-sm text-ink/35">개</span>
-          </div>
-
-          <input
-            type="range"
-            min={limit === 0 ? 0 : 1}
-            // max가 min보다 작으면 브라우저가 값을 제멋대로 잡는다.
-            max={Math.max(limit, 1)}
-            disabled={limit === 0}
-            value={size}
-            onChange={(e) => setCountText(e.target.value)}
-            aria-label="출제할 단어 개수 조절"
-            className="mt-8 h-1 w-full max-w-xs cursor-pointer accent-ink"
-          />
-
-          <SubtleButton
-            onClick={() => setShuffle((prev) => !prev)}
-            aria-pressed={shuffle}
+          {/* 앱에서는 개수 · 섞기를 카드 하나에 담는다. 웹은 감싸도 모양이 같다. */}
+          <div
             className={cn(
-              "mt-8 px-3.5 py-1.5 text-xs",
-              shuffle && "border-ink bg-ink text-cream hover:text-cream",
+              "flex w-full flex-col items-center",
+              appMode &&
+                "mt-4 rounded-3xl border border-taupe/70 px-5 pb-6 pt-5",
             )}
           >
-            {shuffle ? "랜덤 섞기 ON" : "랜덤 섞기"}
-          </SubtleButton>
+            {appMode ? (
+              <p className="self-start text-[15px] font-semibold text-ink">
+                몇 개 볼까요?
+              </p>
+            ) : null}
+            <div
+              className={cn(
+                "mt-12 flex items-end justify-center gap-2",
+                appMode && "mt-4",
+              )}
+            >
+              <input
+                type="number"
+                inputMode="numeric"
+                min={limit === 0 ? 0 : 1}
+                max={limit}
+                disabled={limit === 0}
+                value={countValue}
+                onChange={(e) => setCountText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void start();
+                }}
+                aria-label="출제할 단어 개수"
+                className="w-24 border-b border-taupe/60 bg-transparent pb-1.5 text-center text-4xl font-semibold tabular-nums text-ink outline-none transition focus:border-ink"
+              />
+              <span className="pb-2.5 text-sm text-ink/35">개</span>
+            </div>
+
+            <input
+              type="range"
+              min={limit === 0 ? 0 : 1}
+              // max가 min보다 작으면 브라우저가 값을 제멋대로 잡는다.
+              max={Math.max(limit, 1)}
+              disabled={limit === 0}
+              value={size}
+              onChange={(e) => setCountText(e.target.value)}
+              aria-label="출제할 단어 개수 조절"
+              className="mt-8 h-1 w-full max-w-xs cursor-pointer accent-ink"
+            />
+
+            <SubtleButton
+              onClick={() => setShuffle((prev) => !prev)}
+              aria-pressed={shuffle}
+              className={cn(
+                "mt-8 px-3.5 py-1.5 text-xs",
+                appMode && "mt-6 rounded-full",
+                shuffle && "border-ink bg-ink text-cream hover:text-cream",
+              )}
+            >
+              {shuffle ? "랜덤 섞기 ON" : "랜덤 섞기"}
+            </SubtleButton>
+          </div>
 
           {error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null}
 
           <PrimaryButton
             onClick={start}
             disabled={!due || size < 1 || loading || picked.length === 0}
-            className="mt-10 gap-2 px-7 py-2.5"
+            className={cn(
+              "mt-10 gap-2 px-7 py-2.5",
+              appMode && "mt-4 w-full rounded-full py-3.5",
+            )}
           >
             {loading ? "불러오는 중…" : "시작하기"}
             {loading ? null : <span aria-hidden>→</span>}
@@ -1239,7 +1376,18 @@ export default function ReviewPage() {
         {/* 단어장 — 칩을 늘어놓으면 개수가 늘수록 줄이 접힌다. 세로 목록이 읽기 쉽다. */}
         {showBookPicker ? (
           // 사이드바와 같은 순서로 묶는다 — 폴더들, 그다음 폴더 밖 단어장.
-          <div className="flex flex-col gap-4 sm:border-l sm:border-taupe/30 sm:pl-6">
+          <div
+            className={
+              appMode
+                ? "flex flex-col gap-1 rounded-3xl border border-taupe/70 p-3"
+                : "flex flex-col gap-1 sm:border-l sm:border-taupe/30 sm:pl-6"
+            }
+          >
+            {appMode ? (
+              <p className="mb-1 px-2 pt-1 text-[15px] font-semibold text-ink">
+                단어장 고르기
+              </p>
+            ) : null}
             {bookGroups.map((group) => {
               const ids = group.books.map((book) => book.id);
               const allOn = ids.every((id) => selected.includes(id));
@@ -1364,7 +1512,7 @@ export default function ReviewPage() {
         alt=""
         width={1792}
         height={2400}
-        className="hidden h-auto w-[min(320px,24vw)] shrink-0 lg:block"
+        className="web-only hidden h-auto w-[min(320px,24vw)] shrink-0 lg:block"
       />
     </div>
   );

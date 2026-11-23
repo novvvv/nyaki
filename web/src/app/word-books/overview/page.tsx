@@ -20,6 +20,8 @@ import {
   fillDailyCounts,
   type RangePreset,
 } from "@/lib/stats";
+import { useAppMode } from "@/lib/app-mode";
+import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
 /** "복습한 단어" 차트 기간(일) */
@@ -52,6 +54,7 @@ export default function OverviewPage() {
   const [reviewMetric, setReviewMetric] = useState<ReviewMetric>("cards");
   const [masteryHistory, setMasteryHistory] =
     useState<Record<string, MasteryPoint[]>>();
+  const appMode = useAppMode();
 
   // 날짜별 개수는 서버가 센다 — 단어와 빈칸 노트를 함께 세려면 여기서는 셀 수 없다.
   // 이펙트 본문에서 곧바로 setState가 일어나지 않도록 async 블록으로 감싼다
@@ -139,10 +142,23 @@ export default function OverviewPage() {
   );
   // 빈 날짜까지 채운 목록의 마지막 칸이 오늘이다.
   const reviewedToday = reviewCounts.at(-1)?.count ?? 0;
+  // 앱 머리 카드 — 최근 30일 동안 복습한 카드와 공부한 날.
+  const reviewedMonth = reviewed.reduce((sum, row) => sum + row.count, 0);
+  const studyDays = reviewed.filter((row) => row.count > 0).length;
+  // 앱에서는 카드를 더 둥글게 — 오늘 · 단어장 화면의 타일과 맞춘다.
+  const cardClass = cn("px-5 py-5", appMode && "rounded-3xl border-taupe/70 px-4");
 
   return (
     <main className="mx-auto w-full max-w-6xl px-8 py-14 lg:px-12">
-      <PageHeader title="전체 통계" description="모든 단어장을 합친 추이예요." />
+      {appMode ? (
+        <AppHeader
+          reviewedToday={reviewedToday}
+          reviewedMonth={reviewedMonth}
+          studyDays={studyDays}
+        />
+      ) : (
+        <PageHeader title="전체 통계" description="모든 단어장을 합친 추이예요." />
+      )}
 
       {error ? <p className="mb-6 text-sm text-red-700">{error}</p> : null}
 
@@ -153,55 +169,34 @@ export default function OverviewPage() {
           단어장을 먼저 만들면 여기에 통계가 표시돼요.
         </p>
       ) : (
-        <div className="space-y-8">
-          <dl className="grid grid-cols-3 gap-3">
-            <StatTile label="단어장" value={summary.totalBooks} />
-            <StatTile label="전체 항목" value={summary.totalItems} />
-            <StatTile label="즐겨찾기" value={summary.bookmarkedCount} />
+        <div className={appMode ? "space-y-4" : "space-y-8"}>
+          <dl className={cn("grid grid-cols-3", appMode ? "gap-2" : "gap-3")}>
+            <StatTile app={appMode} label="단어장" value={summary.totalBooks} />
+            <StatTile app={appMode} label="전체 항목" value={summary.totalItems} />
+            <StatTile app={appMode} label="즐겨찾기" value={summary.bookmarkedCount} />
           </dl>
 
-          <Card className="px-5 py-5">
-            <div className="mb-4 flex items-center gap-3.5">
-              {RANGE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => setRange(opt.key)}
-                  className={`text-xs transition ${
-                    range === opt.key
-                      ? "font-semibold text-ink"
-                      : "font-medium text-umber/45 hover:text-umber/70"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+          <Card className={cardClass}>
+            <Choices
+              app={appMode}
+              options={RANGE_OPTIONS}
+              value={range}
+              onChange={setRange}
+            />
             <WordAddedTrend data={dailyCounts} shapeToggle />
           </Card>
 
-          <Card className="px-5 py-5">
+          <Card className={cardClass}>
             <MasteryByBook data={mastery} history={masteryHistory} />
           </Card>
 
-          <Card className="px-5 py-5">
-            <div className="mb-4 flex items-center gap-3.5">
-              {REVIEW_METRICS.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => setReviewMetric(opt.key)}
-                  aria-pressed={reviewMetric === opt.key}
-                  className={`text-xs transition ${
-                    reviewMetric === opt.key
-                      ? "font-semibold text-ink"
-                      : "font-medium text-umber/45 hover:text-umber/70"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+          <Card className={cardClass}>
+            <Choices
+              app={appMode}
+              options={REVIEW_METRICS}
+              value={reviewMetric}
+              onChange={setReviewMetric}
+            />
             <WordAddedTrend
               data={reviewCounts}
               title="복습한 단어"
@@ -227,17 +222,113 @@ export default function OverviewPage() {
   );
 }
 
+/**
+ * 차트 위 고르기 버튼(기간 · 세는 기준). 웹은 글자만, 앱은 알약 모양 묶음이다.
+ */
+function Choices<T extends string | number>({
+  app,
+  options,
+  value,
+  onChange,
+}: {
+  app: boolean;
+  options: { key: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "mb-4 flex items-center",
+        app ? "w-fit gap-0.5 rounded-full bg-subtle p-1" : "gap-3.5",
+      )}
+    >
+      {options.map((opt) => {
+        const on = value === opt.key;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.key)}
+            aria-pressed={on}
+            className={cn(
+              "text-xs transition",
+              app && "rounded-full px-3 py-1",
+              on
+                ? cn("font-semibold text-ink", app && "bg-cream shadow-sm")
+                : "font-medium text-umber/45 hover:text-umber/70",
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 앱의 통계 머리 — 제목과 분홍 카드(오늘 · 최근 30일 복습). */
+function AppHeader({
+  reviewedToday,
+  reviewedMonth,
+  studyDays,
+}: {
+  reviewedToday: number;
+  reviewedMonth: number;
+  studyDays: number;
+}) {
+  return (
+    <div className="mb-4">
+      <h1 className="text-[22px] font-bold tracking-tight text-ink">통계</h1>
+      <p className="mt-1 text-xs text-ink/45">모든 단어장을 합친 기록이에요.</p>
+      <section className="relative mt-5 overflow-hidden rounded-3xl border border-ink/80 bg-[#f7e9e9] dark:bg-[#efd6d6]/15">
+        <div className="relative z-10 p-5 pr-[40%]">
+          <p className="text-xs font-medium text-ink/55">오늘 복습한 카드</p>
+          <p className="mt-1 text-[34px] font-bold leading-none tracking-tight text-ink tabular-nums">
+            {reviewedToday}
+            <span className="ml-1 text-base font-semibold">개</span>
+          </p>
+          <div className="mt-4 flex gap-5 text-xs text-ink/55">
+            <div>
+              <p>최근 30일</p>
+              <p className="mt-0.5 text-sm font-semibold text-ink tabular-nums">
+                {reviewedMonth}개
+              </p>
+            </div>
+            <div>
+              <p>공부한 날</p>
+              <p className="mt-0.5 text-sm font-semibold text-ink tabular-nums">
+                {studyDays}일
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/nyaki_happy.webp"
+          alt=""
+          width={900}
+          height={1206}
+          className="pointer-events-none absolute -bottom-8 -right-2 w-[42%] max-w-[170px]"
+        />
+      </section>
+    </div>
+  );
+}
+
 function StatTile({
+  app,
   label,
   value,
   suffix,
 }: {
+  app: boolean;
   label: string;
   value: number;
   suffix?: string;
 }) {
   return (
-    <Card className="px-4 py-3.5">
+    <Card className={cn("px-4 py-3.5", app && "rounded-2xl border-taupe/70 px-3.5")}>
       <dt className="text-xs text-umber/50">{label}</dt>
       <dd className="mt-1 text-xl font-semibold tabular-nums text-ink">
         {value}

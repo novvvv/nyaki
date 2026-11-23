@@ -4,6 +4,9 @@
    이 클래스를 단다 — 그래야 마이페이지에서 고른 값이 시스템 설정을 이긴다. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* 앱 모드 — 설치한 앱 · 메인 화면의 폰 미리보기. lib/app-mode.ts가 <html class="app">을 단다. */
+@custom-variant app (&:where(.app, .app *));
+
 /* Design.md — 2026-09-15 재확정: 무채색 미니멀 팔레트로 교체.
    따뜻한 톤(Ivory/Nude)을 걷어내고 흰 바탕 기준 그레이스케일로 통일했다.
    바탕과 카드가 모두 흰색이므로 층 구분은 면 색이 아니라 taupe 테두리가 맡는다.
@@ -115,6 +118,39 @@ body {
   color: var(--nyaki-ink);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* 앱 모드에서는 웹용 큰 여백(px-8 py-14)을 폰 화면에 맞게 줄인다. 화면마다 고치지
+   않고 여기서 한 번에 — 층(layer) 밖 규칙이라 유틸리티 클래스보다 우선한다. */
+.app main {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  padding-top: 1.25rem;
+}
+
+/* 앱 모드의 틀 — 웹 머리말 · 공지 띠 · 푸터를 감추고, 아래 탭 바는 폭과 상관없이
+   보인다(넓은 창에 설치한 앱에도 길이 있어야 한다). */
+.app-only {
+  display: none;
+}
+.app .app-only {
+  display: block;
+}
+.app .web-only {
+  display: none;
+}
+.app .app-shell {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+}
+.app .tab-bar {
+  display: block;
+}
+/* 테스트 화면 높이 — 웹 머리말(8.5rem) 대신 앱 위 바 · 탭 바를 뺀다. 카드가 화면을 채운다. */
+.app .review-screen {
+  min-height: calc(
+    100dvh - 7.75rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
 }
 
 ::selection {

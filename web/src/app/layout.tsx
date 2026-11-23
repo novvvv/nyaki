@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Serif_KR } from "next/font/google";
 import localFont from "next/font/local";
 
 import { AppProviders } from "@/components/app-providers";
+import { APP_MODE_SCRIPT } from "@/lib/app-mode";
 import { THEME_SCRIPT } from "@/lib/theme";
 
 import "./globals.css";
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
   // 공유 이미지 같은 상대 경로를 이 주소 기준으로 바꾼다. 카톡 등은 절대 주소만 읽는다.
   metadataBase: new URL("https://nyaki.kr"),
   title: TITLE,
-  // 링크를 공유하면 메인의 고양이가 보인다. cat.png는 배경이 투명해 메신저에
+  // 링크를 공유하면 냐키가 보인다. 캐릭터 그림은 배경이 투명해 메신저에
   // 따라 검게 나와서, 흰 배경에 얹은 1200×630(og.png)을 따로 둔다.
   openGraph: {
     title: TITLE,
@@ -44,11 +45,24 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "Nyaki" }],
   },
+  // 홈 화면에 설치했을 때 — 아이폰은 manifest 대신 이 값을 읽는다.
+  applicationName: "Nyaki",
+  appleWebApp: { capable: true, title: "Nyaki", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     images: ["/og.png"],
   },
+};
+
+// viewportFit cover — 설치한 앱에서 아래 탭 바가 홈 표시줄 위까지 닿게(safe-area).
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+  ],
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -68,6 +82,8 @@ export default function RootLayout({
         {/* 다크 테마를 그리기 전에 단다 — 리액트가 뜬 뒤에 달면 흰 화면이 번쩍인다.
             next/script의 beforeInteractive는 그리기를 막지 않아 늦다. lib/theme.ts */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* 설치한 앱 · 폰 미리보기면 앱 화면으로 — 같은 이유로 그리기 전에. lib/app-mode.ts */}
+        <script dangerouslySetInnerHTML={{ __html: APP_MODE_SCRIPT }} />
       </head>
       <body className="min-h-full antialiased">
         <AppProviders>{children}</AppProviders>

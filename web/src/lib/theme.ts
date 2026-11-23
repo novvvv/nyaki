@@ -1,5 +1,5 @@
 /**
- * 화면 테마 — 시스템 / 라이트 / 다크. 마이페이지에서 고른다.
+ * 화면 테마 — 시스템 / 라이트 / 다크. 마이페이지에서 고른다. 고른 적이 없으면 라이트.
  *
  * 기기마다 다른 화면 설정이라 서버에 두지 않았다 — 테스트 화면 스킨과 같다.
  * 적용은 <html>의 dark 클래스 하나로 한다. 색은 globals.css의 다크 토큰이 바꾼다.
@@ -17,9 +17,9 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 export function loadTheme(): Theme {
   try {
     const value = window.localStorage.getItem(THEME_KEY);
-    return value === "light" || value === "dark" ? value : "system";
+    return value === "system" || value === "dark" ? value : "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 
@@ -44,4 +44,4 @@ export function applyTheme(theme: Theme = loadTheme()) {
  * <head>에 그대로 넣는 스크립트. applyTheme과 같은 규칙이다. 시스템을 따르는
  * 동안 폰·맥 설정이 바뀌면(해 질 때 자동 전환 등) 새로고침 없이 따라간다.
  */
-export const THEME_SCRIPT = `(function(){var m=window.matchMedia(${JSON.stringify(DARK_QUERY)});function a(){var t=null;try{t=localStorage.getItem(${JSON.stringify(THEME_KEY)})}catch(e){}document.documentElement.classList.toggle("dark",t==="dark"||(t!=="light"&&m.matches))}a();m.addEventListener("change",a)})()`;
+export const THEME_SCRIPT = `(function(){var m=window.matchMedia(${JSON.stringify(DARK_QUERY)});function a(){var t=null;try{t=localStorage.getItem(${JSON.stringify(THEME_KEY)})}catch(e){}document.documentElement.classList.toggle("dark",t==="dark"||(t==="system"&&m.matches))}a();m.addEventListener("change",a)})()`;

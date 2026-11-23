@@ -20,6 +20,7 @@ import {
   type ReviewSkin,
 } from "@/lib/review";
 import { useAppMode } from "@/lib/app-mode";
+import { useNyakiImage } from "@/lib/nyaki-skin";
 import { loadTheme, saveTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { bookMeta, useVocab } from "@/lib/vocab-store";
@@ -686,6 +687,7 @@ function ProfileCard({
   /** 연속 출석. 아직 모르면 undefined */
   streak?: number;
 }) {
+  const nyaki = useNyakiImage();
   const stats = [
     { label: "단어장", value: books },
     { label: "모은 단어", value: words },
@@ -695,7 +697,7 @@ function ProfileCard({
     <section className="relative overflow-hidden rounded-3xl border border-ink/80 bg-[#f7e9e9] p-4 dark:bg-[#efd6d6]/15">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/nyaki_normal.webp"
+        src={nyaki("normal")}
         alt=""
         width={900}
         height={1206}
@@ -813,6 +815,11 @@ export default function MyPage() {
           <Field title="테마" hint="시스템을 고르면 폰 설정을 따라갑니다">
             <ThemePicker />
           </Field>
+          <MenuRow
+            label="상점"
+            hint="냐키 옷 바꾸기"
+            onClick={() => router.push("/shop")}
+          />
         </Group>
         <Group label="계정">
           <MenuRow label="로그아웃" onClick={() => void signOutUser()} />

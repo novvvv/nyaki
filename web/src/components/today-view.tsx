@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { useNyakiImage } from "@/lib/nyaki-skin";
 import { cn } from "@/lib/utils";
 
 /** 이번 주 하루 — 월요일부터 일요일까지. */
@@ -102,6 +103,7 @@ function WeekStrip({ week }: { week: WeekDay[] }) {
 /** 오늘 할 일 — 분홍 카드에 냐키가 서 있다. 다 하면 웃는 냐키로 바뀐다. */
 function DueCard({ due }: { due: number | null }) {
   const done = due === 0;
+  const nyaki = useNyakiImage();
   return (
     <section className="relative overflow-hidden rounded-3xl border border-ink/80 bg-[#f7e9e9] dark:bg-[#efd6d6]/15">
       <div className="relative z-10 flex min-h-[188px] flex-col justify-between p-5 pr-[44%]">
@@ -140,7 +142,7 @@ function DueCard({ due }: { due: number | null }) {
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={done ? "/nyaki_happy.webp" : "/nyaki_fighting.webp"}
+        src={nyaki(done ? "happy" : "fighting")}
         alt=""
         width={900}
         height={1206}
@@ -254,6 +256,7 @@ export function BookTile({ book }: { book: TodayBook }) {
 
 /** 단어 다운로드 — 앱 탭 바에 없어서 오늘 화면에서 들어간다. */
 function PackBanner() {
+  const nyaki = useNyakiImage();
   return (
     <Link
       href="/downloads"
@@ -263,7 +266,7 @@ function PackBanner() {
         <div aria-hidden className="h-1.5 bg-[#d9b4b4]" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/nyaki_angry.webp"
+          src={nyaki("angry")}
           alt=""
           width={900}
           height={1206}

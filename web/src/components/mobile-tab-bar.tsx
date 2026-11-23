@@ -41,6 +41,13 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M9 9.5V7a3 3 0 0 1 6 0v2.5" fill="none" />
     </>
   ),
+  "/shop": (
+    <>
+      <path d="M4.5 9.5 6 4.5h12l1.5 5z" />
+      <path d="M5.5 9.5V20h13V9.5" fill="none" />
+      <path d="M10 20v-5h4v5" />
+    </>
+  ),
   "/my": (
     <>
       <circle cx="12" cy="8.5" r="3.8" />
@@ -63,6 +70,7 @@ const WEB_TABS: Tab[] = navItems.map((item) => ({
     "/review": "테스트",
     "/word-books/overview": "통계",
     "/downloads": "다운로드",
+    "/shop": "상점",
     "/my": "마이",
   }[item.href],
 }));

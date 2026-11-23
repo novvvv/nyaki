@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { InstallButton } from "@/components/install-button";
 import { pictureWords, WordCard } from "@/components/word-card";
 import { useAppMode } from "@/lib/app-mode";
+import { useNyakiImage } from "@/lib/nyaki-skin";
 import { getPack } from "@/lib/packs";
 import { cn } from "@/lib/utils";
 
@@ -198,11 +199,12 @@ function CardDeck() {
  * 그래서 폰 안의 메인(좁은 폭)은 다시 폰을 그리지 않는다.
  */
 function CatOnly() {
+  const nyaki = useNyakiImage();
   return (
     <main className="flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center gap-10 px-6 py-16 md:flex-row md:gap-16">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/nyaki_normal.webp"
+        src={nyaki("normal")}
         alt="Nyaki 고양이"
         width={1792}
         height={2400}
@@ -228,6 +230,7 @@ export default function HomePage() {
   const { ready, user } = useAuth();
   const appMode = useAppMode();
   const router = useRouter();
+  const nyaki = useNyakiImage();
   // 앱에서는 메인(소개 · 미리보기) 대신 오늘 화면이 첫 화면이다.
   useEffect(() => {
     if (appMode && user) router.replace("/today");
@@ -287,7 +290,7 @@ export default function HomePage() {
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/nyaki_normal.webp"
+          src={nyaki("normal")}
           alt="Nyaki"
           width={1792}
           height={2400}

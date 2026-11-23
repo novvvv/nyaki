@@ -21,6 +21,7 @@ import {
   type RangePreset,
 } from "@/lib/stats";
 import { useAppMode } from "@/lib/app-mode";
+import { useNyakiImage } from "@/lib/nyaki-skin";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
@@ -277,6 +278,7 @@ function AppHeader({
   reviewedMonth: number;
   studyDays: number;
 }) {
+  const nyaki = useNyakiImage();
   return (
     <div className="mb-4">
       <h1 className="text-[22px] font-bold tracking-tight text-ink">통계</h1>
@@ -305,7 +307,7 @@ function AppHeader({
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/nyaki_happy.webp"
+          src={nyaki("happy")}
           alt=""
           width={900}
           height={1206}

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import { useNyakiImage } from "@/lib/nyaki-skin";
 import { safeNext } from "@/lib/safe-next";
 
 // 헤더·푸터를 뺀 높이만큼만 써서 화면 한가운데에 둔다.
@@ -42,6 +43,7 @@ function messageFor(error: unknown): string {
  * 방지 때문에 그 주소가 어느 방법으로 가입됐는지도 알려주지 않아 안내할 수 없다.
  */
 function LoginScreen() {
+  const nyaki = useNyakiImage();
   const { ready, user, configured, signIn } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,7 +77,7 @@ function LoginScreen() {
       <div className="flex w-full max-w-3xl flex-col items-center gap-8 break-keep sm:flex-row sm:items-center sm:gap-12">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/nyaki_normal.webp"
+          src={nyaki("normal")}
           alt="Nyaki"
           width={1792}
           height={2400}

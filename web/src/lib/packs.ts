@@ -42,7 +42,7 @@ export const PACKS: Pack[] = [
     source: "냐키 그림 단어장",
     tags: ["일본어", "JLPT"],
     updatedAt: "2026-11-20",
-    cover: "/nyaki_angry.webp",
+    cover: "/nyaki/default/angry.webp",
     words: [
       {
         term: "秋",

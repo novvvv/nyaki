@@ -26,6 +26,7 @@ import {
   type TableRow,
 } from "@/lib/cloze";
 import { useAppMode } from "@/lib/app-mode";
+import { useNyakiImage } from "@/lib/nyaki-skin";
 import { formatDelay, loadShowDelays, loadSkin, shuffled } from "@/lib/review";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
@@ -552,6 +553,7 @@ function AppTestHeader({
   loading: boolean;
   dueCount: number;
 }) {
+  const nyaki = useNyakiImage();
   return (
     <section className="relative w-full overflow-hidden rounded-3xl border border-ink/80 bg-[#f7e9e9] text-left dark:bg-[#efd6d6]/15">
       <div className="relative z-10 flex min-h-[150px] flex-col justify-center p-5 pr-[44%]">
@@ -570,7 +572,7 @@ function AppTestHeader({
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/nyaki_fighting.webp"
+        src={nyaki("fighting")}
         alt=""
         width={900}
         height={1206}
@@ -587,6 +589,7 @@ export default function ReviewPage() {
   const [phase, setPhase] = useState<Phase>("setup");
   // 앱에서는 카드 · 버튼을 둥근 앱 모양으로, 시작 화면 머리를 분홍 카드로 바꾼다.
   const appMode = useAppMode();
+  const nyaki = useNyakiImage();
   // 출제 개수. null은 "아직 안 건드림" = 고를 수 있는 걸 전부 낸다는 뜻이다.
   // 예전에는 "20"으로 고정해둬서 단어장을 더 켜도 20에 머물러 있었다.
   const [countText, setCountText] = useState<string | null>(null);
@@ -637,9 +640,9 @@ export default function ReviewPage() {
   useEffect(() => () => clearTimeout(moodTimer.current), []);
   // 표정 그림을 미리 받아둔다 — 처음 채점할 때 그림이 늦게 떠서 표정이 안 바뀌는 일이 없게.
   useEffect(() => {
-    for (const face of ["happy", "angry"])
-      new Image().src = `/nyaki_${face}.webp`;
-  }, []);
+    for (const face of ["happy", "angry"] as const)
+      new Image().src = nyaki(face);
+  }, [nyaki]);
 
   // 단어장이 하나뿐이면 고를 이유가 없어 선택 줄을 숨긴다.
   const showBookPicker = wordBooks.length > 1;
@@ -1084,7 +1087,7 @@ export default function ReviewPage() {
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/nyaki_${mood}.webp`}
+            src={nyaki(mood)}
             alt=""
             width={1792}
             height={2400}
@@ -1158,7 +1161,7 @@ export default function ReviewPage() {
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/nyaki_${mood}.webp`}
+          src={nyaki(mood)}
           alt=""
           width={1792}
           height={2400}
@@ -1180,7 +1183,7 @@ export default function ReviewPage() {
         {appMode ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src="/nyaki_happy.webp"
+            src={nyaki("happy")}
             alt=""
             width={900}
             height={1206}
@@ -1508,7 +1511,7 @@ export default function ReviewPage() {
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/nyaki_fighting.webp"
+        src={nyaki("fighting")}
         alt=""
         width={1792}
         height={2400}

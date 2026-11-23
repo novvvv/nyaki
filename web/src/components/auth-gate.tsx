@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
+import { useNyakiImage } from "@/lib/nyaki-skin";
 // import { PricingSection } from "@/components/pricing-section"; // 플랜 섹션 일단 주석처리
 
 function LandingScreen({
@@ -13,11 +14,12 @@ function LandingScreen({
   message?: string;
   children?: React.ReactNode;
 }) {
+  const nyaki = useNyakiImage();
   return (
     <main className="flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center px-6 py-16 text-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/nyaki_normal.webp"
+        src={nyaki("normal")}
         alt="Nyaki"
         width={1792}
         height={2400}

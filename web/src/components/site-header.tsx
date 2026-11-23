@@ -10,6 +10,7 @@ export const navItems = [
   { href: "/review", label: "테스트" },
   { href: "/word-books/overview", label: "전체 통계" },
   { href: "/downloads", label: "단어 다운로드" },
+  { href: "/shop", label: "상점" },
   { href: "/my", label: "마이페이지" },
 ] as const;
 

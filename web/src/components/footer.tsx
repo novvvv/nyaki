@@ -7,6 +7,7 @@ const links = [
     label: "블로그",
     external: true,
   },
+  { href: "/pricing", label: "요금제" },
   { href: "/terms", label: "이용약관" },
   { href: "/privacy", label: "개인정보처리방침" },
 ] as const;

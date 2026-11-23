@@ -10,6 +10,7 @@ import { pictureWords, WordCard } from "@/components/word-card";
 import { useAppMode } from "@/lib/app-mode";
 import { useNyakiImage } from "@/lib/nyaki-skin";
 import { getPack } from "@/lib/packs";
+import { PLANS } from "@/lib/pricing-plans";
 import { cn } from "@/lib/utils";
 
 // import { PricingSection } from "@/components/pricing-section"; // 플랜 섹션 일단 주석처리
@@ -198,6 +199,55 @@ function CardDeck() {
  * 좁은 화면에서는 폰을 빼고 다운로드 버튼만 둔다 — 폰 안에 폰을 넣지 않는다.
  * 그래서 폰 안의 메인(좁은 폭)은 다시 폰을 그리지 않는다.
  */
+/** 메인의 요금제 — 가격만 짧게, 자세한 건 /pricing. */
+function PlansTeaser() {
+  return (
+    <section className="mt-20">
+      <div className="flex flex-col items-center text-center">
+        <span className="rounded-full border border-taupe/60 px-2.5 py-0.5 text-[11px] font-medium text-ink/55">
+          준비 중
+        </span>
+        <h2 className="mt-3 text-lg font-semibold text-ink sm:text-xl">
+          요금제
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink/55">
+          기본 기능은 무료예요. 유료 플랜은 준비 중이고, 가격은 바뀔 수 있어요.
+        </p>
+      </div>
+      <ul className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+        {PLANS.map((plan) => (
+          <li
+            key={plan.id}
+            className={cn(
+              "rounded-2xl border px-4 py-4 text-center",
+              plan.highlight ? "border-ink/80" : "border-taupe/60",
+            )}
+          >
+            <p className="text-sm font-semibold text-ink">{plan.name}</p>
+            <p className="mt-1 text-ink">
+              <span className="text-xl font-bold tabular-nums">
+                {plan.price}
+              </span>
+              {plan.per ? (
+                <span className="ml-0.5 text-xs text-ink/45">{plan.per}</span>
+              ) : null}
+            </p>
+            <p className="mt-1 text-xs text-ink/45">{plan.summary}</p>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-6 text-center">
+        <Link
+          href="/pricing"
+          className="inline-flex rounded-full border border-ink px-4 py-2 text-sm font-medium text-ink transition hover:bg-subtle"
+        >
+          요금제 자세히 보기
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function CatOnly() {
   const nyaki = useNyakiImage();
   return (
@@ -220,6 +270,12 @@ function CatOnly() {
           />
         </div>
         <InstallButton />
+        <Link
+          href="/pricing"
+          className="text-sm text-ink/50 underline-offset-4 transition hover:text-ink hover:underline"
+        >
+          요금제 보기
+        </Link>
       </div>
     </main>
   );
@@ -332,7 +388,7 @@ export default function HomePage() {
         ))}
       </section>
 
-      {/* <PricingSection /> 플랜 섹션 일단 주석처리 */}
+      <PlansTeaser />
     </main>
   );
 }

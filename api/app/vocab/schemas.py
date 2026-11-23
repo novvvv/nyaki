@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
@@ -37,19 +37,32 @@ class WordBookPayload(BaseModel):
     is_deleted: bool = False
 
 
+# 단어 칸 길이 한도. 웹 입력칸(web/src/lib/word-limits.ts)과 같은 값이다.
+# 발음은 DB가 VARCHAR(500)이라 여기서 막지 않으면 DB에서 터져 500이 나갔다.
+TERM_MAX = 500
+PRONUNCIATION_MAX = 500
+MEANING_MAX = 2000
+EXAMPLE_MAX = 2000
+DESCRIPTION_MAX = 5000
+TAGS_MAX = 20
+TAG_MAX = 50
+
+
 class WordPayload(BaseModel):
     id: str = Field(min_length=1, max_length=80)
     word_book_id: str = Field(min_length=1, max_length=80)
-    term: str = Field(min_length=1, max_length=500)
-    meaning: str = Field(min_length=1)
-    pronunciation: str | None = None
-    description: str | None = None
-    example: str | None = None
-    example_meaning: str | None = None
+    term: str = Field(min_length=1, max_length=TERM_MAX)
+    meaning: str = Field(min_length=1, max_length=MEANING_MAX)
+    pronunciation: str | None = Field(default=None, max_length=PRONUNCIATION_MAX)
+    description: str | None = Field(default=None, max_length=DESCRIPTION_MAX)
+    example: str | None = Field(default=None, max_length=EXAMPLE_MAX)
+    example_meaning: str | None = Field(default=None, max_length=EXAMPLE_MAX)
     image_path: str | None = None
     memorization_status: Literal["unmemorized", "memorized"] = "unmemorized"
     is_bookmarked: bool = False
-    tags: list[str] = Field(default_factory=list)
+    tags: list[Annotated[str, Field(max_length=TAG_MAX)]] = Field(
+        default_factory=list, max_length=TAGS_MAX
+    )
     srs_ease_factor: float = 2.5
     srs_interval_days: int = 0
     srs_repetitions: int = 0

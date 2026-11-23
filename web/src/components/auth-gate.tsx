@@ -39,6 +39,8 @@ export function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
   // 약관 · 방침은 가입 전에 읽을 수 있어야 한다.
   if (pathname === "/terms" || pathname === "/privacy") return true;
+  // 요금제는 가입 전에 보고 고른다.
+  if (pathname === "/pricing") return true;
   return pathname === "/downloads" || /^\/downloads\/[^/]+$/.test(pathname);
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { FieldLabel, SubtleButton } from "@/components/ui";
@@ -57,12 +58,17 @@ export function WordPhotoField({
         <p className="mt-1.5 text-xs text-umber/55">
           단어마다 사진을 붙여 그림으로 외워요. 곧 프리미엄으로 열려요.
         </p>
-        <SubtleButton
-          disabled
-          className="mt-3 rounded-full px-3 py-1.5 text-xs"
-        >
-          준비 중
-        </SubtleButton>
+        <div className="mt-3 flex items-center gap-3">
+          <SubtleButton disabled className="rounded-full px-3 py-1.5 text-xs">
+            준비 중
+          </SubtleButton>
+          <Link
+            href="/pricing"
+            className="text-xs text-umber/55 underline-offset-2 transition hover:text-ink hover:underline"
+          >
+            요금제 보기
+          </Link>
+        </div>
       </div>
     );
   }

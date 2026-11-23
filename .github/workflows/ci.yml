@@ -1,4 +1,5 @@
-# 세 곳(서버·웹·앱)을 한 번에 검증한다.
+# 서버 · 웹을 한 번에 검증한다. Flutter 앱(app/)은 더 이상 개발하지 않아서 뺐다
+# (2026-11-23) — 새 Flutter 버전의 경고로 매번 실패만 했다.
 #
 # 배포(deploy-api.yml)는 이 중 서버 테스트를 다시 불러서 통과해야만 진행된다.
 # 무엇을 어디서 보는지는 docs/archive/TESTING.md에 정리돼 있다.
@@ -43,26 +44,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-  app:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: app
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Install
-        run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze lib test
-
-      - name: Tests
-        run: flutter test

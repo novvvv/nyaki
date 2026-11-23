@@ -35,6 +35,8 @@ function LandingScreen({
 export function isPublicPath(pathname: string): boolean {
   // 메인은 소개(랜딩)라 누구나 본다. 무엇인지 알아야 가입한다.
   if (pathname === "/") return true;
+  // 약관 · 방침은 가입 전에 읽을 수 있어야 한다.
+  if (pathname === "/terms" || pathname === "/privacy") return true;
   return pathname === "/downloads" || /^\/downloads\/[^/]+$/.test(pathname);
 }
 

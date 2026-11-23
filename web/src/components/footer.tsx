@@ -7,6 +7,8 @@ const links = [
     label: "블로그",
     external: true,
   },
+  { href: "/terms", label: "이용약관" },
+  { href: "/privacy", label: "개인정보처리방침" },
 ] as const;
 
 export function Footer() {

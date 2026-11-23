@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { Badge, PageHeader, SubtleButton } from "@/components/ui";
+import { pictureWords, WordCard } from "@/components/word-card";
 import { getPack, LEVEL_TONE } from "@/lib/packs";
 import { cn } from "@/lib/utils";
 
@@ -22,12 +23,19 @@ export default function PackDetailPage() {
     return (
       <main className="mx-auto w-full max-w-7xl px-8 py-14 lg:px-12">
         <PageHeader title="단어 묶음을 찾을 수 없습니다" />
-        <Link href="/downloads" className="text-sm text-umber/55 hover:text-ink">
+        <Link
+          href="/downloads"
+          className="text-sm text-umber/55 hover:text-ink"
+        >
           단어 다운로드로 돌아가기
         </Link>
       </main>
     );
   }
+
+  // 그림이 있는 단어는 카드로, 없는 단어는 예전처럼 줄로 보여 준다.
+  const cards = pictureWords(pack.words);
+  const plain = pack.words.filter((word) => !word.image);
 
   return (
     <main className="mx-auto w-full max-w-7xl px-8 py-14 lg:px-12">
@@ -75,39 +83,49 @@ export default function PackDetailPage() {
         ))}
       </div>
 
-      <ul className="divide-y divide-taupe/25 border-t border-taupe/25">
-        {pack.words.map((word, index) => (
-          <li
-            key={word.term}
-            className="flex items-center gap-6 py-3.5 text-sm"
-          >
-            <span className="w-8 shrink-0 text-xs tabular-nums text-ink/25">
-              {index + 1}
-            </span>
-            <span className="w-40 shrink-0 font-medium text-ink">
-              {word.term}
-            </span>
-            <span className="w-40 shrink-0 text-xs text-umber/45">
-              {word.reading}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-umber/70">
-              {word.meaning}
-            </span>
-            <span className="w-8 shrink-0 text-right">
-              {word.level ? (
-                <span
-                  className={cn(
-                    "rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
-                    LEVEL_TONE[word.level],
-                  )}
-                >
-                  {word.level}
-                </span>
-              ) : null}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {cards.length > 0 ? (
+        <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
+          {cards.map((word, index) => (
+            <WordCard key={word.term} word={word} no={index + 1} />
+          ))}
+        </div>
+      ) : null}
+
+      {plain.length > 0 ? (
+        <ul className="divide-y divide-taupe/25 border-t border-taupe/25">
+          {plain.map((word, index) => (
+            <li
+              key={word.term}
+              className="flex items-center gap-6 py-3.5 text-sm"
+            >
+              <span className="w-8 shrink-0 text-xs tabular-nums text-ink/25">
+                {index + 1}
+              </span>
+              <span className="w-40 shrink-0 font-medium text-ink">
+                {word.term}
+              </span>
+              <span className="w-40 shrink-0 text-xs text-umber/45">
+                {word.reading}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-umber/70">
+                {word.meaning}
+              </span>
+              <span className="w-8 shrink-0 text-right">
+                {word.level ? (
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+                      LEVEL_TONE[word.level],
+                    )}
+                  >
+                    {word.level}
+                  </span>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </main>
   );
 }

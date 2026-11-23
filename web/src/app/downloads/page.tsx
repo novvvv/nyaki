@@ -1,133 +1,117 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 
-import { Badge, Card, PageHeader, TextInput } from "@/components/ui";
-import { LEVEL_TONE, PACKS, type JlptLevel, type Pack } from "@/lib/packs";
+import { PageHeader } from "@/components/ui";
+import { PACKS, type Pack } from "@/lib/packs";
 import { cn } from "@/lib/utils";
 import { useVocab } from "@/lib/vocab-store";
 
-const CATEGORIES = ["전체", "일본어"] as const;
-
-/** 레벨 붙은 단어들의 평균(3.3이면 N3.3). 레벨이 하나도 없으면 undefined. */
-function averageLevel(pack: Pack) {
-  const levels = pack.words.flatMap((word) =>
-    word.level ? [Number(word.level.slice(1))] : [],
+/** 팩 위아래의 톱니 모양 봉합선. */
+function Seal({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "h-4 bg-[#d9b4b4] bg-[repeating-linear-gradient(90deg,rgba(0,0,0,0.10)_0_2px,transparent_2px_6px)]",
+        className,
+      )}
+    />
   );
-  if (levels.length === 0) return undefined;
-  return levels.reduce((total, level) => total + level, 0) / levels.length;
 }
 
-function PackCard({ pack, imported }: { pack: Pack; imported: boolean }) {
-  const average = averageLevel(pack);
-
+/**
+ * 카드 팩 겉면 — 봉합선 · 냐키 그림 · 레벨 · 장수. 마우스를 올리면 살짝 들린다.
+ * 실물 포장처럼 테마와 상관없이 같은 색이다.
+ */
+function PackFace({ pack }: { pack: Pack }) {
+  const level = pack.tags.includes("JLPT") ? (pack.words[0]?.level ?? "") : "";
   return (
-    <Link href={`/downloads/${pack.id}`} className="group block">
-      <Card
-        className={cn(
-          "flex h-full flex-col gap-4 transition group-hover:border-taupe",
-          // 이미 담은 묶음은 카드 전체를 옅은 회색으로 칠한다. 다시 담는 건
-          // 막지 않으니 눌러서 들어갈 수는 있다.
-          imported ? "bg-subtle/60" : "bg-card",
-        )}
-      >
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-ink">{pack.title}</p>
-          <p className="mt-1 truncate text-xs text-umber/45">{pack.source}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {pack.tags.map((tag) => (
-            <Badge key={tag}>{tag}</Badge>
-          ))}
-          <span className="text-xs tabular-nums text-umber/45">
-            {pack.words.length}개
+    <div className="relative w-[200px] overflow-hidden rounded-xl shadow-[0_18px_40px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/10 transition duration-300 group-hover:-translate-y-1.5 group-hover:rotate-[-2deg] sm:w-[230px]">
+      <Seal />
+      <div className="relative flex aspect-[5/6] flex-col items-center bg-[linear-gradient(160deg,#f7e9e9_0%,#efd6d6_55%,#e6c3c3_100%)] px-4 pt-4">
+        {/* 포일처럼 비스듬히 지나가는 빛 */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.55)_45%,transparent_60%)] opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+        />
+        <div className="relative flex w-full items-start justify-between">
+          <span className="font-mono text-xs text-neutral-700">/\.u./\</span>
+          <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-neutral-700">
+            {pack.words.length}장
           </span>
         </div>
+        <p className="relative mt-2 text-3xl font-black tracking-tight text-neutral-900">
+          JLPT {level}
+        </p>
+        <p className="relative text-[11px] font-medium tracking-[0.25em] text-neutral-600">
+          PICTURE CARDS
+        </p>
+        {pack.cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={pack.cover}
+            alt=""
+            width={1792}
+            height={2400}
+            className="relative mt-auto block h-auto w-[78%]"
+          />
+        ) : null}
+      </div>
+      <Seal />
+    </div>
+  );
+}
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-taupe/30 pt-3">
-          <span className="text-xs text-ink/30">{pack.updatedAt} 업데이트</span>
-          {average !== undefined ? (
-            <span className="flex items-center gap-1.5 text-xs text-umber/45">
-              평균 난이도
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
-                  // 색은 반올림한 레벨을 따른다 — 3.3이면 N3.
-                  LEVEL_TONE[`N${Math.round(average)}` as JlptLevel],
-                )}
-              >
-                N{average.toFixed(1)}
-              </span>
-            </span>
+function PackItem({ pack, imported }: { pack: Pack; imported: boolean }) {
+  return (
+    <Link
+      href={`/downloads/${pack.id}`}
+      className="group flex flex-col items-center gap-6 rounded-2xl border border-taupe/40 p-6 transition hover:border-taupe sm:flex-row sm:items-center sm:gap-10 sm:p-8"
+    >
+      <PackFace pack={pack} />
+      <div className="min-w-0 text-center sm:text-left">
+        <p className="text-lg font-semibold text-ink">{pack.title}</p>
+        <p className="mt-1 text-sm text-umber/55">{pack.source}</p>
+        <p className="mt-4 text-sm leading-relaxed text-ink/60">
+          단어마다 그림 한 장. 장면으로 먼저 기억하는 N5 기본 단어예요.
+          <br />
+          쇼츠에 공개되는 카드가 생길 때마다 이 팩에 계속 추가돼요.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+          <span className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-cream transition group-hover:bg-ink/85">
+            팩 열어보기
+          </span>
+          {imported ? (
+            <span className="text-xs text-umber/45">이미 담은 팩이에요</span>
           ) : null}
         </div>
-      </Card>
+        <p className="mt-4 text-xs text-ink/30">{pack.updatedAt} 업데이트</p>
+      </div>
     </Link>
   );
 }
 
 export default function DownloadsPage() {
-  const [category, setCategory] = useState<string>("전체");
-  const [query, setQuery] = useState("");
   const { packImports } = useVocab();
   const importedPackIds = new Set(packImports.map((record) => record.packId));
 
-  const packs = PACKS.filter((pack) => {
-    const byCategory = category === "전체" || pack.tags.includes(category);
-    const byQuery =
-      !query.trim() || pack.title.toLowerCase().includes(query.toLowerCase());
-    return byCategory && byQuery;
-  });
-
   return (
-    <main className="mx-auto w-full max-w-7xl px-8 py-14 lg:px-12">
+    <main className="mx-auto w-full max-w-4xl break-keep px-8 py-14 lg:px-12">
       <PageHeader
         title="단어 다운로드"
-        description="블로그 강의에서 정리한 단어 묶음입니다. 눌러서 단어를 확인하세요."
-        actions={
-          <TextInput
-            className="w-48 py-1.5"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="단어장 검색"
-          />
-        }
+        description="냐키가 만든 단어 팩이에요. 열어서 카드를 보고 내 단어장에 담아 보세요."
       />
 
-      <div className="mb-8 flex flex-wrap items-center gap-1.5">
-        {CATEGORIES.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setCategory(item)}
-            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs transition ${
-              category === item
-                ? "bg-ink text-cream"
-                : "text-umber/55 hover:bg-subtle hover:text-ink"
-            }`}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {packs.map((pack) => (
-          <PackCard
+      <div className="grid gap-6">
+        {PACKS.map((pack) => (
+          <PackItem
             key={pack.id}
             pack={pack}
             imported={importedPackIds.has(pack.id)}
           />
         ))}
       </div>
-
-      {packs.length === 0 ? (
-        <p className="py-16 text-center text-sm text-umber/45">
-          조건에 맞는 단어장이 없습니다.
-        </p>
-      ) : null}
     </main>
   );
 }

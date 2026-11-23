@@ -29,6 +29,8 @@ migrate_working_dir/
 
 # macOS custom folder icon
 Icon?
+# 위 규칙이 대소문자를 안 가리는 macOS에서 icons 폴더까지 걸러서 — 웹 앱 아이콘은 넣는다.
+!web/public/icons/
 
 # Private product notes
 /PRODUCT_DIRECTION.md

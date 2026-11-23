@@ -100,7 +100,14 @@ async function request<T>(
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(body?.detail ?? "서버 요청에 실패했습니다.");
+    // 422(입력 검사)는 detail이 목록이다 — 그대로 넣으면 "[object Object]"가 뜬다.
+    const detail =
+      typeof body?.detail === "string"
+        ? body.detail
+        : response.status === 422
+          ? "입력한 내용이 너무 길거나 형식이 맞지 않아요."
+          : null;
+    throw new Error(detail ?? "서버 요청에 실패했습니다.");
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

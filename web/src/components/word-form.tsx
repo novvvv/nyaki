@@ -17,6 +17,7 @@ import { WordPhotoField, type PhotoChange } from "@/components/word-photo-field"
 import { removeWordPhoto, uploadWordPhoto } from "@/lib/api-client";
 import { WORD_PAGE_SIZE } from "@/lib/constants";
 import { PHOTO_MESSAGES } from "@/lib/photo";
+import { WORD_LIMITS } from "@/lib/word-limits";
 import { activeWords, useVocab } from "@/lib/vocab-store";
 import type { WordInput } from "@/lib/types";
 
@@ -50,7 +51,11 @@ export function WordForm({ mode }: WordFormProps) {
   const [tagsText, setTagsText] = useState(
     () => (existing?.tags ?? []).join(", "),
   );
-  const [errors, setErrors] = useState<{ term?: string; meaning?: string }>({});
+  const [errors, setErrors] = useState<{
+    term?: string;
+    meaning?: string;
+    tags?: string;
+  }>({});
   const [photo, setPhoto] = useState<PhotoChange>(null);
   const [saving, setSaving] = useState(false);
 
@@ -70,22 +75,33 @@ export function WordForm({ mode }: WordFormProps) {
     );
   }
 
+  function splitTags(text: string) {
+    return text
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+
   function validate() {
+    const tags = splitTags(tagsText);
     const next = {
       term: form.term.trim() ? undefined : "단어를 입력해 주세요",
       meaning: form.meaning.trim() ? undefined : "의미를 입력해 주세요",
+      tags:
+        tags.length > WORD_LIMITS.tags
+          ? `태그는 ${WORD_LIMITS.tags}개까지 넣을 수 있어요`
+          : tags.some((tag) => tag.length > WORD_LIMITS.tag)
+            ? `태그 하나는 ${WORD_LIMITS.tag}자까지예요`
+            : undefined,
     };
     setErrors(next);
-    return !next.term && !next.meaning;
+    return !next.term && !next.meaning && !next.tags;
   }
 
   async function handleSubmit() {
     if (!book || !validate()) return;
 
-    const tags = tagsText
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
+    const tags = splitTags(tagsText);
     const payload: WordInput = { ...form, tags };
 
     setSaving(true);
@@ -182,6 +198,7 @@ export function WordForm({ mode }: WordFormProps) {
           <TextInput
             value={form.term}
             onChange={(e) => setField("term", e.target.value)}
+            maxLength={WORD_LIMITS.term}
             placeholder="cat"
             autoFocus
           />
@@ -195,6 +212,7 @@ export function WordForm({ mode }: WordFormProps) {
           <TextInput
             value={form.meaning}
             onChange={(e) => setField("meaning", e.target.value)}
+            maxLength={WORD_LIMITS.meaning}
             placeholder="고양이"
           />
           {errors.meaning ? (
@@ -207,6 +225,7 @@ export function WordForm({ mode }: WordFormProps) {
           <TextInput
             value={form.pronunciation ?? ""}
             onChange={(e) => setField("pronunciation", e.target.value)}
+            maxLength={WORD_LIMITS.pronunciation}
             placeholder="/kæt/"
           />
         </div>
@@ -216,6 +235,7 @@ export function WordForm({ mode }: WordFormProps) {
           <TextArea
             value={form.description ?? ""}
             onChange={(e) => setField("description", e.target.value)}
+            maxLength={WORD_LIMITS.description}
             placeholder="추가 메모"
           />
         </div>
@@ -225,6 +245,7 @@ export function WordForm({ mode }: WordFormProps) {
           <TextArea
             value={form.example ?? ""}
             onChange={(e) => setField("example", e.target.value)}
+            maxLength={WORD_LIMITS.example}
             placeholder="I have a cat."
           />
         </div>
@@ -234,6 +255,7 @@ export function WordForm({ mode }: WordFormProps) {
           <TextArea
             value={form.exampleMeaning ?? ""}
             onChange={(e) => setField("exampleMeaning", e.target.value)}
+            maxLength={WORD_LIMITS.exampleMeaning}
             placeholder="나는 고양이가 있다."
           />
         </div>
@@ -251,6 +273,9 @@ export function WordForm({ mode }: WordFormProps) {
             onChange={(e) => setTagsText(e.target.value)}
             placeholder="N3, 조사 (쉼표로 구분)"
           />
+          {errors.tags ? (
+            <p className="mt-1 text-xs text-red-700">{errors.tags}</p>
+          ) : null}
         </div>
 
         <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-umber/60">

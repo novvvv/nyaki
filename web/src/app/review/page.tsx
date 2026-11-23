@@ -1394,6 +1394,22 @@ export default function ReviewPage() {
             {loading ? "불러오는 중…" : "시작하기"}
             {loading ? null : <span aria-hidden>→</span>}
           </PrimaryButton>
+
+          {/* 연습 모드 — 채점 없이 넘겨 보기. 고른 단어장을 그대로 넘긴다(안 골랐으면 전체). */}
+          <Link
+            href={
+              showBookPicker && selected.length > 0
+                ? `/review/practice?books=${selected.map(encodeURIComponent).join(",")}`
+                : "/review/practice"
+            }
+            className={cn(
+              "mt-3 text-sm text-ink/50 underline-offset-4 transition hover:text-ink hover:underline",
+              appMode &&
+                "mt-2.5 w-full rounded-full border border-taupe/70 py-3 text-center font-medium text-ink no-underline hover:border-ink/40 hover:no-underline",
+            )}
+          >
+            연습 모드 — 기록 없이 넘겨 보기
+          </Link>
         </div>
 
         {/* 단어장 — 칩을 늘어놓으면 개수가 늘수록 줄이 접힌다. 세로 목록이 읽기 쉽다. */}

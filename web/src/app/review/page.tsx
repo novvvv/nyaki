@@ -951,6 +951,8 @@ export default function ReviewPage() {
   const delays = current ? delaysFor(current) : { again: "", good: "" };
 
   if (phase === "session" && current) {
+    // PC에서 사진이 있는 단어 카드는 사진을 왼쪽에 크게, 글을 오른쪽에 둔다.
+    const sideBySide = !appMode && !current.cloze && !!current.word?.photoUrl;
     return (
       // 노트 스킨은 화면 전체가 종이다. 바깥을 칠해야 가운데 단만 뜨지 않는다.
       // 큰 화면에서는 캐릭터가 카드 오른쪽에 크게 선다.
@@ -964,6 +966,8 @@ export default function ReviewPage() {
           className={cn(
             SCREEN,
             "flex w-full max-w-xl flex-col px-6 py-10 lg:px-0",
+            // PC는 카드를 조금 넓게 — 사진을 옆에 놓을 자리.
+            !appMode && "md:max-w-2xl",
           )}
         >
           <div className="mb-6 flex justify-end gap-2">
@@ -1033,9 +1037,11 @@ export default function ReviewPage() {
               onClick={() => setFlipped((prev) => !prev)}
               className={cn(
                 "flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center",
-                // 앱에서는 손에 쥔 단어 카드처럼 — 테두리와 분홍 그림자.
-                appMode &&
-                  "my-5 rounded-3xl border border-ink/80 bg-cream px-5 py-8 shadow-[0_8px_0_-1px_#efd6d6] dark:shadow-[0_8px_0_-1px_rgba(239,214,214,0.3)]",
+                // 손에 쥔 단어 카드처럼 — 테두리와 분홍 그림자. 앱은 여백만 조금 좁다.
+                "my-6 px-8 py-10",
+                "rounded-3xl border border-ink/80 bg-cream shadow-[0_8px_0_-1px_#efd6d6] dark:shadow-[0_8px_0_-1px_rgba(239,214,214,0.3)]",
+                appMode && "my-5 px-5 py-8",
+                sideBySide && "md:flex-row md:gap-10",
               )}
             >
               {/* 카드 사진(유료) — 앞면 · 뒷면 모두 같은 자리에 둔다. */}
@@ -1044,64 +1050,75 @@ export default function ReviewPage() {
                 <img
                   src={current.word.photoUrl}
                   alt=""
-                  className="max-h-52 w-auto max-w-full rounded-2xl object-contain"
+                  className={cn(
+                    "max-h-52 w-auto max-w-full rounded-2xl object-contain",
+                    sideBySide &&
+                      "md:max-h-[26rem] md:w-[46%] md:max-w-none md:shrink-0",
+                  )}
                 />
               ) : null}
-              {/* div다 — 빈칸 노트에 표가 들어가면 p 안에 표를 둘 수 없다. */}
               <div
                 className={cn(
-                  "font-semibold tracking-tight text-ink",
-                  // 줄바꿈을 적은 대로 살린다. 빈칸 노트는 여러 줄로 쓰는 일이 많다.
-                  "whitespace-pre-wrap",
-                  // 길이에 따라 크기를 줄인다 — 문단을 단어와 같은 크기로 두면
-                  // 화면을 넘긴다.
-                  current.cloze
-                    ? clozeLength(current) > 160
-                      ? "text-base leading-loose"
-                      : clozeLength(current) > 60
-                        ? "text-lg leading-relaxed"
-                        : "text-2xl leading-relaxed"
-                    : "text-4xl",
+                  "flex flex-col items-center gap-6",
+                  sideBySide && "md:min-w-0 md:flex-1",
                 )}
               >
-                {current.cloze ? (
-                  <ClozeText
-                    segments={current.cloze.segments}
-                    revealed={flipped}
-                  />
-                ) : (
-                  front(current)
+                {/* div다 — 빈칸 노트에 표가 들어가면 p 안에 표를 둘 수 없다. */}
+                <div
+                  className={cn(
+                    "font-semibold tracking-tight text-ink",
+                    // 줄바꿈을 적은 대로 살린다. 빈칸 노트는 여러 줄로 쓰는 일이 많다.
+                    "whitespace-pre-wrap",
+                    // 길이에 따라 크기를 줄인다 — 문단을 단어와 같은 크기로 두면
+                    // 화면을 넘긴다.
+                    current.cloze
+                      ? clozeLength(current) > 160
+                        ? "text-base leading-loose"
+                        : clozeLength(current) > 60
+                          ? "text-lg leading-relaxed"
+                          : "text-2xl leading-relaxed"
+                      : "text-4xl",
+                  )}
+                >
+                  {current.cloze ? (
+                    <ClozeText
+                      segments={current.cloze.segments}
+                      revealed={flipped}
+                    />
+                  ) : (
+                    front(current)
+                  )}
+                </div>
+
+                {flipped && !current.cloze ? (
+                  <div className="space-y-3">
+                    {current.word?.pronunciation ? (
+                      <p className="text-base text-ink/45">
+                        {current.word.pronunciation}
+                      </p>
+                    ) : null}
+                    <p className="text-2xl text-ink">{back(current)}</p>
+                    {current.word?.example ? (
+                      <p className="pt-4 text-base text-ink/55">
+                        {current.word.example}
+                      </p>
+                    ) : null}
+                    {current.word?.exampleMeaning ? (
+                      <p className="text-sm text-ink/40">
+                        {current.word.exampleMeaning}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : flipped ? null : (
+                  <p className="text-xs text-ink/25">
+                    {current.cloze
+                      ? "눌러서 답 보기"
+                      : current.kind === "recall"
+                        ? "눌러서 단어 보기"
+                        : "눌러서 뜻 보기"}
+                  </p>
                 )}
               </div>
-
-              {flipped && !current.cloze ? (
-                <div className="space-y-3">
-                  {current.word?.pronunciation ? (
-                    <p className="text-base text-ink/45">
-                      {current.word.pronunciation}
-                    </p>
-                  ) : null}
-                  <p className="text-2xl text-ink">{back(current)}</p>
-                  {current.word?.example ? (
-                    <p className="pt-4 text-base text-ink/55">
-                      {current.word.example}
-                    </p>
-                  ) : null}
-                  {current.word?.exampleMeaning ? (
-                    <p className="text-sm text-ink/40">
-                      {current.word.exampleMeaning}
-                    </p>
-                  ) : null}
-                </div>
-              ) : flipped ? null : (
-                <p className="text-xs text-ink/25">
-                  {current.cloze
-                    ? "눌러서 답 보기"
-                    : current.kind === "recall"
-                      ? "눌러서 단어 보기"
-                      : "눌러서 뜻 보기"}
-                </p>
-              )}
             </button>
           )}
 

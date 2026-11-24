@@ -73,6 +73,8 @@ function PracticeScreen() {
   const total = deck.length;
   const done = total > 0 && index >= total;
   const card = done ? undefined : deck[index];
+  // PC에서 사진이 있으면 사진을 왼쪽에 크게, 글을 오른쪽에 둔다(테스트 카드와 같다).
+  const sideBySide = !appMode && !!card?.photoUrl;
 
   const go = useCallback(
     (step: 1 | -1) => {
@@ -162,6 +164,7 @@ function PracticeScreen() {
       className={cn(
         SCREEN,
         "mx-auto flex w-full max-w-xl flex-col px-6 py-10",
+        !appMode && "md:max-w-2xl",
         appMode && "py-5",
       )}
     >
@@ -192,9 +195,12 @@ function PracticeScreen() {
           type="button"
           onClick={() => setFlipped((prev) => !prev)}
           className={cn(
-            "my-6 flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center",
-            appMode &&
-              "my-5 rounded-3xl border border-ink/80 bg-cream px-5 py-8 shadow-[0_8px_0_-1px_#efd6d6] dark:shadow-[0_8px_0_-1px_rgba(239,214,214,0.3)]",
+            "flex flex-1 cursor-pointer flex-col items-center justify-center gap-6 text-center",
+            // 테스트 카드와 같은 모양 — 앱은 여백만 조금 좁다.
+            "my-6 px-8 py-10",
+            "rounded-3xl border border-ink/80 bg-cream shadow-[0_8px_0_-1px_#efd6d6] dark:shadow-[0_8px_0_-1px_rgba(239,214,214,0.3)]",
+            appMode && "my-5 px-5 py-8",
+            sideBySide && "md:flex-row md:gap-10",
           )}
         >
           {card.photoUrl ? (
@@ -202,30 +208,41 @@ function PracticeScreen() {
             <img
               src={card.photoUrl}
               alt=""
-              className="max-h-52 w-auto max-w-full rounded-2xl object-contain"
+              className={cn(
+                "max-h-52 w-auto max-w-full rounded-2xl object-contain",
+                sideBySide &&
+                  "md:max-h-[26rem] md:w-[46%] md:max-w-none md:shrink-0",
+              )}
             />
           ) : null}
-          <div className="whitespace-pre-wrap text-4xl font-semibold tracking-tight text-ink">
-            {card.term}
-          </div>
-          {flipped ? (
-            <div className="space-y-3">
-              {card.pronunciation ? (
-                <p className="text-base text-ink/45">{card.pronunciation}</p>
-              ) : null}
-              <p className="whitespace-pre-wrap text-2xl text-ink">
-                {card.meaning}
-              </p>
-              {card.example ? (
-                <p className="pt-4 text-base text-ink/55">{card.example}</p>
-              ) : null}
-              {card.exampleMeaning ? (
-                <p className="text-sm text-ink/40">{card.exampleMeaning}</p>
-              ) : null}
+          <div
+            className={cn(
+              "flex flex-col items-center gap-6",
+              sideBySide && "md:min-w-0 md:flex-1",
+            )}
+          >
+            <div className="whitespace-pre-wrap text-4xl font-semibold tracking-tight text-ink">
+              {card.term}
             </div>
-          ) : (
-            <p className="text-xs text-ink/25">눌러서 뜻 보기</p>
-          )}
+            {flipped ? (
+              <div className="space-y-3">
+                {card.pronunciation ? (
+                  <p className="text-base text-ink/45">{card.pronunciation}</p>
+                ) : null}
+                <p className="whitespace-pre-wrap text-2xl text-ink">
+                  {card.meaning}
+                </p>
+                {card.example ? (
+                  <p className="pt-4 text-base text-ink/55">{card.example}</p>
+                ) : null}
+                {card.exampleMeaning ? (
+                  <p className="text-sm text-ink/40">{card.exampleMeaning}</p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-xs text-ink/25">눌러서 뜻 보기</p>
+            )}
+          </div>
         </button>
       ) : (
         <div className="my-10 flex flex-1 flex-col items-center justify-center gap-2 text-center">

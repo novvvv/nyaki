@@ -43,44 +43,72 @@ export interface Pack {
   words: PackWord[];
 }
 
-// J-POP 가사 묶음은 내렸다 — 나중에 다시 올린다.
-export const PACKS: Pack[] = [
+/**
+ * 랜딩에 펼쳐 보이는 그림 카드 3장. 그림 팩은 내렸지만 랜딩 카드는 그대로 쓴다.
+ * 그림 단어를 다시 팩으로 올릴 때 여기서 옮겨 가면 된다.
+ */
+export const LANDING_CARDS: PackWord[] = [
   {
-    id: "jlpt-n5-picture",
-    title: "JLPT N5 그림 단어 팩",
-    source: "냐키 그림 단어장",
-    tags: ["일본어", "JLPT"],
-    updatedAt: "2026-11-20",
-    cover: "/nyaki/default/angry.webp",
-    description:
-      "단어마다 그림 한 장. 장면으로 먼저 기억하는 N5 기본 단어예요. 쇼츠에 공개되는 카드가 생길 때마다 이 팩에 계속 추가돼요.",
-    face: { label: "PICTURE CARDS" },
-    words: [
-      {
-        term: "秋",
-        reading: "あき",
-        meaning: "가을",
-        level: "N5",
-        image: { src: "/cards/N5_1_aki.webp", width: 720, height: 793 },
-      },
-      {
-        term: "朝",
-        reading: "あさ",
-        meaning: "아침",
-        level: "N5",
-        image: { src: "/cards/N5_2_asa.webp", width: 720, height: 965 },
-      },
-      {
-        term: "朝ご飯",
-        reading: "あさごはん",
-        meaning: "아침밥",
-        level: "N5",
-        image: { src: "/cards/N5_3_asagohang.webp", width: 440, height: 500 },
-      },
-    ],
+    term: "秋",
+    reading: "あき",
+    meaning: "가을",
+    level: "N5",
+    image: { src: "/cards/N5_1_aki.webp", width: 720, height: 793 },
   },
-  ...KANJI_N5_PACKS,
+  {
+    term: "朝",
+    reading: "あさ",
+    meaning: "아침",
+    level: "N5",
+    image: { src: "/cards/N5_2_asa.webp", width: 720, height: 965 },
+  },
+  {
+    term: "朝ご飯",
+    reading: "あさごはん",
+    meaning: "아침밥",
+    level: "N5",
+    image: { src: "/cards/N5_3_asagohang.webp", width: 440, height: 500 },
+  },
 ];
+
+// J-POP 가사 묶음과 N5 그림 단어 팩은 내렸다 — 나중에 다시 올린다.
+// 팩은 덱 안에만 있다. 목록에는 덱이 나오고, 덱을 열면 팩이 나온다.
+export const PACKS: Pack[] = [...KANJI_N5_PACKS];
+
+/** 여러 팩을 묶은 덱. 덱 자체는 담지 않고, 안의 팩을 하나씩 담는다. */
+export interface Deck {
+  id: string;
+  title: string;
+  source: string;
+  updatedAt: string;
+  description: string;
+  cover?: string;
+  face: { label: string };
+  packs: Pack[];
+}
+
+export const DECKS: Deck[] = [
+  {
+    id: "jlpt-n5-kanji",
+    title: "N5 한자 덱",
+    source: "상용한자 · JLPT N5 수준",
+    updatedAt: "2026-11-26",
+    description:
+      "상용한자에서 N5 수준 한자를 골라 주제별 팩으로 나눴어요. 훈음 · 음독 · 훈독과 예시 단어까지 카드에 담겨요.",
+    cover: "/nyaki/default/angry.webp",
+    face: { label: "KANJI" },
+    packs: KANJI_N5_PACKS,
+  },
+];
+
+export function getDeck(id: string) {
+  return DECKS.find((deck) => deck.id === id);
+}
+
+/** 이 팩이 들어 있는 덱. */
+export function deckOf(packId: string) {
+  return DECKS.find((deck) => deck.packs.some((pack) => pack.id === packId));
+}
 
 export function getPack(id: string) {
   return PACKS.find((pack) => pack.id === id);

@@ -5,16 +5,53 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import { PackTile } from "@/components/pack-face";
 import { Badge, PageHeader, SubtleButton } from "@/components/ui";
 import { pictureWords, WordCard } from "@/components/word-card";
-import { getPack, LEVEL_TONE } from "@/lib/packs";
+import { deckOf, type Deck, getDeck, getPack, LEVEL_TONE } from "@/lib/packs";
 import { cn } from "@/lib/utils";
+import { useVocab } from "@/lib/vocab-store";
 
-export default function PackDetailPage() {
+/** 덱 — 안의 팩들을 나란히 보여 준다. 덱 자체는 담지 않는다. */
+function DeckView({ deck }: { deck: Deck }) {
+  const { packImports } = useVocab();
+  const importedPackIds = new Set(packImports.map((record) => record.packId));
+  const count = deck.packs.reduce((sum, pack) => sum + pack.words.length, 0);
+  return (
+    <main className="mx-auto w-full max-w-4xl break-keep px-8 py-14 lg:px-12">
+      <div className="mb-7 text-xs text-umber/40">
+        <Link href="/downloads" className="transition-colors hover:text-ink">
+          단어 다운로드
+        </Link>
+      </div>
+      <PageHeader
+        title={deck.title}
+        description={`${deck.source} · ${count}자 · ${deck.packs.length}개 팩 · ${deck.updatedAt} 업데이트`}
+      />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {deck.packs.map((pack) => (
+          <PackTile
+            key={pack.id}
+            pack={pack}
+            imported={importedPackIds.has(pack.id)}
+          />
+        ))}
+      </div>
+    </main>
+  );
+}
+
+export default function DownloadDetailPage() {
+  const params = useParams<{ id: string }>();
+  const deck = getDeck(params.id);
+  return deck ? <DeckView deck={deck} /> : <PackView id={params.id} />;
+}
+
+function PackView({ id }: { id: string }) {
   const router = useRouter();
   const { user } = useAuth();
-  const params = useParams<{ id: string }>();
-  const pack = getPack(params.id);
+  const pack = getPack(id);
+  const deck = deckOf(id);
   // 로그인 전에 담기를 누르면 바로 넘기지 않고 안내부터 한다 — 둘러보던 흐름을
   // 끊지 않고, 로그인할지는 사용자가 고른다.
   const [loginHint, setLoginHint] = useState(false);
@@ -43,6 +80,17 @@ export default function PackDetailPage() {
         <Link href="/downloads" className="transition-colors hover:text-ink">
           단어 다운로드
         </Link>
+        {deck ? (
+          <>
+            <span className="mx-1.5">/</span>
+            <Link
+              href={`/downloads/${deck.id}`}
+              className="transition-colors hover:text-ink"
+            >
+              {deck.title}
+            </Link>
+          </>
+        ) : null}
       </div>
 
       <PageHeader

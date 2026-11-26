@@ -9,7 +9,7 @@ import { InstallButton } from "@/components/install-button";
 import { pictureWords, WordCard } from "@/components/word-card";
 import { useAppMode } from "@/lib/app-mode";
 import { useNyakiImage } from "@/lib/nyaki-skin";
-import { getPack } from "@/lib/packs";
+import { LANDING_CARDS } from "@/lib/packs";
 import { PLANS } from "@/lib/pricing-plans";
 import { cn } from "@/lib/utils";
 
@@ -163,8 +163,8 @@ const FEATURES: { title: string; visual: ReactNode; body: ReactNode }[] = [
   },
 ];
 
-/** 랜딩에 펼쳐 보이는 카드 — N5 그림 단어 팩의 카드들. */
-const SAMPLE_CARDS = pictureWords(getPack("jlpt-n5-picture")?.words ?? []);
+/** 랜딩에 펼쳐 보이는 카드 — 예전 N5 그림 단어 팩의 카드들. */
+const SAMPLE_CARDS = pictureWords(LANDING_CARDS);
 
 /** 카드마다 부채꼴 자리 — 왼쪽 · 가운데 · 오른쪽. 마우스를 올리면 조금 더 벌어진다. */
 const FAN = [

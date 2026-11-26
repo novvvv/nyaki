@@ -903,6 +903,8 @@ export interface PackImportInput {
     term: string;
     pronunciation?: string;
     meaning: string;
+    example?: string;
+    exampleMeaning?: string;
   }[];
 }
 
@@ -938,6 +940,8 @@ export async function importPack(
         term: word.term,
         pronunciation: word.pronunciation ?? null,
         meaning: word.meaning,
+        example: word.example ?? null,
+        example_meaning: word.exampleMeaning ?? null,
         created_at: timestamp,
         updated_at: timestamp,
       })),

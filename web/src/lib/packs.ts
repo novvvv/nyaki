@@ -1,3 +1,5 @@
+import { KANJI_N5_PACKS } from "@/lib/packs-kanji-n5";
+
 // 배포용 단어 묶음 — 아직 목업 데이터다.
 // 나중에 파일(public/packs/*.csv)이나 Firestore로 옮겨도 화면은 그대로 쓸 수 있도록
 // 이 모듈만 바꾸면 되게 분리해 둔다.
@@ -17,6 +19,9 @@ export interface PackWord {
   term: string;
   reading?: string;
   meaning: string;
+  /** 예문 칸에 담긴다. 한자 팩은 예시 단어(읽기 포함)를 넣는다. */
+  example?: string;
+  exampleMeaning?: string;
   /** JLPT 레벨 — 공식 목록이 없어 비공식 목록 기준 추정치다. */
   level?: JlptLevel;
   /** 그림 카드. 담을 때는 빠진다 — 단어에 그림 칸이 아직 없다. */
@@ -31,6 +36,10 @@ export interface Pack {
   updatedAt: string;
   /** 팩 겉면 그림. */
   cover?: string;
+  /** 목록에 보이는 소개 글. */
+  description?: string;
+  /** 팩 겉면 글씨 — 아래 줄 이름과, 그림 대신 크게 넣을 글자. */
+  face?: { label: string; glyph?: string };
   words: PackWord[];
 }
 
@@ -43,6 +52,9 @@ export const PACKS: Pack[] = [
     tags: ["일본어", "JLPT"],
     updatedAt: "2026-11-20",
     cover: "/nyaki/default/angry.webp",
+    description:
+      "단어마다 그림 한 장. 장면으로 먼저 기억하는 N5 기본 단어예요. 쇼츠에 공개되는 카드가 생길 때마다 이 팩에 계속 추가돼요.",
+    face: { label: "PICTURE CARDS" },
     words: [
       {
         term: "秋",
@@ -67,6 +79,7 @@ export const PACKS: Pack[] = [
       },
     ],
   },
+  ...KANJI_N5_PACKS,
 ];
 
 export function getPack(id: string) {

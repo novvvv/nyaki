@@ -96,7 +96,13 @@ interface VocabContextValue {
 export interface ImportPackInput {
   importId: string;
   packId: string;
-  words: { term: string; reading?: string; meaning: string }[];
+  words: {
+    term: string;
+    reading?: string;
+    meaning: string;
+    example?: string;
+    exampleMeaning?: string;
+  }[];
   target:
     | { type: "existing"; wordBookId: string }
     | { type: "new"; title: string; folderId: string | null };
@@ -531,6 +537,8 @@ export function VocabProvider({ children }: { children: ReactNode }) {
           term: word.term,
           pronunciation: word.reading,
           meaning: word.meaning,
+          example: word.example,
+          exampleMeaning: word.exampleMeaning,
         })),
       });
       // 단어장 · 단어 · 집계 · 담은 기록이 한꺼번에 바뀌었다. 사이드바와

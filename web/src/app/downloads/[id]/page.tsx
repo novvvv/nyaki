@@ -107,8 +107,15 @@ export default function PackDetailPage() {
               <span className="w-40 shrink-0 text-xs text-umber/45">
                 {word.reading}
               </span>
-              <span className="min-w-0 flex-1 truncate text-umber/70">
-                {word.meaning}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-umber/70">
+                  {word.meaning}
+                </span>
+                {word.example ? (
+                  <span className="mt-0.5 block truncate text-xs text-umber/40">
+                    {word.example}
+                  </span>
+                ) : null}
               </span>
               <span className="w-8 shrink-0 text-right">
                 {word.level ? (
